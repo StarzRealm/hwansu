@@ -701,7 +701,7 @@ function ybStart(){const p=P(),ad=accDaily();if(!p)return;if((ad.game||0)>=1)ret
  let n=0;const pet=$('ypet');
  function doSwap(){if(!$('yst'))return;if(n>=swaps.length){phase='pick';$('ymsg').textContent='어느 그릇에 숨었을까? 골라 보세요!';[0,1,2].forEach(k=>cup(k).classList.add('pickable'));return;}
   const [sa,sb]=swaps[n++],ca=slot[sa],cb=slot[sb],dur=Math.max(170,520-n*36);[ca,cb].forEach(c=>{cup(c).style.transition='left '+dur+'ms ease-in-out, transform '+dur+'ms ease-in-out';});
-  slot[sa]=cb;slot[sb]=ca;cup(ca).style.left=X[sb]+'%';cup(cb).style.left=X[sa]+'%';cup(ca).style.transform='translate(-50%,-26px)';cup(cb).style.transform='translate(-50%,10px)';
+  slot[sa]=cb;slot[sb]=ca;cup(ca).style.left=X[sb]+'%';cup(cb).style.left=X[sa]+'%';cup(ca).style.transform='translate(-50%,-22%)';cup(cb).style.transform='translate(-50%,8%)';
   if(ca===hid||cb===hid){const nh=ca===hid?sb:sa;pet.style.transition='left '+dur+'ms ease-in-out';pet.style.left=X[nh]+'%';}
   SFX.play('tap');setTimeout(()=>{cup(ca).style.transform='';cup(cb).style.transform='';setTimeout(doSwap,60);},dur);}
  setTimeout(()=>{$('ymsg').textContent='섞는 중…';doSwap();},1800);
