@@ -350,11 +350,17 @@ function vTrain(){const p=P();
 /* ================= 도감 컬렉션 (해방하면 불이 들어와요) ================= */
 const COLS=[[3,5,'해태의 수호','백구','해태'],[6,8,'여우불의 길','황구','구미호'],[9,18,'태양의 삼족오','아기새','삼족오'],[9,24,'남방 주작','아기새','주작'],[25,34,'중앙 황룡','아기뱀','황룡'],[25,40,'동방 청룡','아기뱀','청룡'],[41,50,'뇌명의 신귀','아기거북','뇌명신귀'],[41,56,'북방 현무','아기거북','현무'],[57,66,'상서로운 기린','아기호랑이','기린'],[57,72,'서방 백호','아기호랑이','백호'],[73,76,'달빛 곰의 숲','아기곰','반달곰']];
 function colPath(a,b){const r=[];let x=b;while(x!=null){r.unshift(x);if(x===a)break;x=FORMS[x].parent;}return r[0]===a?r:[a,b];}
-function vCollections(){let done=0;const cards=COLS.map(([a,b,t])=>{const m=colPath(a,b).filter(i=>FORMS[i].st>=4),an=NAMES[m[0]],bn=NAMES[m[m.length-1]],fr=m.filter(i=>acc.dex[i]&&acc.dex[i].freed).length,full=fr===m.length;if(full)done++;
-  return '<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(t)+'</b><small class="muted">'+esc(an)+' → '+esc(bn)+'</small><span class="colp">'+(full?'<b class="colok">完成</b>':'해방 '+fr+'/'+m.length)+'</span></div><div class="colm">'+
-  m.map(i=>{const d=acc.dex[i],no=String(i).padStart(2,'0');if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
-   return '<div class="cm'+(d.freed?' lit':' dim')+'" title="'+esc(NAMES[i])+(d.freed?' (해방)':'')+'"><img class="px" src="'+img(i)+'" alt=""><span>'+no+'</span></div>';}).join('')+'</div></div>';}).join('');
- return '<div class="colhead"><h2 class="serif" style="margin:0">도감 컬렉션</h2><span class="muted">완성 '+done+' / '+COLS.length+' · 해방한 환수에 불이 들어와요</span></div>'+cards;}
+const COLS2=[
+ {t:'칠요의 정령',m:[82,101,120,127,134,141,148],sub:'일요 · 월요 · 화요 · 수요 · 목요 · 금요 · 토요의정',own:true},
+ {t:'흉풍의 궁기',a:83,b:91},{t:'탐식의 도철',a:83,b:100},{t:'심연의 혼돈',a:102,b:110},{t:'패악의 도올',a:102,b:119},
+ {t:'십이지신',m:[144,147,94,140,113,130,151,133,137,123,126,154],sub:'자·축·인·묘·진·사·오·미·신·유·술·해'}];
+function colCard(c){const m=c.m||colPath(c.a,c.b).filter(i=>FORMS[i].st>=4),on=i=>c.own?!!acc.dex[i]:!!(acc.dex[i]&&acc.dex[i].freed),fr=m.filter(on).length,full=fr===m.length;
+ return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.t)+'</b><small class="muted">'+esc(c.sub||NAMES[m[0]]+' → '+NAMES[m[m.length-1]])+'</small><span class="colp">'+(full?'<b class="colok">完成</b>':(c.own?'획득 ':'해방 ')+fr+'/'+m.length)+'</span></div><div class="colm">'+
+  m.map(i=>{const d=acc.dex[i],no=String(i).padStart(2,'0'),lit=on(i);if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
+   return '<div class="cm'+(lit?' lit':' dim')+'" title="'+esc(NAMES[i])+(lit?(c.own?' (획득)':' (해방)'):'')+'"><img class="px" src="'+img(i)+'" alt=""><span>'+no+'</span></div>';}).join('')+'</div></div>'};}
+function vCollections(){const all=COLS.map(([a,b,t])=>({t,a,b})).concat(COLS2),cs=all.map(colCard),done=cs.filter(c=>c.full).length;
+ return '<div class="colhead"><h2 class="serif" style="margin:0">도감 컬렉션</h2><span class="muted">완성 '+done+' / '+all.length+' · 해방한 환수에 불이 들어와요</span></div>'+cs.slice(0,COLS.length).map(c=>c.h).join('')+
+  '<div class="colhead" style="margin-top:6px"><h3 class="serif" style="margin:0;color:#6a4ad0">음양알 컬렉션</h3></div>'+cs.slice(COLS.length).map(c=>c.h).join('');}
 function vDex(){const own=Object.keys(acc.dex).length,freed=Object.values(acc.dex).filter(d=>d.freed).length;
  return '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><h1 class="serif" style="margin:0;font-size:26px">환수 도감</h1><div style="display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:420px"><div class="stat" style="flex:1;margin:0"><div class="tr"><i style="width:'+own/NAMES.length*100+'%;background:linear-gradient(90deg,#c9a24a,#f0d78a)"></i></div></div><b>'+own+' / '+NAMES.length+'</b><span class="muted">해방 '+freed+'</span></div></div><div class="dexwrap"><div class="dexL"><div class="dex">'+NAMES.map((n,i)=>{const d=acc.dex[i];if(!d)return '<div class="dc no"><span class="muted" style="align-self:flex-start;font-weight:700">no.'+String(i).padStart(2,'0')+'</span><img class="px" src="i/q.png" alt="" style="padding:20px;opacity:.7"><span class="n" style="color:#9a8b6c">???</span><span class="muted" style="min-height:14px"></span></div>';
   const b=SAHYUNG.has(i)?['b-x','사흉']:SUNGSU.has(i)?['b-s','성수']:YOUNGSU.has(i)?['b-y','영수']:!CHILD[i].length?['b-f','최종']:null;
