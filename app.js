@@ -69,7 +69,7 @@ const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const img=no=>'h/'+String(no).padStart(2,'0')+'.gif';
 const isAdmin=()=>acc&&(acc.role==='main'||acc.role==='sub');
 const isMain=()=>acc&&acc.role==='main';
-function toast(m){const l=document.createElement('div');l.className='toast';l.textContent=m;document.body.appendChild(l);setTimeout(()=>l.remove(),2600);}
+function toast(m){if(typeof SFX!=='undefined'&&/(없어요|부족|아니에요|이미 |할 수 없|다 했|다 썼|수련 중이|자는 중|아직|불러요|못했|아프지|없는|더 살 수|형식이)/.test(m))SFX.nopeMaybe();const l=document.createElement('div');l.className='toast';l.textContent=m;document.body.appendChild(l);setTimeout(()=>l.remove(),2600);}
 function fmtDur(ms){ms=Math.max(0,ms);const h=Math.floor(ms/H),m=Math.floor(ms%H/MIN),s=Math.floor(ms%MIN/1000);return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 async function sha(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('hwansu:'+s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){let h=0;for(const c of 'hwansu:'+s)h=(h*31+c.charCodeAt(0))|0;return 'x'+h;}}
 const rnd=()=>Math.random();
@@ -96,7 +96,7 @@ function addEl(p,e,amt){const cur=p.el[e];let cap=50;if(p.lock){const r=p.lock.i
 function addExp(p,amt){if(p.st>=12)return;const mx=maxLv(p.st);p.exp+=amt;while(p.lv<mx&&p.exp>=need(p.lv,p.st)){p.exp-=need(p.lv,p.st);p.lv++;}if(p.lv>=mx){p.lv=mx;p.exp=0;}}
 function lvUp(p,n){const mx=maxLv(p.st);p.lv=Math.min(mx,p.lv+n);if(p.lv>=mx)p.exp=0;}
 function randEl(){return EL[Math.floor(rnd()*5)];}
-function makeSick(p,t){if(p.sick==null){p.sick=t;addAff(p,-5);if(p.train){p.train=null;}}}
+function makeSick(p,t){if(p.sick==null){p.sick=t;SFX.play('sick');addAff(p,-5);if(p.train){p.train=null;}}}
 
 function finishTraining(p,t){
  const sp=SPOTS[p.train.s],dur=(p.train.end-p.train.start)/H,st=stats(p),m=.5*(1-st.decay/100);
@@ -151,7 +151,7 @@ function advance(p,to){
 }
 function tickAll(){let changed=false;acc.slots.forEach((p,i)=>{if(!p)return;const r=advance(p,now());if(r==='vanish'){vanish(i,'병을 이기지 못하고 선계로 돌아갔어요.');changed=true;}else if(r)changed=true;});return changed;}
 function freeGear(p){}
-function vanish(i,msg){const p=acc.slots[i];acc.notice[i]=NAMES[p.no]+'은(는) '+msg;acc.slots[i]=null;}
+function vanish(i,msg){const p=acc.slots[i];SFX.play('sad');acc.notice[i]=NAMES[p.no]+'은(는) '+msg;acc.slots[i]=null;}
 function topEls(p){const mx=Math.max(...EL.map(e=>p.el[e]));return{mx,tops:mx>0?EL.filter(e=>p.el[e]===mx):[]};}
 function evoCheck(p){
  if(p.st>=12)return{done:true,reason:'완성된 최종 단계예요'};
@@ -184,33 +184,33 @@ const A={
   p.hu=Math.min(100,p.hu+25);
   if(el==='yy'){const pos=EL.filter(e=>p.el[e]>0);if(pos.length){const e=pos[Math.floor(rnd()*pos.length)];p.el[e]--;toast(ELK[e]+' -1');}else toast('포만감만 찼어요.');}
   else{let a=3;const st=stats(p);if(st.affEl===el&&rnd()*100<Math.min(100,st.aff))a++;addEl(p,el,a);}
-  closeLayer();commit();},
- dew(){const p=P();if(!guard(p))return;if(p.th>60)return toast('아직 목마르지 않아요 (60 이하일 때).');if(!take('dew'))return;p.th=Math.min(100,p.th+40);commit();},
- soap(){const p=P();if(!guard(p))return;if(p.cl>50)return toast('아직 깨끗해요 (50 이하일 때).');if(!take('soap'))return;p.cl=Math.min(100,p.cl+50);commit();},
- pat(){const p=P();if(!guard(p))return;const d=daily(p);if(d.play)return toast('오늘은 이미 놀아줬어요.');if(d.pat>=2)return toast('오늘 쓰다듬기를 다 했어요.');d.pat++;addAff(p,7);p.acc.nopat=0;toast('기분 좋아해요! 호감도 +7');commit();},
- play(){const p=P();if(!guard(p))return;const d=daily(p);if(d.pat||d.play)return toast('오늘 교감을 이미 했어요.');if(p.en<10)return toast('행동력이 부족해요.');d.play=1;p.en-=10;p.hu=Math.max(0,p.hu-10);addAff(p,15);p.acc.nopat=0;toast('신나게 놀았어요! 호감도 +15');commit();},
- sleep(){const p=P();if(!p)return;if(p.sleep){p.sleep=null;toast('깨웠어요.');return commit();}if(p.train)return toast('수련 중이에요.');const d=daily(p);if(d.sleep>=2)return toast('오늘 재울 수 있는 횟수를 다 썼어요.');d.sleep++;p.sleep=now()+8*H;toast('잠들었어요. 8시간 동안 수치가 천천히 줄어요.');commit();},
- elixir(){const p=P();if(!p)return;if(p.sick==null)return toast('아프지 않아요.');if(!take('elixir'))return;if(rnd()<.5){p.sick=null;p.acc.sickA=0;toast('나았어요!');}else toast('치료에 실패했어요…');commit();},
+  SFX.play('munch');closeLayer();commit();},
+ dew(){const p=P();if(!guard(p))return;if(p.th>60)return toast('아직 목마르지 않아요 (60 이하일 때).');if(!take('dew'))return;SFX.play('drip');p.th=Math.min(100,p.th+40);commit();},
+ soap(){const p=P();if(!guard(p))return;if(p.cl>50)return toast('아직 깨끗해요 (50 이하일 때).');if(!take('soap'))return;SFX.play('bubble');p.cl=Math.min(100,p.cl+50);commit();},
+ pat(){const p=P();if(!guard(p))return;const d=daily(p);if(d.play)return toast('오늘은 이미 놀아줬어요.');if(d.pat>=2)return toast('오늘 쓰다듬기를 다 했어요.');d.pat++;addAff(p,7);p.acc.nopat=0;SFX.play('pat');toast('기분 좋아해요! 호감도 +7');commit();},
+ play(){const p=P();if(!guard(p))return;const d=daily(p);if(d.pat||d.play)return toast('오늘 교감을 이미 했어요.');if(p.en<10)return toast('행동력이 부족해요.');d.play=1;p.en-=10;p.hu=Math.max(0,p.hu-10);addAff(p,15);p.acc.nopat=0;SFX.play('play');toast('신나게 놀았어요! 호감도 +15');commit();},
+ sleep(){const p=P();if(!p)return;if(p.sleep){p.sleep=null;(SFX.play('wake'),toast('깨웠어요.'));return commit();}if(p.train)return toast('수련 중이에요.');const d=daily(p);if(d.sleep>=2)return toast('오늘 재울 수 있는 횟수를 다 썼어요.');d.sleep++;p.sleep=now()+8*H;SFX.play('sleep');toast('잠들었어요. 8시간 동안 수치가 천천히 줄어요.');commit();},
+ elixir(){const p=P();if(!p)return;if(p.sick==null)return toast('아프지 않아요.');if(!take('elixir'))return;if(rnd()<.5){p.sick=null;p.acc.sickA=0;(SFX.play('heal'),toast('나았어요!'));}else (SFX.play('thud'),toast('치료에 실패했어요…'));commit();},
  sus(k){const p=P();if(!guard(p))return;if(p.st>=12)return toast('완성된 환수에게는 효과가 없어요.');if(!take(k))return;const mx=maxLv(p.st);
   if(k==='sus_s'){if(p.lv<mx)addExp(p,Math.round(need(p.lv,p.st)*.3));addEl(p,randEl(),1);}
   if(k==='sus_m'){if(p.lv<mx)addExp(p,Math.round(need(p.lv,p.st)*.7));addEl(p,randEl(),3+(rnd()<.5?1:0));p.hu=Math.max(0,p.hu-30);}
   if(k==='sus_l'){lvUp(p,1);addEl(p,randEl(),5+(rnd()<.5?1:0));if(rnd()<.1){makeSick(p,now());toast('으앗, 몸이 안 좋아졌어요!');}}
-  toast(ITEMS[k].n+' 사용!');closeLayer();commit();},
- energy(){const p=P();if(!p)return;if(!take('sec_active'))return;p.en=Math.min(maxEn(p),p.en+50);toast('행동력 +50');commit();},
- resetKi(){const p=P();if(!p)return;if(!take('reset_ki'))return;EL.forEach(e=>{p.el[e]=0;p.elT[e]=0;});p.lock=null;toast('오행이 초기화됐어요.');commit();},
+  SFX.play('magic');toast(ITEMS[k].n+' 사용!');closeLayer();commit();},
+ energy(){const p=P();if(!p)return;if(!take('sec_active'))return;p.en=Math.min(maxEn(p),p.en+50);SFX.play('heal');toast('행동력 +50');commit();},
+ resetKi(){const p=P();if(!p)return;if(!take('reset_ki'))return;EL.forEach(e=>{p.el[e]=0;p.elT[e]=0;});p.lock=null;SFX.play('mystic');toast('오행이 초기화됐어요.');commit();},
  admItem(k){const p=P();if(!p)return;if(!take(k))return;
   if(k==='sec_instant'){if(!p.train){acc.inv[k]++;return toast('진행 중인 수련이 없어요.');}p.train.end=now();advance(p,now());}
-  if(k==='sec_cure'){p.sick=null;p.acc.sickA=0;toast('나았어요!');}
-  if(k==='sec_cancel'){if(!p.prev){acc.inv[k]++;return toast('되돌릴 진화가 없어요.');}Object.assign(p,p.prev);p.prev=null;toast('진화를 되돌렸어요.');}
+  if(k==='sec_cure'){p.sick=null;p.acc.sickA=0;(SFX.play('heal'),toast('나았어요!'));}
+  if(k==='sec_cancel'){if(!p.prev){acc.inv[k]++;return toast('되돌릴 진화가 없어요.');}Object.assign(p,p.prev);p.prev=null;SFX.play('mystic');toast('진화를 되돌렸어요.');}
   commit();},
  train(i){const p=P();if(!guard(p))return;if(p.sick!=null)return toast('아파서 수련할 수 없어요.');if(p.st>=12)return toast('완성된 환수는 수련이 필요 없어요.');const sp=SPOTS[i];if(p.en<sp.cost)return toast('행동력이 부족해요.');
   if(p.lv>=maxLv(p.st))return toast('최대 레벨이라 경험치를 더 받을 수 없어요. 먼저 진화하세요.');
-  p.en-=sp.cost;p.train={s:i,start:now(),end:now()+sp.min*MIN};toast(NAMES[p.no]+'이(가) '+sp.n+'(으)로 떠났어요.');commit();},
+  p.en-=sp.cost;p.train={s:i,start:now(),end:now()+sp.min*MIN};SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+sp.n+'(으)로 떠났어요.');commit();},
  evolve(){const p=P();const e=evoCheck(p);if(!e.ok)return toast(e.reason);evoAnim(p,e.target);},
  liberate(){const p=P();if(!p)return;if(p.st<4)return toast('4단계부터 해방할 수 있어요.');if(p.sick!=null)return toast('아플 때는 해방할 수 없어요.');if(acc.dex[p.no]&&acc.dex[p.no].freed)return toast('이미 해방한 환수예요. 선계 귀환만 가능해요.');
-  confirmBox('해방하기',NAMES[p.no]+'을(를) 해방할까요? 되돌릴 수 없어요. 도감에 解 도장이 찍혀요.',()=>{dexAdd(p.no);acc.dex[p.no].freed=true;acc.notice[sel]=NAMES[p.no]+'을(를) 해방했어요. 새 알 코드를 입력하세요.';acc.slots[sel]=null;commit();toast('해방했어요.');});},
+  confirmBox('해방하기',NAMES[p.no]+'을(를) 해방할까요? 되돌릴 수 없어요. 도감에 解 도장이 찍혀요.',()=>{dexAdd(p.no);acc.dex[p.no].freed=true;acc.notice[sel]=NAMES[p.no]+'을(를) 해방했어요. 새 알 코드를 입력하세요.';acc.slots[sel]=null;commit();SFX.play('mystic');toast('해방했어요.');});},
  home(){const p=P();if(!p)return;if(p.st<4)return toast('4단계부터 선계 귀환할 수 있어요.');const c=REFUND[p.st];
-  confirmBox('선계 귀환',NAMES[p.no]+'을(를) 선계로 돌려보내고 환수 코인 '+c+'개를 받을까요?',()=>{acc.coins+=c;acc.notice[sel]=NAMES[p.no]+'이(가) 선계로 돌아갔어요. (코인 +'+c+')';acc.slots[sel]=null;commit();});},
+  confirmBox('선계 귀환',NAMES[p.no]+'을(를) 선계로 돌려보내고 환수 코인 '+c+'개를 받을까요?',()=>{SFX.play('mystic');SFX.play('coins');acc.coins+=c;acc.notice[sel]=NAMES[p.no]+'이(가) 선계로 돌아갔어요. (코인 +'+c+')';acc.slots[sel]=null;commit();});},
  autoSleep(){acc.autoSleep=!(acc.autoSleep===true);commit();},
  ack(){const p=P();if(p){p.result=null;commit();}}
 };
@@ -220,19 +220,19 @@ async function commit(){render();await save();}
 function evoAnim(p,target){
  const L=document.getElementById('layer');const oldS=img(p.no),newS=img(target);let cancelled=false;
  L.innerHTML='<div class="overlay"><div class="evo stage" id="evo"><div style="position:absolute;inset:0;background:rgba(8,16,20,.55)" id="evoDim"></div><img class="m px" id="evoA" src="'+oldS+'" alt=""><div class="say" id="evoSay">어라…?<br>'+esc(NAMES[p.no])+'의 모습이…!</div></div></div>';
- const box=document.getElementById('evo'),a=document.getElementById('evoA'),say=document.getElementById('evoSay');
+ const box=document.getElementById('evo'),a=document.getElementById('evoA'),say=document.getElementById('evoSay');SFX.play('huh');
  setTimeout(()=>{if(cancelled)return;box.style.background='radial-gradient(circle at 50% 45%,#2a3f52,#070d12 70%)';box.classList.remove('stage');document.getElementById('evoDim').remove();a.classList.add('sil');
   say.innerHTML='<button class="btn soft" id="evoCancel">진화 취소하기</button>';say.style.background='transparent';say.style.border='none';say.style.textAlign='center';
-  document.getElementById('evoCancel').onclick=()=>{cancelled=true;closeLayer();toast('진화를 멈췄어요.');};
+  document.getElementById('evoCancel').onclick=()=>{cancelled=true;closeLayer();SFX.play('thud');toast('진화를 멈췄어요.');};
   let iv=420,flip=false,t=0;
-  const loop=()=>{if(cancelled)return;flip=!flip;a.src=flip?newS:oldS;t+=iv;iv=Math.max(55,iv*.86);if(t<3400)setTimeout(loop,iv);else boom();};loop();},1600);
- function boom(){if(cancelled)return;const el=topEls(p).tops[0]||'metal';const c=ELC[el];say.innerHTML='';a.src=newS;
+  const loop=()=>{if(cancelled)return;flip=!flip;a.src=flip?newS:oldS;SFX.evoBlip(t);t+=iv;iv=Math.max(55,iv*.86);if(t<3400)setTimeout(loop,iv);else boom();};loop();},1600);
+ function boom(){if(cancelled)return;const el=topEls(p).tops[0]||'metal';const c=ELC[el];say.innerHTML='';a.src=newS;SFX.play('boom');
   const b=document.createElement('div');b.className='burst';b.style.background='radial-gradient(circle,#fff 0%,#fff6d6 15%,'+c+' 40%,rgba(0,0,0,0) 70%)';box.insertBefore(b,a);
   setTimeout(()=>{if(cancelled)return;
    p.prev=JSON.parse(JSON.stringify(Object.assign({},p,{prev:null})));
    const oldName=NAMES[p.no];p.no=target;p.st++;p.lv=1;p.exp=0;p.en=maxEn(p);EL.forEach(e=>{p.el[e]=0;p.elT[e]=0;});p.lock=null;dexAdd(target);
    a.classList.remove('sil');b.remove();box.classList.add('stage');box.style.background='';
-   say.style.cssText='';say.innerHTML='축하합니다!<br>'+esc(oldName)+'은(는) <b>'+esc(NAMES[target])+'</b>(으)로 진화했다!<br><small style="color:#2b5a5e">행동력이 가득 찼어요!</small><div style="margin-top:10px;text-align:right"><button class="btn" id="evoOk">확인</button></div>';
+   SFX.play('fanfare');say.style.cssText='';say.innerHTML='축하합니다!<br>'+esc(oldName)+'은(는) <b>'+esc(NAMES[target])+'</b>(으)로 진화했다!<br><small style="color:#2b5a5e">행동력이 가득 찼어요!</small><div style="margin-top:10px;text-align:right"><button class="btn" id="evoOk">확인</button></div>';
    document.getElementById('evoOk').onclick=closeLayer;commit();},1100);}
 }
 function closeLayer(){document.getElementById('layer').innerHTML='';}
@@ -244,7 +244,7 @@ function susMenu(){const L=document.getElementById('layer');L.innerHTML='<div cl
 /* ================= 화면 ================= */
 function header(){
  const tabs=[['home','환수'],['train','선계수련'],['gear','장비'],['bag','가방'],['shop','상점'],['code','코드'],['dex','도감']];
- return '<header class="sky"><div class="bar"><span class="logo">환수키우기</span><nav class="main" aria-label="주 메뉴">'+tabs.map(([k,n])=>'<button data-view="'+k+'" class="'+(view===k?'on':'')+'">'+n+'</button>').join('')+'</nav><div class="coinbox"><img class="px" src="i/coin_spin.gif" alt="" width="44" height="44"><b>'+fmt(acc.coins)+'</b><span class="muted" style="margin-left:4px">코인</span></div><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+'</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div>'+
+ return '<header class="sky"><div class="bar"><span class="logo">환수키우기</span><nav class="main" aria-label="주 메뉴">'+tabs.map(([k,n])=>'<button data-view="'+k+'" class="'+(view===k?'on':'')+'">'+n+'</button>').join('')+'</nav><div class="coinbox"><img class="px" src="i/coin_spin.gif" alt="" width="44" height="44"><b>'+fmt(acc.coins)+'</b><span class="muted" style="margin-left:4px">코인</span></div><button class="btn ghost sm" data-a2="sfx" title="효과음" aria-label="효과음 '+(SFX.st.sfx?'끄기':'켜기')+'">'+(SFX.st.sfx?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>')+'</button><button class="btn ghost sm" data-a2="bgm" title="배경음" aria-label="배경음 '+(SFX.st.bgm?'끄기':'켜기')+'" style="'+(SFX.st.bgm?'':'opacity:.4')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+'</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div>'+
  ((cfg.expMult||1)>1||cfg.notice?'<div class="banner">'+((cfg.expMult||1)>1?'<span class="tag">이벤트</span><span>경험치 '+cfg.expMult+'배 적용 중</span>':'')+(cfg.notice?'<span>[공지] '+esc(cfg.notice)+'</span>':'')+'</div>':'')+
  (acc.offset?'<div class="banner" style="background:#7a4512">테스트 시간 +'+(acc.offset/H).toFixed(1)+'시간 앞당겨진 상태예요</div>':'')+'</header>';
 }
@@ -306,11 +306,71 @@ function vGear(){const p=P();const sg=S.forgeSel.map(gearOf).filter(Boolean);con
  return slotsBar()+'<div class="row"><section class="grow"><div class="card"><h2>보유 장비</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">'+(acc.gear.length?acc.gear.slice().sort((x,y)=>y.g-x.g||y.p-x.p).map(g=>{const e=equippedBy(g.u);return gearCard(g,e!=null&&acc.slots[e]?NAMES[acc.slots[e].no]+' 장착 중':'');}).join(''):'<p class="muted">장비가 없어요. 상점에서 일반 장비를 사 보세요.</p>')+'</div></div></section><aside class="side"><div class="card"><h2>강화 · 합성</h2>'+panel+'</div></aside></div>';}
 function vCode(){return '<h1 class="serif" style="margin:0;font-size:26px">코드</h1><div class="row"><div class="card" style="flex:1 1 360px"><h2>환수 코드 (게임 → 웹)</h2><p class="muted">게임에서 <b>/trigger hwansu</b>로 받은 [환수 코드]를 입력하세요. 금화 3개 = 코인 1개예요.</p><form data-form="coin" style="display:flex;gap:8px;flex-wrap:wrap"><label class="f" style="flex:1">환수 코드<input type="text" name="code" placeholder="3-7-10-4821" required></label><button class="btn teal" style="align-self:flex-end">입력</button></form><p class="muted">연결된 플레이어 번호: '+(acc.playerNo||'아직 없음 (첫 코드로 연결돼요)')+' · 마지막 회차: '+(acc.lastNonce||0)+'</p></div><div class="card" style="flex:1 1 360px"><h2>알 코드</h2><form data-form="egg" style="display:flex;gap:8px;flex-wrap:wrap"><label class="f" style="flex:1">알 코드<input type="text" name="code" placeholder="EGG-XXXX-XXXX" required></label><button class="btn teal" style="align-self:flex-end">알 받기</button></form><p class="muted">빈 슬롯에 알이 들어가요.</p></div></div>';}
 
-function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result,encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)'};
+function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);if(r.enc==='luck')setTimeout(()=>SFX.play('coins'),900);const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)'};
   res='<div class="overlay"><div class="modal" role="dialog" aria-label="수련 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(r.spot)+' 수련 결과</span><span class="serif" style="font-size:34px;font-weight:700;color:'+(r.out==='fail'?'#c9d8d5':'#ffd36e')+'">'+{fail:'실패…',ok:'성공',great:'대성공!'}[r.out]+'</span><img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain">'+(r.enc?'<div class="chip" style="background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.5);color:#fff8e6">인카운트 · '+encN[r.enc]+'</div>':'')+'<b style="font-size:22px">+'+fmt(r.exp)+' EXP</b><span class="muted" style="color:#c9d8d5">Lv '+r.lvFrom+' → '+r.lvTo+(r.max?' (MAX)':'')+'</span><button class="btn" data-ack="'+i+'" style="background:#f0c75e">확인</button></div></div>';}return res;}
 
 /* ================= 공통 렌더 / 로그인 ================= */
 const MODE=(document.body.dataset.mode||'player');
+
+/* ================= 사운드 (Web Audio로 직접 합성 · 파일 없음) ================= */
+const SFX=(()=>{
+ let ctx=null,fx=null,bg=null,bgT=null,last=0,lastKey='';
+ const pref=k=>{try{return localStorage.getItem('hs_'+k)!=='0';}catch(e){return true;}};
+ const st={sfx:pref('sfx'),bgm:pref('bgm')};
+ function init(){if(ctx){if(ctx.state==='suspended')ctx.resume();return true;}const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;ctx=new AC();
+  const out=ctx.createDynamicsCompressor();out.connect(ctx.destination);fx=ctx.createGain();fx.gain.value=st.sfx?1:0;fx.connect(out);bg=ctx.createGain();bg.gain.value=st.bgm?1:0;bg.connect(out);if(st.bgm)startBgm();return true;}
+ function tone(f,d,o={}){const t=ctx.currentTime+(o.at||0),g=ctx.createGain(),os=ctx.createOscillator();os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+d);
+  const v=o.vol||.15,a=o.atk||.005;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);os.connect(g);g.connect(o.dest||fx);os.start(t);os.stop(t+d+.05);}
+ let nb=null;function noise(d,o={}){if(!nb){nb=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const c=nb.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1;}
+  const t=ctx.currentTime+(o.at||0),s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=nb;s.loop=true;f.type=o.ft||'lowpass';f.frequency.setValueAtTime(o.f||1200,t);if(o.fto)f.frequency.exponentialRampToValueAtTime(o.fto,t+d);f.Q.value=o.q||1;
+  const v=o.vol||.15;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+(o.atk||.005));g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f);f.connect(g);g.connect(fx);s.start(t);s.stop(t+d+.05);}
+ const seq=(ns,step,o)=>ns.forEach((f,i)=>f&&tone(f,o.d||step*1.6,Object.assign({},o,{at:(o.at||0)+i*step})));
+ const N={C4:262,D4:294,E4:330,G4:392,A4:440,C5:523,D5:587,E5:659,G5:784,A5:880,C6:1047,E6:1319,G6:1568,C7:2093};
+ const S={
+  tap:()=>tone(720,.06,{vol:.05,to:820}),
+  nope:()=>{tone(240,.1,{type:'square',vol:.04});tone(180,.14,{type:'square',vol:.04,at:.09});},
+  coins:()=>{[0,.09,.18].forEach((a,i)=>{tone(988+i*60,.08,{type:'square',vol:.05,at:a});tone(1319+i*80,.3,{type:'square',vol:.05,at:a+.06});});},
+  buy:()=>{noise(.05,{ft:'highpass',f:3000,vol:.08});tone(1568,.12,{type:'triangle',vol:.1,at:.04});tone(2093,.4,{type:'triangle',vol:.09,at:.12});},
+  munch:()=>{[0,.13,.26].forEach(a=>noise(.07,{f:900,vol:.18,at:a}));tone(N.G5,.15,{type:'triangle',vol:.1,at:.42});tone(N.C6,.3,{type:'triangle',vol:.1,at:.52});},
+  drip:()=>{tone(500,.14,{to:1500,vol:.14});tone(700,.16,{to:1900,vol:.1,at:.2});},
+  bubble:()=>{for(let i=0;i<7;i++){const f=500+Math.random()*700;tone(f,.07,{to:f*1.8,vol:.09,at:i*.06});}},
+  pat:()=>{tone(N.E5,.16,{type:'triangle',vol:.13});tone(N.A5,.3,{type:'triangle',vol:.13,at:.12});},
+  play:()=>seq([N.C5,N.E5,N.G5,N.C6,N.G5,N.C6,N.E6],.075,{type:'triangle',vol:.11}),
+  sleep:()=>seq([N.G5,N.E5,N.D5,N.C5],.28,{vol:.1,atk:.04,d:.6}),
+  wake:()=>seq([N.C5,N.E5,N.G5,N.C6],.09,{type:'triangle',vol:.1}),
+  heal:()=>{seq([N.C6,N.E6,N.G6,N.C7],.07,{vol:.07,d:.6});seq([N.G5,N.C6,N.E6],.09,{vol:.05,at:.05,d:.6});},
+  thud:()=>{tone(140,.35,{to:55,vol:.25});noise(.2,{f:400,vol:.1});},
+  sad:()=>seq([N.C5,466,N.G4,370],.22,{type:'triangle',vol:.1,d:.4}),
+  whoosh:()=>{noise(.6,{ft:'bandpass',f:400,fto:2400,q:2,vol:.22,atk:.15});tone(300,.5,{to:900,vol:.04,atk:.1});},
+  magic:()=>{for(let i=0;i<9;i++)tone(800+i*170+Math.random()*60,.25,{vol:.05,at:i*.04});},
+  up:()=>{for(let i=0;i<8;i++)tone(N.C5*Math.pow(2,i/5),.2,{type:'triangle',vol:.08,at:i*.045});tone(N.C7,.6,{vol:.06,at:.38});},
+  clank:()=>{tone(220,.12,{type:'square',vol:.07});noise(.15,{ft:'highpass',f:2500,vol:.1});tone(165,.3,{type:'triangle',vol:.1,at:.08});},
+  crash:()=>{noise(.9,{f:3000,fto:200,vol:.3});tone(110,.6,{to:40,vol:.25});tone(90,.5,{type:'square',vol:.05,at:.05});},
+  equip:()=>{tone(1250,.12,{type:'triangle',vol:.1});tone(1870,.25,{type:'triangle',vol:.07,at:.05});},
+  egg:()=>{S.magic();tone(N.C6,.8,{vol:.08,at:.35});tone(N.G6,.8,{vol:.05,at:.4});},
+  mystic:()=>[N.C4,N.G4,N.D5,N.A5].forEach((f,i)=>tone(f,1.6,{vol:.06,atk:.4,at:i*.12})),
+  huh:()=>{tone(N.E5,.15,{type:'triangle',vol:.1});tone(N.A5,.25,{type:'triangle',vol:.1,at:.18,to:N.C6});},
+  boom:()=>{noise(1.1,{f:5000,fto:150,vol:.3});tone(70,.9,{to:35,vol:.3});S.magic();},
+  fanfare:()=>{seq([N.C5,N.E5,N.G5],.11,{type:'square',vol:.06});tone(N.C6,.9,{type:'square',vol:.06,at:.33});tone(N.E6,.9,{type:'triangle',vol:.05,at:.33});tone(N.C4,.9,{type:'triangle',vol:.12,at:.33});},
+  great:()=>{S.fanfare();S.magic();},
+  ok:()=>{tone(N.A5,.6,{type:'triangle',vol:.1});tone(N.E6,.8,{vol:.06,at:.08});},
+  fail:()=>S.sad(),
+  lvup:()=>seq([N.G5,N.C6,N.E6,N.G6],.08,{type:'square',vol:.05,at:.5}),
+  sick:()=>{tone(300,.6,{to:200,type:'triangle',vol:.08});tone(310,.6,{to:190,type:'triangle',vol:.06,at:.05});}
+ };
+ function play(k){if(MODE!=='player'||!st.sfx||!S[k])return;if(!init())return;if(k!=='tap')last=performance.now();try{S[k]();}catch(e){}}
+ function evoBlip(t){if(!st.sfx||!init())return;tone(300+t*.25,.05,{type:'triangle',vol:.07});}
+ // 선계 배경음: 오음계로 가야금 뜯듯 잔잔하게 + 낮은 바탕음
+ const PENT=[N.C4,N.D4,N.E4,N.G4,N.A4,N.C5,N.D5,N.E5,N.G5,N.A5];let nextT=0,pad=0;
+ function startBgm(){if(bgT||!ctx)return;nextT=ctx.currentTime+.3;pad=0;bgT=setInterval(()=>{if(document.hidden)return;if(nextT<ctx.currentTime)nextT=ctx.currentTime+.1;while(nextT<ctx.currentTime+1){const at=nextT-ctx.currentTime,f=PENT[Math.floor(Math.random()*PENT.length)];tone(f,1.8,{type:'triangle',vol:.035,dest:bg,at});if(Math.random()<.3)tone(f*2,1.2,{vol:.012,dest:bg,at:at+.02});
+   if(pad<=nextT){const r=[N.C4,N.A4/2,N.G4/2][Math.floor(Math.random()*3)];tone(r/2,7,{vol:.03,atk:2,dest:bg,at});tone(r*.75,7,{vol:.015,atk:2.5,dest:bg,at});pad=nextT+6;}
+   nextT+=[.45,.6,.9,1.2,1.8][Math.floor(Math.random()*5)];}},250);}
+ function toggle(k){st[k]=!st[k];try{localStorage.setItem('hs_'+k,st[k]?'1':'0');}catch(e){}if(!init())return;const g=k==='sfx'?fx:bg;g.gain.setTargetAtTime(st[k]?1:0,ctx.currentTime,.05);if(k==='bgm'){if(st.bgm)startBgm();else{clearInterval(bgT);bgT=null;}}if(k==='sfx'&&st.sfx)S.tap();}
+ function nopeMaybe(){if(performance.now()-last>200)play('nope');}
+ function once(key,k){if(key===lastKey)return;lastKey=key;setTimeout(()=>play(k),0);}
+ return {play,evoBlip,toggle,init,st,nopeMaybe,once};
+})();
+document.addEventListener('pointerdown',()=>{if(MODE==='player')SFX.init();},{capture:true});
 let HS=null, unsubMe=null;
 function normAcc(d){const a=JSON.parse(JSON.stringify(d));a.notice=a.notice||[null,null,null];a.gear=a.gear||[];a.inv=a.inv||{};a.dex=a.dex||{};a.slots=a.slots||[null,null,null];a.offset=0;return a;}
 function render(){
@@ -421,31 +481,32 @@ document.addEventListener('submit',async ev=>{const f=ev.target;ev.preventDefaul
  if(!acc)return;
  if(k==='egg'){const code=String(fd.get('code')).trim().toUpperCase();const slot=acc.slots[sel]==null?sel:acc.slots.findIndex(s=>!s);if(slot<0)return toast('빈 슬롯이 없어요.');if(!/^EGG-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code))return toast('알 코드 형식이 아니에요.');const d=await db.doc('eggcodes/'+code).get();if(!d.exists)return toast('없는 알 코드예요.');const e=d.data();if(e.used)return toast('이미 사용한 알 코드예요.');if(e.target&&e.target!==acc.id)return toast('다른 사람 전용 알 코드예요.');
   try{await db.doc('eggcodes/'+code).set(Object.assign({},e,{used:true,by:acc.id,byUid:acc.uid,usedT:Date.now()}));}catch(er){return toast('알 코드를 쓰지 못했어요.');}
-  acc.slots[slot]=newPet();acc.notice[slot]=null;dexAdd(0);sel=slot;view='home';toast('알을 받았어요!');await commit();}
- if(k==='coin'){const m=String(fd.get('code')).trim().match(/^(\d+)-(\d+)-(\d+)-(\d+)$/);if(!m)return toast('코드 형식이 아니에요. 예: 3-7-10-4821');const [id,n,c,chk]=m.slice(1).map(Number);if((id*37+n*53+c*71+1234)%9973!==chk)return toast('잘못된 코드예요.');if(acc.playerNo&&acc.playerNo!==id)return toast('본인 플레이어 번호의 코드가 아니에요.');if(n<=(acc.lastNonce||0))return toast('이미 사용한 코드예요.');acc.playerNo=id;acc.lastNonce=n;acc.coins+=c;toast('환수 코인 '+c+'개가 들어왔어요!');await commit();}
+  acc.slots[slot]=newPet();acc.notice[slot]=null;dexAdd(0);sel=slot;view='home';SFX.play('egg');toast('알을 받았어요!');await commit();}
+ if(k==='coin'){const m=String(fd.get('code')).trim().match(/^(\d+)-(\d+)-(\d+)-(\d+)$/);if(!m)return toast('코드 형식이 아니에요. 예: 3-7-10-4821');const [id,n,c,chk]=m.slice(1).map(Number);if((id*37+n*53+c*71+1234)%9973!==chk)return toast('잘못된 코드예요.');if(acc.playerNo&&acc.playerNo!==id)return toast('본인 플레이어 번호의 코드가 아니에요.');if(n<=(acc.lastNonce||0))return toast('이미 사용한 코드예요.');acc.playerNo=id;acc.lastNonce=n;acc.coins+=c;SFX.play('coins');toast('환수 코인 '+c+'개가 들어왔어요!');await commit();}
 }finally{busy=false;}});
-document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[data-close],input[type=checkbox]');if(!t)return;const ds=t.dataset;
+document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[data-close],input[type=checkbox]');if(!t)return;const ds=t.dataset;if(t.tagName==='BUTTON'&&!ds.a2)SFX.play('tap');
  if(ds.close&&ev.target===t)return closeLayer();
  if(ds.view){view=ds.view;S.forgeSel=[];return render();}
  if(ds.sel!=null){sel=+ds.sel;selSpot=null;S.forgeSel=[];return render();}
  if(ds.spot!=null){selSpot=+ds.spot;return render();}
  if(ds.a){const a=ds.a;if(a==='feed'&&!ds.v)return feedMenu();if(a==='susm')return susMenu();if(A[a])return A[a](ds.v);}
  if(ds.ack!=null){const q=acc.slots[+ds.ack];if(q){q.result=null;return commit();}}
+ if(ds.a2==='sfx'||ds.a2==='bgm'){SFX.toggle(ds.a2);return render();}
  if(ds.a2==='logout')return logout();
- if(ds.buy){const k=ds.buy,n=+ds.n,it=ITEMS[k],ad=accDaily();if(it.daily&&(ad[k]||0)+n>it.daily)return toast('오늘은 더 살 수 없어요 (하루 '+it.daily+'개).');if(acc.coins<it.p*n)return toast('코인이 부족해요.');acc.coins-=it.p*n;acc.inv[k]=(acc.inv[k]||0)+n;if(it.daily)ad[k]=(ad[k]||0)+n;toast(it.n+' ×'+n+' 구매!');return commit();}
- if(ds.buyeq){if(acc.coins<30)return toast('코인이 부족해요.');acc.coins-=30;acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1000),t:ds.buyeq,g:0,p:0,aff:'fire'});toast('일반 '+TN[ds.buyeq]+' 구매!');return commit();}
+ if(ds.buy){const k=ds.buy,n=+ds.n,it=ITEMS[k],ad=accDaily();if(it.daily&&(ad[k]||0)+n>it.daily)return toast('오늘은 더 살 수 없어요 (하루 '+it.daily+'개).');if(acc.coins<it.p*n)return toast('코인이 부족해요.');acc.coins-=it.p*n;acc.inv[k]=(acc.inv[k]||0)+n;if(it.daily)ad[k]=(ad[k]||0)+n;SFX.play('buy');toast(it.n+' ×'+n+' 구매!');return commit();}
+ if(ds.buyeq){if(acc.coins<30)return toast('코인이 부족해요.');acc.coins-=30;acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1000),t:ds.buyeq,g:0,p:0,aff:'fire'});SFX.play('buy');toast('일반 '+TN[ds.buyeq]+' 구매!');return commit();}
  if(ds.gsel){const u=ds.gsel;const i=S.forgeSel.indexOf(u);if(i>=0)S.forgeSel.splice(i,1);else{S.forgeSel.push(u);if(S.forgeSel.length>2)S.forgeSel.shift();}return render();}
  if(t.matches('[data-bless]')){S.bless=t.checked;return render();}
  if(t.matches('[data-protect]')){S.protect=t.checked;return render();}
  if(ds.aff){const g=gearOf(S.forgeSel[0]);g.aff=ds.aff;return commit();}
- if(ds.equip){const p=P(),g=gearOf(ds.equip);if(!p)return;const o=equippedBy(g.u);if(o!=null)acc.slots[o].eq[g.t]=null;p.eq[g.t]=g.u;if(p.en>maxEn(p))p.en=maxEn(p);toast('장착했어요.');return commit();}
- if(ds.unequip){const p=P(),g=gearOf(ds.unequip);p.eq[g.t]=null;if(p.en>maxEn(p))p.en=maxEn(p);return commit();}
- if(ds.enh){const g=gearOf(ds.enh);if(g.p>=MAXP[g.g])return;if(acc.coins<ECOST[g.g])return toast('코인이 부족해요.');let r=RATE[g.p+1];if(S.bless){if(!take('sec_bless'))return;r+=.1;}acc.coins-=ECOST[g.g];if(rnd()<r){g.p++;toast('강화 성공! +'+g.p);}else toast('강화 실패… 단계는 그대로예요.');return commit();}
+ if(ds.equip){const p=P(),g=gearOf(ds.equip);if(!p)return;const o=equippedBy(g.u);if(o!=null)acc.slots[o].eq[g.t]=null;p.eq[g.t]=g.u;if(p.en>maxEn(p))p.en=maxEn(p);SFX.play('equip');toast('장착했어요.');return commit();}
+ if(ds.unequip){const p=P(),g=gearOf(ds.unequip);p.eq[g.t]=null;if(p.en>maxEn(p))p.en=maxEn(p);SFX.play('clank');return commit();}
+ if(ds.enh){const g=gearOf(ds.enh);if(g.p>=MAXP[g.g])return;if(acc.coins<ECOST[g.g])return toast('코인이 부족해요.');let r=RATE[g.p+1];if(S.bless){if(!take('sec_bless'))return;r+=.1;}acc.coins-=ECOST[g.g];if(rnd()<r){g.p++;(SFX.play('up'),toast('강화 성공! +'+g.p));}else (SFX.play('clank'),toast('강화 실패… 단계는 그대로예요.'));return commit();}
  if(ds.synth){const [a,b]=S.forgeSel.map(gearOf);const sy=SYN[a.g];if(acc.coins<SFEE[a.g])return toast('코인이 부족해요.');let prot=false;if(sy.x&&S.protect){if(!take('sec_protect'))return;prot=true;}acc.coins-=SFEE[a.g];const r=rnd();
-  if(r<sy.s){acc.gear=acc.gear.filter(x=>x.u!==a.u&&x.u!==b.u);acc.gear.push({u:'g'+Date.now(),t:a.t,g:a.g+1,p:0,aff:a.aff||'fire'});toast('합성 성공! '+GN[a.g+1]+' '+TN[a.t]+' 획득!');}
-  else if(r<sy.s+sy.d){b.g--;b.p=0;toast('합성 실패… 장비 하나가 '+GN[b.g]+'(으)로 내려갔어요.');}
-  else if(r<sy.s+sy.d+sy.x){if(prot)toast('파괴될 뻔했지만 파괴방지비서가 막았어요!');else{acc.gear=acc.gear.filter(x=>x.u!==b.u);toast('합성 실패… 장비 하나가 파괴됐어요.');}}
-  else toast('합성 실패… 코인만 사라졌어요.');S.forgeSel=[];return commit();}
+  if(r<sy.s){acc.gear=acc.gear.filter(x=>x.u!==a.u&&x.u!==b.u);acc.gear.push({u:'g'+Date.now(),t:a.t,g:a.g+1,p:0,aff:a.aff||'fire'});SFX.play('great');toast('합성 성공! '+GN[a.g+1]+' '+TN[a.t]+' 획득!');}
+  else if(r<sy.s+sy.d){b.g--;b.p=0;SFX.play('clank');toast('합성 실패… 장비 하나가 '+GN[b.g]+'(으)로 내려갔어요.');}
+  else if(r<sy.s+sy.d+sy.x){if(prot)SFX.play('clank');if(prot)toast('파괴될 뻔했지만 파괴방지비서가 막았어요!');else{acc.gear=acc.gear.filter(x=>x.u!==b.u);(SFX.play('crash'),toast('합성 실패… 장비 하나가 파괴됐어요.'));}}
+  else (SFX.play('thud'),toast('합성 실패… 코인만 사라졌어요.'));S.forgeSel=[];return commit();}
  // 운영자
  if(MODE!=='admin'||!isAdmin())return;
  if(ds.xtab){AS.tab=ds.xtab;if(ds.xtab==='eggs'&&!AS.eggs)AD.loadEggs();if(ds.xtab==='logs'&&!AS.logs)AD.loadLogs();return render();}
