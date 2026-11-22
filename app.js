@@ -67,6 +67,7 @@ const ITEMS={
  sec_t480:{n:'시간단축비서 (8시간)',p:0,img:'i/sec_t480.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 8시간 단축 (보상 전용)'},
  sec_slot:{n:'슬롯추가비서',p:0,img:'i/sec_slot.gif',cat:'보상',d:'환수 슬롯을 1칸 늘려요 (최대 '+5+'칸)'},
  sec_aff:{n:'호감도비서',p:10,img:'i/sec_aff.gif',cat:'성장',d:'호감도 +10',daily:1},
+ sec_tower:{n:'탑재도전비서',p:20,img:'i/sec_tower.gif',cat:'성장',d:'오늘 구천탑 도전 기회 +1 (주 1회 구매)',weekly:1},
  sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
  egg_n:{n:'환수 알',p:0,img:'h/00.gif',cat:'알',d:'빈 슬롯이 생기면 부화시킬 수 있어요'},
  egg_yy:{n:'음양알',p:0,img:'h/80.gif',cat:'알',d:'상위 알. 빈 슬롯이 생기면 부화시킬 수 있어요'},
@@ -322,7 +323,7 @@ function attModal(fresh){const a=acc.att||{streak:0},st=a.last===dayKey(now())?a
  '<small style="color:#c9d8d5">매일 오전 6시에 새 출석이 열려요. 하루라도 빠지면 1일차부터 다시 시작해요.</small><button class="btn" data-close="1" style="background:#f0c75e">확인</button></div></div>';
  if(fresh)setTimeout(()=>SFX.play(st===7?'fanfare':'egg'),350);}
 function header(){
- const tabs=[['home','환수'],['train','선계수련'],['gear','장비'],['bag','가방'],['shop','상점'],['code','코드'],['dex','도감'],['pvp','대전'],['boss','토벌'],['mail','우편']];
+ const tabs=[['home','환수'],['train','선계수련'],['gear','장비'],['bag','가방'],['shop','상점'],['code','코드'],['dex','도감'],['pvp','대전'],['boss','토벌'],['tower','구천탑'],['mail','우편']];
  return '<header class="sky"><div class="bar"><span class="logo">환수키우기</span><nav class="main" aria-label="주 메뉴">'+tabs.map(([k,n])=>'<button data-view="'+k+'" class="'+(view===k?'on':'')+'">'+n+(k==='mail'&&acc.mail&&acc.mail.length?'<span class="mbadge">'+acc.mail.length+'</span>':'')+'</button>').join('')+'</nav><div class="coinbox"><img class="px" src="i/coin_spin.gif" alt="" width="44" height="44"><b>'+fmt(acc.coins)+'</b><span class="muted" style="margin-left:4px">코인</span></div><button class="btn ghost sm" data-a2="att" title="출석부">출석'+(acc.att&&acc.att.last===dayKey(now())?' '+acc.att.streak+'일':'')+'</button><button class="btn ghost sm" data-a2="sfx" title="효과음" aria-label="효과음 '+(SFX.st.sfx?'끄기':'켜기')+'">'+(SFX.st.sfx?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>')+'</button><button class="btn ghost sm" data-a2="bgm" title="배경음" aria-label="배경음 '+(SFX.st.bgm?'끄기':'켜기')+'" style="'+(SFX.st.bgm?'':'opacity:.4')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+'</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div>'+
  ((cfg.expMult||1)>1||cfg.notice?'<div class="banner">'+((cfg.expMult||1)>1?'<span class="tag">이벤트</span><span>경험치 '+cfg.expMult+'배 적용 중</span>':'')+(cfg.notice?'<span>[공지] '+esc(cfg.notice)+'</span>':'')+'</div>':'')+
  (acc.offset?'<div class="banner" style="background:#7a4512">테스트 시간 +'+(acc.offset/H).toFixed(1)+'시간 앞당겨진 상태예요</div>':'')+'</header>';
@@ -382,7 +383,7 @@ function vDex(){const own=Object.keys(acc.dex).length,freed=Object.values(acc.de
   const b=SAHYUNG.has(i)?['b-x','사흉']:SUNGSU.has(i)?['b-s','성수']:YOUNGSU.has(i)?['b-y','영수']:!CHILD[i].length?['b-f','최종']:null;
   return '<div class="dc"><span class="muted" style="align-self:flex-start;font-weight:700">no.'+String(i).padStart(2,'0')+'</span><img class="px" src="'+img(i)+'" alt=""><span class="n">'+n+'</span>'+elTag(ELOF[i])+'<span class="muted" style="min-height:14px">'+esc(d.d)+'</span>'+(b?'<span class="badge '+b[0]+'">'+b[1]+'</span>':'')+(d.freed?'<span class="seal" aria-label="해방함">解</span>':'')+'</div>';}).join('')+'</div></div><div class="dexR">'+vCollections()+'</div></div>';}
 function vShop(){const cats=['기운','생활','약','성장','강화','기타'],ad=accDaily();
- return '<h1 class="serif" style="margin:0;font-size:26px">상점</h1>'+cats.map(c=>'<div class="card"><h2>'+c+'</h2><div class="items">'+Object.entries(ITEMS).filter(([k,v])=>v.cat===c).map(([k,v])=>{const lim=v.daily?(ad[k]||0)+'/'+v.daily:'';return '<div class="item"><img class="px" src="'+v.img+'" alt=""><div class="t"><b>'+v.n+'</b><small>'+v.d+'</small><small>'+v.p+'코인 · 보유 '+(acc.inv[k]||0)+(lim?' · 오늘 구매 '+lim:'')+'</small></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn sm" data-buy="'+k+'" data-n="1">1개</button>'+(v.daily?'':'<button class="btn soft sm" data-buy="'+k+'" data-n="10">10개</button>')+'</div></div>';}).join('')+'</div></div>').join('')+
+ return '<h1 class="serif" style="margin:0;font-size:26px">상점</h1>'+cats.map(c=>'<div class="card"><h2>'+c+'</h2><div class="items">'+Object.entries(ITEMS).filter(([k,v])=>v.cat===c).map(([k,v])=>{const lim=v.daily?(ad[k]||0)+'/'+v.daily:'',wl=v.weekly?(accWeekly()[k]||0)+'/'+v.weekly:'';return '<div class="item"><img class="px" src="'+v.img+'" alt=""><div class="t"><b>'+v.n+'</b><small>'+v.d+'</small><small>'+v.p+'코인 · 보유 '+(acc.inv[k]||0)+(lim?' · 오늘 구매 '+lim:'')+(wl?' · 이번 주 구매 '+wl:'')+'</small></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn sm" data-buy="'+k+'" data-n="1">1개</button>'+(v.daily||v.weekly?'':'<button class="btn soft sm" data-buy="'+k+'" data-n="10">10개</button>')+'</div></div>';}).join('')+'</div></div>').join('')+
  (()=>{const wk=accWeekly(),left=EGG_WEEK-wk.egg,free=acc.slots.some(q=>!q);return '<div class="card"><h2>환수 알</h2><div class="items"><div class="item"><img class="px" src="h/00.gif" alt=""><div class="t"><b>환수 알</b><small>빈 슬롯에 바로 들어가요(없으면 가방). 매주 월요일 오전 6시에 초기화</small><small>'+EGG_PRICE+'코인 · 이번 주 '+wk.egg+'/'+EGG_WEEK+'</small></div><button class="btn sm" data-buyegg="1" '+(left<=0?'disabled':'')+'>'+(left<=0?'이번 주 구매 완료':'구매')+'</button></div></div></div>';})()+
  (()=>{const n=acc.slots.length,full=n>=MAX_SLOTS,pr=slotPrice();return '<div class="card"><h2>환수 슬롯</h2><div class="items"><div class="item"><img class="px" src="i/sec_slot.gif" alt=""><div class="t"><b>슬롯추가비서</b><small>선계 문서고에 이름을 올려 환수를 한 마리 더 맡아요. 사면 바로 슬롯이 늘어나요.</small><small>'+(full?'최대 '+MAX_SLOTS+'칸 달성':(n+1)+'번째 슬롯 · '+pr+'코인')+' · 현재 '+n+'/'+MAX_SLOTS+'칸</small></div><button class="btn sm" data-buyslot="1" '+(full?'disabled':'')+'>'+(full?'최대':'구매')+'</button></div></div></div>';})()+
  '<div class="card"><h2>장비 (일반 등급)</h2><div class="items">'+['w','a','s'].map(t=>'<div class="item"><img class="px" src="eq/0_'+t+'.gif" alt=""><div class="t"><b>일반 '+TN[t]+'</b><small>'+Object.keys(GS[t]).map(k=>SL[k]+' '+gstat(t,0,0,k)+(PCT[k]?'%':'')).join(', ')+'</small><small>30코인</small></div><button class="btn sm" data-buyeq="'+t+'">구매</button></div>').join('')+'</div></div>';}
@@ -506,26 +507,28 @@ function fxSprite(P,sk,box,from,to){if(P.boss||FXOK[P.no]!==true)return null;
  return Math.round(dur*.5);}
 function pnm(P){return P.boss?P.name:NAMES[P.no];}
 function pim(P){return P.boss?P.img:img(P.no);}
-function abPlate(nick,P,id){return '<div class="abp-top"><b>'+esc(pnm(P))+'</b>'+elTag(P.el)+'<small>'+(P.boss?'월드보스':'Lv '+P.lv)+'</small></div><div class="abp-own">'+(P.boss?'흑화한 12지신':esc(nick)+' · 전투력 '+fmt(P.cp))+'</div><div class="abp-hp"><span>HP</span><div class="abp-tr"><i id="'+id+'"></i></div></div><div class="abp-num" id="'+id+'n"></div>';}
-function battleAnim(b,role){const L=document.getElementById('layer'),log=JSON.parse(b.logS||'[]'),A=b.a.pet,D=b.d.pet,boss=b.kind==='boss';fxPreload([A.boss?null:A.no,D.boss?null:D.no]);let sp=1,i=0,done=false,alive=true;
- L.innerHTML='<div class="overlay"><div class="abox'+(boss?' bossf':'')+'" role="dialog" aria-label="'+(boss?'월드보스 토벌':'환수 대전')+'"><div class="abf" id="abf"><div class="abp abp-d">'+abPlate(b.d.nick,D,'hD')+'</div><img class="px abpet abpet-d'+(boss?' abboss':'')+'" id="pD" src="'+pim(D)+'" alt=""><img class="px abpet abpet-a" id="pA" src="'+pim(A)+'" alt=""><div class="abp abp-a">'+abPlate(b.a.nick,A,'hA')+'</div><div id="abfx"></div></div><div class="abmsg" id="abMsg"></div><div class="abbtn" id="abBtns"><button class="btn soft sm" id="abFast">빨리 보기</button><button class="btn soft sm" id="abSkip">결과 바로 보기</button></div></div></div>';
+function abPlate(nick,P,id){return '<div class="abp-top"><b>'+esc(pnm(P))+'</b>'+elTag(P.el)+'<small>'+(P.boss?(P.tag||'월드보스'):'Lv '+P.lv)+'</small></div><div class="abp-own">'+(P.boss?esc(P.sub||'흑화한 12지신'):esc(nick)+' · 전투력 '+fmt(P.cp))+'</div><div class="abp-hp"><span>HP</span><div class="abp-tr"><i id="'+id+'"></i></div></div><div class="abp-num" id="'+id+'n"></div>';}
+function battleAnim(b,role){const L=document.getElementById('layer'),log=JSON.parse(b.logS||'[]'),A=b.a.pet,D=b.d.pet,boss=b.kind==='boss',tw=b.kind==='tower';fxPreload([A.boss?null:A.no,D.boss?null:D.no]);let sp=1,i=0,done=false,alive=true;
+ L.innerHTML='<div class="overlay"><div class="abox'+(boss?' bossf':'')+'" role="dialog" aria-label="'+(boss?'월드보스 토벌':'환수 대전')+'"><div class="abf" id="abf"><div class="abp abp-d">'+abPlate(b.d.nick,D,'hD')+'</div><img class="px abpet abpet-d'+(boss||(tw&&D.big)?' abboss':'')+(D.fb?' twfb':'')+'" id="pD" src="'+pim(D)+'" alt=""><img class="px abpet abpet-a" id="pA" src="'+pim(A)+'" alt=""><div class="abp abp-a">'+abPlate(b.a.nick,A,'hA')+'</div><div id="abfx"></div></div><div class="abmsg" id="abMsg"></div><div class="abbtn" id="abBtns"><button class="btn soft sm" id="abFast">빨리 보기</button><button class="btn soft sm" id="abSkip">결과 바로 보기</button></div></div></div>';
  const $=id=>document.getElementById(id),msg=t=>{const m=$('abMsg');if(m)m.innerHTML=t;},ok=()=>alive&&$('abf');
  const hp=(ha,hd)=>{[['hA',ha,b.hpA],['hD',hd,b.hpD]].forEach(([id,v,m])=>{const e=$(id);if(!e)return;const w=Math.max(0,v/m*100);e.style.width=w+'%';e.style.background=w>50?'#4caf50':w>20?'#f0b429':'#e5484d';$(id+'n').textContent=fmt(Math.ceil(v))+' / '+fmt(m);});};
  const num=(target,txt,cls)=>{const t=$(target),f=$('abfx');if(!t||!f)return;const box=$('abf').getBoundingClientRect(),r=t.getBoundingClientRect();const n=document.createElement('div');n.className='abdmg '+(cls||'');n.textContent=txt;n.style.left=(r.left-box.left+r.width/2)+'px';n.style.top=(r.top-box.top+6)+'px';f.appendChild(n);setTimeout(()=>n.remove(),1000);};
- hp(b.hpA,b.hpD0!=null?b.hpD0:b.hpD);
- msg(boss?'<b>'+esc(b.a.nick)+'</b>의 '+esc(pnm(A))+'이(가) 월드보스 <b>'+esc(pnm(D))+'</b>에게 맞선다!':'<b>'+esc(b.a.nick)+'</b>의 '+esc(pnm(A))+'이(가) <b>'+esc(b.d.nick)+'</b>의 '+esc(pnm(D))+'에게 도전했다!');
+ hp(b.hpA0!=null?b.hpA0:b.hpA,b.hpD0!=null?b.hpD0:b.hpD);
+ msg(tw?'<b>구천탑 '+b.floor+'층</b> · '+esc(pnm(A))+'이(가) <b>'+esc(pnm(D))+'</b>에게 맞선다!':boss?'<b>'+esc(b.a.nick)+'</b>의 '+esc(pnm(A))+'이(가) 월드보스 <b>'+esc(pnm(D))+'</b>에게 맞선다!':'<b>'+esc(b.a.nick)+'</b>의 '+esc(pnm(A))+'이(가) <b>'+esc(b.d.nick)+'</b>의 '+esc(pnm(D))+'에게 도전했다!');
  function finish(quick){if(done||!ok())return;done=true;const last=log[log.length-1]||[0,0,0,0,0,b.hpA,b.hpD];hp(last[5],last[6]);
   if(last[6]<=0)$('pD').classList.add('faint');if(last[5]<=0)$('pA').classList.add('faint');
   if(boss)msg(last[6]<=0?'<b style="color:#c8281e">'+esc(pnm(D))+'</b>이(가) 쓰러졌다! 토벌 성공!':last[5]<=0?esc(pnm(A))+'이(가) 쓰러졌다…':'공격 시간이 끝났다! '+esc(pnm(A))+'이(가) 물러난다.');
+  else if(tw)msg(b.win?'<b style="color:#ffd36e">'+esc(pnm(D))+'</b>을(를) 쓰러뜨렸다!':esc(pnm(A))+'이(가) 쓰러졌다…');
   else msg((last[5]>0&&last[6]>0?'시간 초과! 남은 체력 비율이 높은 쪽이 이겼어요. ':'')+'<b>'+esc(b.win?b.a.nick:b.d.nick)+'</b>의 승리!');
   const bt=$('abBtns');if(bt)bt.innerHTML='';
   setTimeout(()=>{if(!ok())return;const res=document.createElement('div');res.className='abres';
-   if(boss){SFX.play(b.killed?'fanfare':'ok');res.innerHTML='<span class="serif" style="font-size:34px;font-weight:700;color:#ffd36e">'+(b.killed?'토벌 성공!':'공격 완료')+'</span><div style="color:#e8fff8;font-size:18px">이번 공격 데미지 <b style="color:#ffd36e;font-size:30px">'+fmt(b.dealt)+'</b></div><small style="color:#c9d8d5">내 누적 데미지 '+fmt(b.myTotal)+' · 남은 보스 체력 '+fmt(Math.max(0,last[6]))+'</small><button class="btn" id="abOk" style="background:#f0c75e;margin-top:8px">확인</button>';}
+   if(tw){SFX.play(b.win?'fanfare':'sad');res.innerHTML='<span class="serif" style="font-size:36px;font-weight:700;color:'+(b.win?'#ffd36e':'#c9d8d5')+'">'+(b.win?b.floor+'층 돌파!':'쓰러졌어요…')+'</span>'+(b.win?'<div style="color:#e8fff8;font-size:16px">첫 돌파 보상: <b style="color:#ffd36e">'+esc(b.reward)+'</b></div>':'<div style="color:#e8fff8;font-size:15px">'+esc(pnm(A))+'은(는) 이번 등반에서 쉬어야 해요.</div>')+'<small style="color:#c9d8d5">'+(b.ended?(b.floor>=TW_TOP&&b.win?'구천탑 정복!':'출전할 환수가 없어 등반이 끝났어요.'):b.win?'다음 화면에서 보상을 하나 골라요.':'남은 환수 '+b.left+'마리로 계속 도전할 수 있어요.')+'</small><button class="btn" id="abOk" style="background:#f0c75e;margin-top:8px">확인</button>';}
+   else if(boss){SFX.play(b.killed?'fanfare':'ok');res.innerHTML='<span class="serif" style="font-size:34px;font-weight:700;color:#ffd36e">'+(b.killed?'토벌 성공!':'공격 완료')+'</span><div style="color:#e8fff8;font-size:18px">이번 공격 데미지 <b style="color:#ffd36e;font-size:30px">'+fmt(b.dealt)+'</b></div><small style="color:#c9d8d5">내 누적 데미지 '+fmt(b.myTotal)+' · 남은 보스 체력 '+fmt(Math.max(0,last[6]))+'</small><button class="btn" id="abOk" style="background:#f0c75e;margin-top:8px">확인</button>';}
    else{const meWin=role==='atk'?b.win:!b.win,delta=role==='atk'?b.da:b.dd,total=role==='atk'?b.ma:b.md;SFX.play(meWin?'fanfare':'sad');
     res.innerHTML='<span class="serif" style="font-size:40px;font-weight:700;color:'+(meWin?'#ffd36e':'#c9d8d5')+'">'+(meWin?'승리!':'패배…')+'</span><div style="display:flex;align-items:center;gap:10px;justify-content:center"><img class="px" src="i/mapae.png" alt="" width="56" height="56"><b style="font-size:28px;color:'+(delta>=0?'#ffd36e':'#ff8a7a')+'">'+(delta>=0?'+':'')+delta+'</b><span style="color:#e8fff8">→ 마패 '+total+'</span></div><small style="color:#c9d8d5">'+(role==='atk'?'공격':'방어')+' 기록 · '+new Date(b.t).toLocaleString('ko-KR')+'</small><button class="btn" id="abOk" style="background:#f0c75e;margin-top:8px">확인</button>';}
-   document.querySelector('.abox').appendChild(res);$('abOk').onclick=()=>{alive=false;closeLayer();if(boss)loadBoss();else if(role==='atk')loadArena();};},quick?150:700);}
+   document.querySelector('.abox').appendChild(res);$('abOk').onclick=()=>{alive=false;closeLayer();if(tw)render();else if(boss)loadBoss();else if(role==='atk')loadArena();};},quick?150:700);}
  function step(){if(done||!ok())return;if(i>=log.length)return finish();const [w,dmg,crit,miss,adv,ha,hd]=log[i++],P=w?D:A,T=w?'pA':'pD',me=w?'pD':'pA',sk=skillOf(P),pc=(PAL[sk.pal]||PAL.fire)[2];
-  msg(esc(w?b.d.nick:b.a.nick)+'의 '+esc(pnm(P))+'의 <b style="color:'+pc+'">'+esc(sk.n)+'</b>!');
+  msg((tw&&w?'':esc(w?b.d.nick:b.a.nick)+'의 ')+esc(pnm(P))+'의 <b style="color:'+pc+'">'+esc(sk.n)+'</b>!');
   const actor=$(me);actor.classList.remove('lunge-a','lunge-d');void actor.offsetWidth;actor.classList.add(w?'lunge-d':'lunge-a');
   let hitAt=320;try{const hs=fxSprite(P,sk,$('abf'),actor,$(T));hitAt=hs!=null?hs:skillFx(sk,$('abf'),actor,$(T));}catch(e){}
   setTimeout(()=>{if(done||!ok())return;const base=$('abMsg').innerHTML;
@@ -816,7 +819,7 @@ function render(){
  if(!acc){app.innerHTML=loginView(S.loginMsg||'');return;}
  if(MODE==='admin'){app.innerHTML=isAdmin()?adminHeader()+'<main>'+adminBody()+'</main>':'<main><div class="card">운영자 계정이 아니에요. <button class="btn sm" data-a2="logout">로그아웃</button></div></main>';return;}
  const keep=document.activeElement&&document.activeElement.id;
- const body={home:vHome,train:vTrainHub,gear:vGear,bag:vBag,shop:vShop,code:vCode,dex:vDex,pvp:vArena,boss:vBoss,mail:vMail}[view]||vHome;
+ const body={home:vHome,train:vTrainHub,gear:vGear,bag:vBag,shop:vShop,code:vCode,dex:vDex,pvp:vArena,boss:vBoss,tower:vTower,mail:vMail}[view]||vHome;
  app.innerHTML=header()+'<main>'+body()+'</main>'+resultOverlay()+errandOverlay();
  if(keep){const el=document.getElementById(keep);if(el)el.focus();}
 }
@@ -837,11 +840,158 @@ async function loadAccount(uid){
 }
 async function logout(){if(unsubMe){unsubMe();unsubMe=null;}acc=null;AS.tgt=null;AS.list=null;try{await HS.signOut();}catch(e){}render();}
 
+/* ================= 구천탑 ================= */
+const TW_DAILY=3,TW_TOP=100;
+const TW_ZONES=[null,
+ {n:'구름 문턱',el:'neutral'},{n:'염화 회랑',el:'fire'},{n:'수궁 심연',el:'water'},{n:'고목 숲',el:'wood'},{n:'토우 무덤',el:'earth'},
+ {n:'쇠비늘 광산',el:'metal'},{n:'그믐 골짜기',el:'yin'},{n:'금오 제단',el:'yang'},{n:'혼돈의 틈',el:'rand'},{n:'구천 정상',el:'rand'}];
+// [키, 이름, 임시그림 환수번호, 스킬이름, fx]
+const TW_MON={1:[['m01a','도깨비불',81,'홀림불','orbs'],['m01b','꼬마 도깨비',2,'방망이 장난','shock'],['m01c','구름 쥐',142,'구름 갉기','bite']],
+ 2:[['m02a','불여우',8,'여우불','ball'],['m02b','화서',142,'불털 돌진','burst'],['m02c','등잔 귀신',121,'등잔불 뿜기','pillar']],
+ 3:[['m03a','물귀신',1,'끌어당기기','vortex'],['m03b','강철이',26,'물살 휘감기','vine'],['m03c','조개 요괴',41,'진주 쏘기','ball']],
+ 4:[['m04a','덩굴 요괴',25,'덩굴 채찍','vine'],['m04b','목각승',135,'목탁 내려치기','shock'],['m04c','송진 정령',138,'끈적 송진','rain']],
+ 5:[['m05a','토우 병사',149,'토우 창찌르기','spike'],['m05b','두억시니',73,'짓누르기','rock'],['m05c','흙두꺼비',45,'진흙 뱉기','ball']],
+ 6:[['m06a','철갑 지네',31,'철갑 물기','bite'],['m06b','녹슨 갑옷귀',145,'녹슨 칼날','slash'],['m06c','쇠까마귀',16,'쇠깃 쏘기','rain']],
+ 7:[['m07a','어둑시니',103,'어둠 부풀리기','vortex'],['m07b','그슨대',106,'그림자 손','claw'],['m07c','달그림자',104,'그믐 빛살','beam']],
+ 8:[['m08a','금빛 허수아비',84,'볕 휘두르기','slash'],['m08b','해무리 정령',83,'햇무리 고리','shock'],['m08c','볕귀신',85,'뙤약볕','beam']],
+ 9:[['m09a','그림자 환수',0,'그림자 일격','burst']],
+ 10:[['m10a','천계 수호병',72,'천계 창술','spike'],['m10b','타락한 선녀',113,'찢긴 날개옷','wave']]};
+const TW_BOSS={10:['b10','외다리 도깨비 대장',75,'도깨비 방망이','rock'],20:['b20','화마',49,'화마의 불길','pillar'],30:['b30','이무기',35,'역린의 물기둥','wave'],
+ 40:['b40','장산범',63,'홀리는 울음','shock'],50:['b50','토왕 장군',151,'토왕의 언월도','slash'],60:['b60','불가사리',147,'쇠 삼키기','bite'],
+ 70:['b70','구미호',8,'아홉 꼬리 여우불','orbs'],80:['b80','삼목신장',94,'제3의 눈','beam'],100:['b100','천마',119,'천마군림','vortex']};
+const TW_B90=[['b90a','흑화 주작',24,'검은 불새','pillar','fire'],['b90b','흑화 청룡',40,'흑룡승천','beam','wood'],['b90c','흑화 백호',72,'흑풍 발톱','claw','metal'],['b90d','흑화 현무',56,'검은 해일','wave','water']];
+const TW_SHADOW=[7,13,21,27,33,36,46,51,58,61,66,70,75,87,92,96,107,112,115,123,129,136,143,150,153];
+const TW_RANDEL=['fire','water','wood','earth','metal','yang','yin'];
+// 받은 그림 파일 표시 (그림이 들어오면 키를 추가)
+const TW_ART={};
+function twImg(k,fb){return TW_ART[k]?'t/'+k+'.png?'+IMG_V:fb;}
+function twSeason(t){return dayKey(t||now()).slice(0,7);}
+function twPrevSeason(){const [y,m]=twSeason().split('-').map(Number);return m===1?(y-1)+'-12':y+'-'+String(m-1).padStart(2,'0');}
+function twState(){const s=twSeason();if(!acc.tower||acc.tower.season!==s)acc.tower={season:s,best:0,bestT:0,bestNo:null,run:null};return acc.tower;}
+function twRec(f){const r=30+1.5*f*f;return Math.round(f%10===0?r*1.3:r);}
+function twZone(f){return Math.min(10,Math.ceil(f/10));}
+function twHash(n){let x=(n*2654435761)>>>0;x^=x>>>15;x=Math.imul(x,2246822519)>>>0;x^=x>>>13;return x>>>0;}
+function twMon(f){const z=twZone(f),Z=TW_ZONES[z],boss=f%10===0,sea=twSeason();let d,el=Z.el;
+ if(boss&&f===90){const b=TW_B90[twHash(f+Number(sea.replace('-','')))%4];d=b;el=b[5];}
+ else if(boss)d=TW_BOSS[f];
+ else{const L=TW_MON[z];d=L[(f-1)%L.length];}
+ if(el==='rand')el=f===100?'yin':TW_RANDEL[(z===10?f:twHash(f*7+3))%7];
+ let fb=d[2];if(z===9&&!boss)fb=TW_SHADOW[twHash(f*13+Number(sea.replace('-','')))%TW_SHADOW.length];
+ const name=z===9&&!boss?'그림자 '+NAMES[fb]:d[1];
+ return{boss:true,tw:1,big:boss,key:d[0],name,img:twImg(d[0],img(fb)),fb:!TW_ART[d[0]],el,cp:twRec(f),lv:f,tag:boss?(f===100?'최종 보스':f+'층 수문장'):f+'층',sub:'구천탑 · '+Z.n,skill:{n:d[3],fx:d[4],pal:el==='neutral'?'neutral':el}};}
+function twStat(D){const s=bStat(D);return{hp:Math.round(s.hp*.8),atk:s.atk*.75};}
+function twBuff(run){const b={atk:0,taken:0,drain:0,first:0,elem:0};(run.picks||[]).forEach(k=>{const e=TWC[k];if(e&&e.bf)Object.entries(e.bf).forEach(([x,v])=>{b[x]+=v;});});return b;}
+function towerSim(A,ha0,D,bf,seed){let x=seed>>>0;const R=()=>{x=(x+0x6D2B79F5)>>>0;let t=x;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+ const sa=bStat(A),sd=twStat(D);let ha=Math.max(1,Math.min(sa.hp,ha0)),hd=sd.hp,turn=0,first=true;const log=[];
+ while(ha>0&&hd>0&&turn<200){const aT=turn%2===0,at=aT?A:D,df=aT?D:A;
+  const miss=R()<.05,crit=!miss&&R()<.1,adv=isAdv(at.el,df.el)?1:0;
+  let m=(0.85+R()*0.3)*(crit?1.5:1)*(adv?ADV_ATK*WEAK_TAKE:1);
+  if(aT){m*=1+bf.atk;if(adv&&bf.elem)m*=1.25;if(first&&bf.first)m*=2;first=false;}else m*=Math.max(.3,1+bf.taken);
+  const dmg=miss?0:Math.max(1,Math.round((aT?sa.atk:sd.atk)*m));
+  if(aT){hd=Math.max(0,hd-dmg);if(bf.drain&&dmg)ha=Math.min(sa.hp,ha+Math.round(dmg*bf.drain));}else ha=Math.max(0,ha-dmg);
+  log.push([aT?0:1,dmg,crit?1:0,miss?1:0,adv,ha,hd]);turn++;}
+ return{log,win:hd<=0,hpA:sa.hp,hpA0:Math.round(ha0),hpD:sd.hp,ha};}
+// 로그라이크 선택지
+const TWC={
+ heal_s:{n:'선계 약수',r:0,d:'방금 싸운 환수 체력 30% 회복',fb:null},
+ heal_all:{n:'주먹밥 보따리',r:0,d:'살아 있는 환수 전원 체력 15% 회복',fb:'i/act_feed.png'},
+ atk_s:{n:'날 선 발톱',r:0,d:'이번 등반 공격력 +8%',fb:'eq/0_w.gif',bf:{atk:.08}},
+ def_s:{n:'단단한 비늘',r:0,d:'이번 등반 받는 피해 -8%',fb:'eq/0_a.gif',bf:{taken:-.08}},
+ coin_s:{n:'코인 주머니',r:0,d:'환수 코인 +3',fb:'i/bag1.png'},
+ sus_s:{n:'수상한 기운 (소)',r:0,d:'수상한 기운(소) 1개',fb:null},
+ heal_l:{n:'영약 한 모금',r:1,d:'방금 싸운 환수 체력 60% 회복',fb:null},
+ drain:{n:'흡혈 부적',r:1,d:'이번 등반 가한 피해의 10% 회복',fb:'i/sec_cure.gif',bf:{drain:.1}},
+ first:{n:'선공의 깃털',r:1,d:'이번 등반 매 전투 첫 공격 피해 2배',fb:'i/act_play.png',bf:{first:1}},
+ elem:{n:'오행 공명',r:1,d:'이번 등반 상성 유리 시 피해 +25%',fb:'i/act_evolve.png',bf:{elem:1}},
+ coin_m:{n:'큰 코인 주머니',r:1,d:'환수 코인 +8',fb:'i/bag2.png'},
+ sus_m:{n:'수상한 기운 (중)',r:1,d:'수상한 기운(중) 1개',fb:null},
+ revive:{n:'부활초',r:2,d:'쓰러진 환수 1마리를 체력 50%로 부활 (없으면 전원 50% 회복)',fb:'i/act_return.png'},
+ fox:{n:'구미호의 구슬',r:2,d:'이번 등반 공격력 +20%, 받는 피해 +10%',fb:'h/08.gif',bf:{atk:.2,taken:.1}},
+ toad:{n:'황금 두꺼비',r:2,d:'환수 코인 +20',fb:'i/bag3.png'},
+ t60:{n:'시간단축비서 (1시간)',r:2,d:'시간단축비서(1시간) 1개',fb:null},
+ bet:{n:'도깨비 내기',r:3,d:'50%: 코인 +12 / 50%: 방금 싸운 환수 체력 -25%',fb:'i/yb_cup.png'}};
+const TWR=['일반','희귀','전설','특수'],TWRC=['n','r','l','s'];
+function twcImg(k){const e=TWC[k],fb=e.fb||({sus_s:ITEMS.sus_s.img,sus_m:ITEMS.sus_m.img,heal_l:ITEMS.elixir.img,heal_s:ITEMS.dew.img,t60:ITEMS.sec_t60.img})[k];return twImg('c_'+k,fb);}
+function twRoll(f){const out=[],pool=r=>Object.keys(TWC).filter(k=>TWC[k].r===r&&!out.includes(k));
+ for(let i=0;i<3;i++){if(!out.includes('bet')&&rnd()<.05){out.push('bet');continue;}
+  const x=rnd(),r=f%10===0?(x<.25?2:1):(x<.6?0:x<.9?1:2);let p=pool(r);if(!p.length)p=pool(0).concat(pool(1),pool(2));out.push(p[Math.floor(rnd()*p.length)]);}
+ return out;}
+function petKey(q,i){if(!q.born)q.born=Date.now()+i;return String(q.born);}
+function twHp(run,q,i){const k=petKey(q,i),v=run.hp[k];return v==null?1:v;}
+function twUsable(run){return acc.slots.map((q,i)=>q&&q.sick==null&&!run.down.includes(petKey(q,i))?i:-1).filter(i=>i>=0);}
+function twPick(k){const t=twState(),run=t.run;if(!run||!run.choice||!run.choice.includes(k))return;const e=TWC[k],last=run.last;let msg=e.n+' 획득!';
+ const heal=(key,v)=>{if(key==null||run.down.includes(key))return;run.hp[key]=Math.min(1,(run.hp[key]==null?1:run.hp[key])+v);};
+ const alive=()=>acc.slots.map((q,i)=>q?petKey(q,i):null).filter(x=>x&&!run.down.includes(x));
+ if(k==='heal_s')heal(last,.3);if(k==='heal_l')heal(last,.6);if(k==='heal_all')alive().forEach(x=>heal(x,.15));
+ if(k==='coin_s')acc.coins+=3;if(k==='coin_m')acc.coins+=8;if(k==='toad')acc.coins+=20;
+ if(k==='sus_s'||k==='sus_m')acc.inv[k]=(acc.inv[k]||0)+1;if(k==='t60')acc.inv.sec_t60=(acc.inv.sec_t60||0)+1;
+ if(k==='revive'){const dn=acc.slots.map((q,i)=>q&&run.down.includes(petKey(q,i))?{k:petKey(q,i),c:cp(q)}:null).filter(Boolean).sort((a,b)=>b.c-a.c);
+  if(dn.length){run.down=run.down.filter(x=>x!==dn[0].k);run.hp[dn[0].k]=.5;msg='부활초! '+NAMES[acc.slots.find((q,i)=>q&&petKey(q,i)===dn[0].k).no]+'이(가) 다시 일어났어요.';}else alive().forEach(x=>heal(x,.5));}
+ if(k==='bet'){if(rnd()<.5){acc.coins+=12;msg='도깨비 내기 승리! 코인 +12';SFX.play('coins');}else{if(last!=null&&!run.down.includes(last))run.hp[last]=Math.max(.01,(run.hp[last]==null?1:run.hp[last])-.25);msg='도깨비 내기 패배… 체력 -25%';SFX.play('sad');}}
+ else SFX.play(e.r>=2?'fanfare':'magic');
+ if(e.bf)run.picks.push(k);run.choice=null;toast(msg);commit();}
+function twReward(f){const r={c:0,it:{},g:null,title:null};
+ if(f%10===0){const B={10:[15,{sec_t60:1}],20:[15,{},1],30:[20,{sec_t180:1}],40:[20,{sec_bless:1},2],50:[30,{sec_t300:1,sus_l:1}],60:[30,{},3],70:[40,{sec_t480:1,sec_protect:1}],80:[50,{},4],90:[60,{egg_n:1}],100:[100,{egg_yy:1}]}[f];
+  r.c=B[0];r.it=Object.assign({},B[1]);if(B[2]!=null)r.g=B[2];if(f===100)r.title='천마를 벤 자';}
+ else if(f%5===0){const el=TW_ZONES[twZone(f)].el,ki=EL.includes(el)?'ki_'+el:'ki_yy';const L=[{tal_time:1},{sus_s:2},{[ki]:5},{sec_aff:1},{sus_m:1},{sec_bless:1}];r.it=L[Math.floor(f/5)%L.length];}
+ else r.c=f<=30?2:f<=60?3:f<=90?4:6;
+ return r;}
+function twRewardTxt(r){const a=[];if(r.c)a.push('코인 '+r.c);Object.entries(r.it).forEach(([k,n])=>a.push(ITEMS[k].n+(n>1?' ×'+n:'')));if(r.g!=null)a.push(GN[r.g]+' 장비');if(r.title)a.push('칭호 「'+r.title+'」');return a.join(', ');}
+function twGive(r){acc.coins+=r.c;Object.entries(r.it).forEach(([k,n])=>{acc.inv[k]=(acc.inv[k]||0)+n;});if(r.g!=null)acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1e6),t:['w','a','s'][Math.floor(rnd()*3)],g:r.g,p:0,aff:'fire'});if(r.title){acc.titles=acc.titles||[];if(!acc.titles.includes(r.title))acc.titles.push(r.title);}}
+const TV={tab:'climb',rank:null,prev:null,loaded:false,busy:false};
+function twTickets(){const ad=accDaily();return{used:ad.tw||0,max:TW_DAILY+(ad.twx||0)};}
+function twStart(){const t=twState();if(t.run)return;if(t.best>=TW_TOP)return toast('이번 시즌 구천탑을 정복했어요!');const k=twTickets();if(k.used>=k.max)return toast('오늘 도전 기회를 다 썼어요. 탑재도전비서로 1회 더 할 수 있어요.');
+ if(!acc.slots.some(q=>q&&q.sick==null))return toast('출전할 수 있는 환수가 없어요.');
+ accDaily().tw=k.used+1;t.run={hp:{},down:[],picks:[],choice:null,last:null,n:0};SFX.play('mystic');toast('구천탑 등반 시작! '+(t.best+1)+'층으로 올라가요.');commit();}
+function twRetreat(){const t=twState();if(!t.run)return;confirmBox('등반 끝내기','지금 등반을 끝낼까요? 다음 도전은 기회 1회를 써서 모든 환수가 체력이 가득 찬 상태로 '+(t.best+1)+'층부터 시작해요.',()=>{t.run=null;SFX.play('wake');commit();});}
+function twTicketUse(){const k=twTickets();if(k.used<k.max)return toast('아직 오늘 도전 기회가 남아 있어요.');if(!take('sec_tower'))return;accDaily().twx=(accDaily().twx||0)+1;SFX.play('magic');toast('구천탑 도전 기회 +1');commit();}
+async function twSync(){if(!db||!acc||MODE!=='player')return;const t=twState();try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,title:(acc.titles||[]).slice(-1)[0]||null});}catch(e){}}
+async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.slots[i];if(!run)return toast('먼저 도전을 시작해 주세요.');if(run.choice)return toast('먼저 보상을 하나 골라 주세요.');if(!q)return;
+ const key=petKey(q,i);if(run.down.includes(key))return toast('쓰러진 환수는 이번 등반에서 나갈 수 없어요.');if(q.sick!=null)return toast('아픈 환수는 나갈 수 없어요.');
+ const f=t.best+1;if(f>TW_TOP)return;TV.busy=true;
+ try{const A=petSnap(q),D=twMon(f),bf=twBuff(run),frac=twHp(run,q,i),ha0=Math.max(1,Math.round(bStat(A).hp*frac));
+  const res=towerSim(A,ha0,D,bf,Math.floor(rnd()*4294967296));run.last=key;run.n++;
+  let rw=null,ended=false;
+  if(res.win){run.hp[key]=res.ha/res.hpA;t.best=f;t.bestT=Date.now();t.bestNo=q.no;rw=twReward(f);twGive(rw);if(f<TW_TOP)run.choice=twRoll(f);else run.choice=null;}
+  else{run.hp[key]=0;run.down.push(key);}
+  if(!twUsable(run).length||t.best>=TW_TOP){if(!(res.win&&run.choice)){t.run=null;ended=true;}}
+  await save();if(res.win)twSync();
+  battleAnim({kind:'tower',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:'',pet:D},hpA:res.hpA,hpA0:res.hpA0,hpD:res.hpD,logS:JSON.stringify(res.log),win:res.win,floor:f,reward:rw?twRewardTxt(rw):'',ended,left:twUsable(run).length},'atk');
+ }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
+async function loadTower(){TV.loaded=true;try{const s=twSeason(),p=twPrevSeason();
+  const a=await db.collection('tower').where('season','==',s).get();TV.rank=a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);
+  const b=await db.collection('tower').where('season','==',p).get();TV.prev=b.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
+ catch(e){TV.rank=TV.rank||[];TV.prev=TV.prev||[];}
+ if(view==='tower'&&!document.getElementById('layer').innerHTML)render();}
+function twHpBar(v){const w=Math.max(0,Math.min(100,v*100));return '<div class="twhp"><i style="width:'+w+'%;background:'+(w>50?'#4caf50':w>20?'#f0b429':'#e5484d')+'"></i></div>';}
+function vTower(){if(!TV.loaded)setTimeout(loadTower,0);const t=twState(),run=t.run,k=twTickets(),f=t.best+1,done=t.best>=TW_TOP;
+ const banner=TW_ART.ui_tw_banner?'background-image:linear-gradient(90deg,rgba(20,14,30,.75),rgba(20,14,30,.1)),url(t/ui_tw_banner.png?'+IMG_V+')':'';
+ let h='<div class="twtop" style="'+banner+'"><div><div class="serif twttl">구천탑</div><div class="twsub">'+t.season.replace('-','년 ')+'월 시즌 · 매달 1일 오전 6시 초기화</div></div><div class="twstat"><span>최고 층<b>'+t.best+'</b></span><span>오늘 도전<b>'+Math.max(0,k.max-k.used)+' / '+k.max+'</b></span>'+((acc.inv.sec_tower||0)>0?'<button class="btn sm" data-twticket="1"><img class="px" src="'+ITEMS.sec_tower.img+'" alt="" style="width:22px;height:22px;vertical-align:-6px"> 탑재도전비서 ('+acc.inv.sec_tower+')</button>':'')+'</div></div>';
+ h+='<div class="tmode"><button class="'+(TV.tab==='climb'?'on':'')+'" data-twtab="climb">등반</button><button class="'+(TV.tab==='rank'?'on':'')+'" data-twtab="rank">구천탑 순위</button></div>';
+ if(TV.tab==='rank')return h+vTowerRank();
+ if(done)return h+'<div class="card" style="text-align:center"><b class="serif" style="font-size:26px;color:#b0302a">구천탑 정복!</b><p class="muted">이번 시즌 100층을 모두 올랐어요. 다음 시즌에 다시 도전해요.</p></div>';
+ const D=twMon(f),rw=twReward(f);
+ h+='<div class="row"><section class="grow"><div class="card twfloor"><div class="twplate serif">'+f+'층'+(D.big?' · 수문장':'')+'</div><div class="twzone">'+esc(TW_ZONES[twZone(f)].n)+'</div><div class="twmon'+(D.big?' big':'')+'"><img class="px'+(D.fb?' twfb':'')+'" src="'+D.img+'" alt=""></div><div class="twmn"><b class="serif">'+esc(D.name)+'</b> '+elTag(D.el)+'</div><div class="kv" style="font-size:14px;justify-content:center"><span>추천 전투력 <b>'+fmt(D.cp)+'</b></span><span>첫 돌파 보상 <b>'+esc(twRewardTxt(rw))+'</b></span></div></div>';
+ if(!run){h+='<div class="card" style="text-align:center"><p class="muted" style="margin-top:0">도전 기회 1회를 쓰면 등반이 시작돼요. 층마다 환수 한 마리를 골라 싸우고, 체력은 등반이 끝날 때까지 이어져요.<br>쓰러진 환수는 그 등반에서 다시 못 나가요.</p><button class="btn teal" data-twstart="1" style="min-height:52px;font-size:17px;min-width:240px" '+(k.used>=k.max?'disabled':'')+'>'+(k.used>=k.max?'오늘 도전 기회를 다 썼어요':'도전 시작 · '+f+'층부터')+'</button></div>';}
+ else if(run.choice){h+='<div class="card"><h2 style="text-align:center">'+t.best+'층 돌파! 보상을 하나 고르세요</h2><div class="twch">'+run.choice.map(c=>{const e=TWC[c];return '<button class="twcard r'+TWRC[e.r]+'" data-twpick="'+c+'"><small>'+TWR[e.r]+'</small><img class="px" src="'+twcImg(c)+'" alt=""><b>'+esc(e.n)+'</b><span>'+esc(e.d)+'</span></button>';}).join('')+'</div></div>';}
+ else{const bf=twBuff(run),chips=[];if(bf.atk)chips.push('공격력 '+(bf.atk>0?'+':'')+Math.round(bf.atk*100)+'%');if(bf.taken)chips.push('받는 피해 '+(bf.taken>0?'+':'')+Math.round(bf.taken*100)+'%');if(bf.drain)chips.push('흡혈 '+Math.round(bf.drain*100)+'%');if(bf.first)chips.push('첫 공격 2배');if(bf.elem)chips.push('상성 피해 +25%');
+  h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">출전할 환수</h2><button class="btn soft sm" data-twret="1">등반 끝내기</button></div>'+(chips.length?'<div class="twbuf">'+chips.map(c=>'<span class="chip">'+c+'</span>').join('')+'</div>':'')+'<div class="twpets">'+acc.slots.map((q,i)=>{if(!q)return '';const key=petKey(q,i),dn=run.down.includes(key),hp=dn?0:twHp(run,q,i),c=cp(q),ratio=c/D.cp;
+   return '<div class="twpet'+(dn?' down':'')+'"><img class="px" src="'+img(q.no)+'" alt=""><div class="t"><b>'+NAMES[q.no]+'</b> '+elTag(ELOF[q.no])+'<small>전투력 '+fmt(c)+' · <span style="color:'+(ratio>=1?'#2e7d3a':'#b02a1f')+'">'+(ratio>=1?'여유 +':'부족 ')+Math.round((ratio-1)*100)+'%</span>'+(isAdv(ELOF[q.no],D.el)?' · <b style="color:#2e7d3a">상성 유리</b>':isAdv(D.el,ELOF[q.no])?' · <b style="color:#b02a1f">상성 불리</b>':'')+'</small>'+twHpBar(hp)+'<small>'+(dn?'쓰러짐':'체력 '+Math.round(hp*100)+'%')+'</small></div><button class="btn sm teal" data-twgo="'+i+'" '+(dn||q.sick!=null||TV.busy?'disabled':'')+'>'+(dn?'쓰러짐':q.sick!=null?'아픔':'출전')+'</button></div>';}).join('')+'</div></div>';}
+ h+='</section><aside class="side"><div class="card"><h2>층 안내</h2><div class="twlist">'+[0,1,2,3,4].map(d=>{const g=f+d;if(g>TW_TOP)return '';const M=twMon(g);return '<div class="'+(d===0?'on':'')+'"><b>'+g+'층</b><span class="nm">'+esc(M.name)+'</span>'+elTag(M.el)+'<small>'+fmt(M.cp)+'</small></div>';}).join('')+'</div><p class="muted" style="margin-bottom:0">10층마다 수문장이 지켜요. 수문장을 깨면 희귀 이상 보상만 나와요.</p></div></aside></div>';
+ return h;}
+function vTowerRank(){const L=TV.rank;if(!L)return '<div class="card"><p class="muted">순위를 불러오는 중…</p></div>';
+ const me=L.findIndex(r=>r.uid===acc.uid);let h='';
+ if(TV.prev&&TV.prev.length)h+='<div class="card twhall"><h2>지난 시즌 명예의 전당</h2><div class="twhallrow">'+TV.prev.map((r,i)=>'<div><img class="px medal" src="'+(TW_ART['ui_medal'+(i+1)]?'t/ui_medal'+(i+1)+'.png?'+IMG_V:'')+'" alt="" onerror="this.style.display=\'none\'"><span class="rk">'+(i+1)+'위</span>'+(r.no!=null?'<img class="px" src="'+img(r.no)+'" alt="">':'')+'<b>'+esc(r.nick)+'</b><small>'+r.best+'층</small></div>').join('')+'</div></div>';
+ h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">이번 시즌 순위</h2><button class="btn soft sm" data-twreload="1">새로고침</button></div><p class="muted">최고 층이 높은 순, 같으면 먼저 도달한 사람이 위예요.</p>'+
+  (L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>닉네임</th><th>최고 층</th><th>돌파 환수</th><th>도달 시각</th></tr>'+L.slice(0,50).map((r,i)=>'<tr'+(r.uid===acc.uid?' class="me"':'')+'><td><b>'+(i+1)+'</b></td><td>'+esc(r.nick)+(r.title?' <span class="chip glow" style="font-size:11px">'+esc(r.title)+'</span>':'')+'</td><td><b>'+r.best+'층</b></td><td>'+(r.no!=null?'<img class="px" src="'+img(r.no)+'" alt="" style="width:32px;height:32px;vertical-align:middle"> '+NAMES[r.no]:'')+'</td><td>'+new Date(r.t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</td></tr>').join('')+'</table></div>':'<p class="muted">아직 기록이 없어요. 첫 번째 등반자가 되어 보세요!</p>')+
+  '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'층':'기록 없음')+'</p></div>';
+ return h;}
+
 /* ================= 운영자 사이트 ================= */
 const AS={tab:'users',tgt:null,list:null,eggs:null,logs:null,newPw:'',codeGen:'',slot:0};
-function adminHeader(){const tabs=[['users','유저 관리'],['eggs','알 코드'],['mail','우편'],['boss','월드보스'],['event','이벤트·공지'],['tools','코드 테스트'],['logs','변경 기록']];if(isMain())tabs.splice(1,0,['make','계정 만들기']);
+function adminHeader(){const tabs=[['users','유저 관리'],['eggs','알 코드'],['mail','우편'],['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['tools','코드 테스트'],['logs','변경 기록']];if(isMain())tabs.splice(1,0,['make','계정 만들기']);
  return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main" aria-label="운영자 메뉴">'+tabs.map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div></header>';}
-function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,event:aEvent,tools:aTools,logs:aLogs}[AS.tab]();}
+function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,event:aEvent,tools:aTools,logs:aLogs}[AS.tab]();}
 const roleN={main:'메인',sub:'보조',player:'플레이어'};
 function aUsers(){
  const L=AS.list||[];const tot=L.reduce((s,a)=>s+(a.coins||0),0),pets=L.reduce((s,a)=>s+(a.slots||[]).filter(Boolean).length,0);
@@ -907,7 +1057,13 @@ function mergeT(base,tgt,fresh,abs){const out=CL(fresh);base=base||{};
 async function saveTgt(msg){const t=AS.tgt,s0=await db.doc('accounts/'+t.uid).get();const fresh=s0.exists?s0.data():t;
  const out=mergeT(AS.base,t,fresh,AS.abs||{});AS.abs=null;await db.doc('accounts/'+t.uid).set(out);if(msg)log(t.id+': '+msg);
  AS.tgt=normT(Object.assign({uid:t.uid},out));AS.base=CL(AS.tgt);const i=(AS.list||[]).findIndex(a=>a.uid===t.uid);if(i>=0)AS.list[i]=CL(AS.tgt);toast('저장했어요.');render();}
+function aTower(){if(!AS.tw)setTimeout(()=>AD.twLoad(),0);const ss=AS.twSeason||twSeason(),L=AS.tw||[];
+ return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">구천탑 순위</h2><div style="display:flex;gap:8px;align-items:flex-end"><label class="f">시즌<input type="month" id="xTwS" value="'+ss+'"></label><button class="btn soft sm" data-x="twLoad">불러오기</button></div></div><p class="muted">매달 1일 오전 6시에 새 시즌이 시작돼요. 시즌 보상은 순위를 보고 우편 탭에서 보내 주세요. 추천: 1위 음양알, 2~3위 환수 알 + 시간단축비서(8시간) 2개, 4~10위 시간단축비서(5시간).</p>'+
+ (AS.tw==null?'<p class="muted">불러오는 중…</p>':L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>아이디</th><th>닉네임</th><th>최고 층</th><th>환수</th><th>도달 시각</th><th></th></tr>'+L.map((r,i)=>'<tr><td><b>'+(i+1)+'</b></td><td>'+esc(r.id||'')+'</td><td>'+esc(r.nick||'')+'</td><td><b>'+r.best+'층</b></td><td>'+(r.no!=null?NAMES[r.no]:'')+'</td><td>'+new Date(r.t).toLocaleString('ko-KR')+'</td><td><button class="btn soft sm" data-x="twDel" data-uid="'+esc(r.uid)+'">기록 삭제</button></td></tr>').join('')+'</table></div>':'<p class="muted">이 시즌 기록이 없어요.</p>')+'</div>';}
 const AD={
+ async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());const q=await db.collection('tower').where('season','==',AS.twSeason).get();AS.tw=q.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);render();},
+ async twDel(){const uid=AS.twUid;if(!uid)return;const r=(AS.tw||[]).find(x=>x.uid===uid);
+  confirmBox('구천탑 기록 삭제',(r?r.nick+'의 ':'')+'이번 시즌 구천탑 기록을 지울까요? 진행도도 1층으로 돌아가요.',async()=>{await db.doc('tower/'+uid).delete();const ref=db.doc('accounts/'+uid),s0=await ref.get();if(s0.exists){const a=s0.data();if(a.tower&&a.tower.season===(AS.twSeason||twSeason()))await ref.update({tower:null,rev:(a.rev||0)+1});}log('구천탑 기록 삭제 '+(r?r.id:uid));toast('기록을 지웠어요.');AS.tw=null;await AD.twLoad();});},
  async loadList(){const q=await db.collection('accounts').get();AS.list=q.docs.map(d=>Object.assign({uid:d.id},d.data())).sort((a,b)=>(a.id>b.id?1:-1));if(AS.tgt){const n=AS.list.find(a=>a.uid===AS.tgt.uid);AS.tgt=n?normT(n):null;AS.base=CL(AS.tgt);}render();},
  find(){AS.find=document.getElementById('xFind').value.trim();render();},
  reload(){AD.loadList();},
@@ -982,7 +1138,7 @@ document.addEventListener('error',ev=>{const t=ev.target;if(t&&t.tagName==='IMG'
 document.addEventListener('change',ev=>{if(ev.target&&ev.target.id==='bNo'&&MODE==='admin'){AS.bossNo=+ev.target.value;render();}});
 document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[data-close],input[type=checkbox]');if(!t)return;const ds=t.dataset;if(t.tagName==='BUTTON'&&!ds.a2)SFX.play('tap');
  if(ds.close&&ev.target===t)return closeLayer();
- if(ds.view){view=ds.view;S.forgeSel=[];if(view==='pvp')PV.loaded=false;if(view==='boss')BV.loaded=false;return render();}
+ if(ds.view){view=ds.view;S.forgeSel=[];if(view==='pvp')PV.loaded=false;if(view==='boss')BV.loaded=false;if(view==='tower')TV.loaded=false;return render();}
  if(ds.batk!=null){BV.atk=+ds.batk;return render();}
  if(ds.bossgo)return bossAttack();
  if(ds.bossclaim)return bossClaim();
@@ -1007,7 +1163,14 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.a2==='sfx'||ds.a2==='bgm'){SFX.toggle(ds.a2);return render();}
  if(ds.mclaim)return claimMail(ds.mclaim);
  if(ds.a2==='logout')return logout();
- if(ds.buy){const k=ds.buy,n=+ds.n,it=ITEMS[k],ad=accDaily();if(!it||!['기운','생활','약','성장','강화','기타'].includes(it.cat))return toast('상점에서 살 수 없는 아이템이에요.');if(it.daily&&(ad[k]||0)+n>it.daily)return toast('오늘은 더 살 수 없어요 (하루 '+it.daily+'개).');if(acc.coins<it.p*n)return toast('코인이 부족해요.');acc.coins-=it.p*n;acc.inv[k]=(acc.inv[k]||0)+n;if(it.daily)ad[k]=(ad[k]||0)+n;SFX.play('buy');toast(it.n+' ×'+n+' 구매!');return commit();}
+ if(ds.buy){const k=ds.buy,n=+ds.n,it=ITEMS[k],ad=accDaily();if(!it||!['기운','생활','약','성장','강화','기타'].includes(it.cat))return toast('상점에서 살 수 없는 아이템이에요.');if(it.daily&&(ad[k]||0)+n>it.daily)return toast('오늘은 더 살 수 없어요 (하루 '+it.daily+'개).');const wk=accWeekly();if(it.weekly&&(wk[k]||0)+n>it.weekly)return toast('이번 주에는 더 살 수 없어요 (주 '+it.weekly+'개).');if(acc.coins<it.p*n)return toast('코인이 부족해요.');acc.coins-=it.p*n;acc.inv[k]=(acc.inv[k]||0)+n;if(it.daily)ad[k]=(ad[k]||0)+n;if(it.weekly)wk[k]=(wk[k]||0)+n;SFX.play('buy');toast(it.n+' ×'+n+' 구매!');return commit();}
+ if(ds.twstart)return twStart();
+ if(ds.twgo!=null)return twFight(+ds.twgo);
+ if(ds.twpick)return twPick(ds.twpick);
+ if(ds.twret)return twRetreat();
+ if(ds.twticket)return twTicketUse();
+ if(ds.twtab){TV.tab=ds.twtab;if(ds.twtab==='rank')loadTower();return render();}
+ if(ds.twreload){TV.rank=null;render();return loadTower();}
  if(ds.buyslot||ds.slotadd){if(acc.slots.length>=MAX_SLOTS)return toast('슬롯은 최대 '+MAX_SLOTS+'칸이에요.');
   if(ds.slotadd&&(acc.inv.sec_slot||0)>0){acc.inv.sec_slot--;addSlot();slotFx();sel=acc.slots.length-1;return commit();}
   const pr=slotPrice();if(acc.coins<pr)return toast('코인이 부족해요. ('+(acc.slots.length+1)+'번째 슬롯 '+pr+'코인)');
@@ -1035,6 +1198,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(MODE!=='admin'||!isAdmin())return;
  if(ds.xtab){AS.tab=ds.xtab;if(ds.xtab==='eggs'&&!AS.eggs)AD.loadEggs();if(ds.xtab==='logs'&&!AS.logs)AD.loadLogs();return render();}
  if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.base=CL(AS.tgt);AS.slot=0;AS.tgtArena=undefined;render();return AD.loadArenaT();}
+ if(ds.x&&ds.uid)AS.twUid=ds.uid;
  if(ds.x&&AD[ds.x]){if(MAIN_ONLY.has(ds.x)&&!isMain())return toast('메인 운영자만 할 수 있어요.');try{return await AD[ds.x]();}catch(e){toast('실패했어요: '+(e&&e.message||e));}}
  if(ds.xslot!=null){AS.slot=+ds.xslot;return render();}
  if(ds.xgdel&&isMain()){const u=ds.xgdel;AS.tgt.slots.forEach(p=>{if(p)['w','a','s'].forEach(k=>{if(p.eq[k]===u)p.eq[k]=null;});});AS.tgt.gear=AS.tgt.gear.filter(g=>g.u!==u);return saveTgt('장비 회수');}

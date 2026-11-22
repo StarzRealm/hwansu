@@ -353,3 +353,45 @@ nav.main button{position:relative}
 .slot.lockslot img{width:40px;height:40px;margin:4px;opacity:.9;image-rendering:pixelated}
 .slot.lockslot b{color:#2b5a5e}
 .slot.lockslot:hover{border-style:solid;filter:brightness(1.04)}
+/* 구천탑 v38 */
+.twtop{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:22px 24px;border-radius:14px;color:#fff8e6;background:linear-gradient(120deg,#1d1730,#3a2350 55%,#6a2f2a);background-size:cover;background-position:center;border:2px solid #c9952e;box-shadow:0 3px 0 #7a5a20;image-rendering:pixelated}
+.twttl{font-size:34px;font-weight:700;color:#ffd98a;text-shadow:0 2px 0 #3a1a10}
+.twsub{font-size:13px;color:#e6d9ff}
+.twstat{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.twstat span{display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,.35);border:1px solid rgba(255,217,138,.5);border-radius:10px;padding:6px 14px;font-size:12px;color:#e6d9ff}
+.twstat b{font-size:22px;color:#ffd98a}
+.twfloor{text-align:center;background:radial-gradient(circle at 50% 40%,#fff8e6,#efe2c4)}
+.twplate{display:inline-block;padding:8px 34px;font-size:22px;font-weight:700;color:#ffe9b0;background:url(i/ui_btn_evolve.png) center/100% 100% no-repeat;image-rendering:pixelated;text-shadow:0 1px 0 #3a1a10;filter:hue-rotate(160deg) saturate(.8) brightness(.7)}
+.twzone{font-size:13px;color:var(--sub);margin-top:4px}
+.twmon{height:170px;display:flex;align-items:center;justify-content:center}
+.twmon img{width:150px;height:150px;object-fit:contain;animation:twbob 2.4s ease-in-out infinite}
+.twmon.big img{width:200px;height:200px}
+.twmon.big{height:215px}
+@keyframes twbob{50%{transform:translateY(-6px)}}
+.twfb{filter:brightness(.62) saturate(1.5) hue-rotate(-25deg) drop-shadow(0 0 6px rgba(120,40,160,.85))}
+.twmn{display:flex;gap:6px;justify-content:center;align-items:center;font-size:20px;margin-bottom:6px}
+.twch{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.twcard{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;min-height:210px;cursor:pointer;color:#3a2414;background:#fbf3df;border:3px solid #8a6a40;border-radius:10px;box-shadow:0 3px 0 #5a3f20;transition:transform .1s}
+.twcard:hover{transform:translateY(-3px)}
+.twcard img{width:64px;height:64px;object-fit:contain;image-rendering:pixelated}
+.twcard b{font-size:15px}.twcard span{font-size:12.5px;color:#6b4f36;text-align:center}
+.twcard small{font-size:11px;font-weight:700;padding:1px 10px;border-radius:10px;background:#8a6a40;color:#fff}
+.twcard.rr{border-color:#2f6fae;background:#eef5ff;box-shadow:0 3px 0 #1d4a78}.twcard.rr small{background:#2f6fae}
+.twcard.rl{border-color:#c9952e;background:linear-gradient(180deg,#fff6d8,#ffe9a8);box-shadow:0 3px 0 #8a6010,0 0 14px rgba(255,200,80,.6)}.twcard.rl small{background:#c9952e}
+.twcard.rs{border-color:#9e2b25;background:#fff0ec;box-shadow:0 3px 0 #5e1a16}.twcard.rs small{background:#9e2b25}
+.twbuf{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}
+.twpets{display:grid;gap:8px;margin-top:10px}
+.twpet{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)}
+.twpet>img{width:56px;height:56px;object-fit:contain}
+.twpet .t{flex:1;min-width:0}.twpet small{display:block;font-size:12px;color:var(--sub)}
+.twpet.down{opacity:.5;filter:grayscale(.8)}
+.twhp{height:9px;border-radius:5px;background:rgba(0,0,0,.15);overflow:hidden;margin:4px 0 2px;max-width:260px}.twhp i{display:block;height:100%}
+.twlist>div{display:flex;align-items:center;gap:6px;padding:6px 4px;border-bottom:1px dashed var(--line);font-size:13px}
+.twlist>div.on{background:rgba(201,149,46,.15);border-radius:6px}
+.twlist .nm{flex:1}.twlist small{color:var(--sub)}
+.twhallrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.twhallrow>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 16px;border-radius:10px;background:linear-gradient(180deg,#fff6d8,#f4e2b0);border:2px solid #c9952e;min-width:120px}
+.twhallrow img{width:56px;height:56px;object-fit:contain}.twhallrow .medal{width:32px;height:32px}
+.twhallrow .rk{font-weight:700;color:#9e2b25}
+table.t tr.me td{background:rgba(201,149,46,.18)}
+@media (max-width:600px){.twch{grid-template-columns:1fr}.twcard{min-height:0;flex-direction:row;flex-wrap:wrap;justify-content:center;text-align:left}.twttl{font-size:28px}}
