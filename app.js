@@ -40,6 +40,7 @@ const needP=p=>Math.round(need(p.lv,p.st)*(PREMIUM(p.no)?1.5:1));
 const maxLv=st=>st>=12?1:EVO_LV[st-1];
 const ENC_W={egg:2,gear:4,secret:6,dosa:8,susluck:10,blesssec:12,bless:14,luck:14,snack:14,lost:16};
 const FAIL_ZERO=0.5; // 내 전투력이 권장의 50% 미만인 곳에서 실패하면 경험치 0
+const FEED_DAILY=20; // 환수 한 마리당 하루 먹이 횟수
 const LUCK=[[5,8],[5,10],[6,13],[7,17],[9,22],[11,28],[14,36],[18,46],[22,60],[28,78],[35,100],[35,100]];
 const REFUND={4:5,5:8,6:14,7:22,8:33,9:48,10:65,11:84,12:100};
 const HEART_T=[10,25,45,70,100], HEART_CP=[0,2,4,7,10,15], HEART_EXP=[0,2,4,6,8,10];
@@ -218,11 +219,12 @@ const P=()=>acc.slots[sel];
 function take(id,n=1){if((acc.inv[id]||0)<n){toast(ITEMS[id].n+'이(가) 없어요. 상점에서 사 주세요.');return false;}acc.inv[id]-=n;return true;}
 function guard(p,opt={}){if(!p)return false;if(p.errand&&!opt.errand){toast('심부름 중이에요. '+fmtDur(p.errand.end-now())+' 뒤에 돌아와요.');return false;}if(p.train&&!opt.train){toast('수련 중이에요.');return false;}if(p.sleep&&!opt.sleep){toast('자는 중이에요. 먼저 깨워 주세요.');return false;}return true;}
 const A={
- feed(el){const p=P();if(!guard(p))return;if(p.hu>75)return toast('배가 불러요. 포만감 75 이하일 때 줄 수 있어요.');const id=el==='yy'?'ki_yy':'ki_'+el;if(!take(id))return;
-  p.hu=Math.min(100,p.hu+25);
+ feed(el){const p=P();if(!guard(p))return;const d=daily(p);if((d.feed||0)>=FEED_DAILY){closeLayer();return toast('오늘은 더 먹일 수 없어요 (하루 '+FEED_DAILY+'번).');}const id=el==='yy'?'ki_yy':'ki_'+el;if(!take(id))return;
+  d.feed=(d.feed||0)+1;const over=Math.round(p.hu)>=100;
+  p.hu=Math.min(100,p.hu+25);if(over){p.cl=Math.max(0,p.cl-5);p.th=Math.max(0,p.th-5);addAff(p,-1);}
   if(el==='yy'){const pos=EL.filter(e=>p.el[e]>0);if(pos.length){const e=pos[Math.floor(rnd()*pos.length)];p.el[e]--;toast(ELK[e]+' -1');}else toast('포만감만 찼어요.');}
   else{let a=3;const st=stats(p);if(st.affEl===el&&rnd()*100<Math.min(100,st.aff))a++;addEl(p,el,a);}
-  SFX.play('munch');closeLayer();commit();},
+  SFX.play('munch');if(over)setTimeout(()=>toast('과식했어요! 청결도 -5 · 목마름 -5 · 호감도 -1'),50);closeLayer();commit();},
  dew(){const p=P();if(!guard(p))return;if(p.th>60)return toast('아직 목마르지 않아요 (60 이하일 때).');if(!take('dew'))return;SFX.play('drip');p.th=Math.min(100,p.th+40);commit();},
  soap(){const p=P();if(!guard(p))return;if(p.cl>50)return toast('아직 깨끗해요 (50 이하일 때).');if(!take('soap'))return;SFX.play('bubble');p.cl=Math.min(100,p.cl+50);commit();},
  pat(){const p=P();if(!guard(p))return;const d=daily(p);if(d.play)return toast('오늘은 이미 놀아줬어요.');if(d.pat>=2)return toast('오늘 쓰다듬기를 다 했어요.');d.pat++;addAff(p,7);p.acc.nopat=0;SFX.play('pat');toast('기분 좋아해요! 호감도 +7');commit();},
@@ -281,7 +283,7 @@ function evoAnim(p,target){
 function closeLayer(){document.getElementById('layer').innerHTML='';}
 function confirmBox(title,msg,yes){const L=document.getElementById('layer');L.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-label="'+esc(title)+'"><b class="serif" style="font-size:22px;color:#ffd36e">'+esc(title)+'</b><p style="margin:0">'+esc(msg)+'</p><div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="cfY">확인</button><button class="btn ghost" id="cfN">취소</button></div></div></div>';document.getElementById('cfY').onclick=()=>{closeLayer();yes();};document.getElementById('cfN').onclick=closeLayer;}
 function feedMenu(){const L=document.getElementById('layer');const ks=['fire','water','wood','earth','metal','yy'];
- L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="기운 먹이기"><b class="serif" style="font-size:20px">어떤 기운을 먹일까요?</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+ks.map(k=>{const id=k==='yy'?'ki_yy':'ki_'+k;return '<button class="act" data-a="feed" data-v="'+k+'"><img class="px" src="'+ITEMS[id].img+'" alt=""><b>'+ITEMS[id].n+'</b><small>보유 '+(acc.inv[id]||0)+'</small></button>';}).join('')+'</div><button class="btn ghost" data-close="1">닫기</button></div></div>';}
+ L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="기운 먹이기"><b class="serif" style="font-size:20px">어떤 기운을 먹일까요?</b>'+(()=>{const p=P(),d=p?daily(p):{};return '<small style="color:#c9d8d5">오늘 먹이 '+(d.feed||0)+' / '+FEED_DAILY+'</small>'+(p&&Math.round(p.hu)>=100?'<small style="color:#ff9a7a">배가 가득 찼어요. 더 먹이면 과식해서 청결도·목마름 -5, 호감도 -1</small>':'');})()+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+ks.map(k=>{const id=k==='yy'?'ki_yy':'ki_'+k;return '<button class="act" data-a="feed" data-v="'+k+'"><img class="px" src="'+ITEMS[id].img+'" alt=""><b>'+ITEMS[id].n+'</b><small>보유 '+(acc.inv[id]||0)+'</small></button>';}).join('')+'</div><button class="btn ghost" data-close="1">닫기</button></div></div>';}
 function susMenu(){const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="수상한 기운"><b class="serif" style="font-size:20px">수상한 기운</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+['sus_s','sus_m','sus_l'].map(k=>'<button class="act" data-a="sus" data-v="'+k+'"><img class="px" src="'+ITEMS[k].img+'" alt=""><b>'+['소','중','대'][['sus_s','sus_m','sus_l'].indexOf(k)]+'</b><small>보유 '+(acc.inv[k]||0)+'</small></button>').join('')+'</div><p class="muted" style="color:#c9d8d5">빨리 크는 대신 오행이 무작위로 올라 분기가 틀어질 수 있어요.</p><button class="btn ghost" data-close="1">닫기</button></div></div>';}
 
 /* ================= 화면 ================= */
@@ -657,7 +659,9 @@ function forgeAnim(o){const L=document.getElementById('layer');let done=false;
 
 
 /* ================= 선계 심부름 ================= */
-const ERR=[{n:'아랫마을 장터',min:30,bags:1,boost:false,bg:'e/e1.png',d:'장터 상인들의 잔심부름'},{n:'대숲 오솔길',min:60,bags:1,boost:true,bg:'e/e2.png',d:'대숲 너머 약초꾼에게 짐 전하기 · 좋은 보따리 확률 업'},{n:'구름 고갯길',min:180,bags:2,boost:false,bg:'e/e3.png',d:'구름 고개 넘어 이웃 마을 배달'},{n:'선계 상단',min:480,bags:5,boost:false,bg:'e/e4.png',d:'선계 상단과 함께 하늘길 교역'}];
+// 그림을 바꿔 올리면 이 숫자를 올려 주세요 (브라우저에 남은 옛 그림 대신 새 그림을 불러와요)
+const IMG_V='2';
+const ERR=[{n:'아랫마을 장터',min:30,bags:1,boost:false,bg:'e/e1.png?'+IMG_V,d:'장터 상인들의 잔심부름'},{n:'대숲 오솔길',min:60,bags:1,boost:true,bg:'e/e2.png?'+IMG_V,d:'대숲 너머 약초꾼에게 짐 전하기 · 좋은 보따리 확률 업'},{n:'구름 고갯길',min:180,bags:2,boost:false,bg:'e/e3.png?'+IMG_V,d:'구름 고개 넘어 이웃 마을 배달'},{n:'선계 상단',min:480,bags:5,boost:false,bg:'e/e4.png?'+IMG_V,d:'선계 상단과 함께 하늘길 교역'}];
 const BAGS=[{n:'일반 보따리',img:'i/bag1.png',lo:1,hi:5},{n:'상급 보따리',img:'i/bag2.png',lo:3,hi:10},{n:'최상급 보따리',img:'i/bag3.png',lo:10,hi:30}];
 const ERRAND_DAILY=5;
 // 단계가 높을수록 좋은 보따리. 최상급은 6단계부터, 12단계 10% (확률 업 20%)
