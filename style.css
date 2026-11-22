@@ -6,9 +6,9 @@ button{cursor:pointer}
 button:disabled{cursor:not-allowed;opacity:.55}
 .serif{font-family:'Gowun Batang',serif}
 .px{image-rendering:pixelated}
-.sky{background:url(assets/bg.jpg) center 30%/cover}
-.stage{background:url(assets/bg.jpg) center 42%/cover}
-.thumb{background:url(assets/bg.jpg);background-size:260%}
+.sky{background:url(bg.jpg) center 30%/cover}
+.stage{background:url(bg.jpg) center 42%/cover}
+.thumb{background:url(bg.jpg);background-size:260%}
 header .bar{background:linear-gradient(180deg,rgba(20,40,46,.6),rgba(20,40,46,.3));padding:10px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:16px}
 .logo{font-family:'Gowun Batang',serif;font-weight:700;font-size:26px;color:#fff8e6;letter-spacing:2px;text-shadow:0 2px 0 #1d3b40}
 nav.main{display:flex;flex-wrap:wrap;gap:4px;flex:1 1 480px}
