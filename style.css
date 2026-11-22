@@ -161,3 +161,94 @@ nav.main button{position:relative}
 .abres{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(8,16,20,.82);animation:fadeIn .4s}
 @keyframes fadeIn{from{opacity:0}}
 @media (max-width:560px){.abp{min-width:150px;font-size:12px;padding:4px 7px}.abmsg{font-size:14px}}
+/* 출석부 */
+.modal.att{max-width:640px;width:94vw}
+.attgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+.attc{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff8e6;border:2px solid #c9a24a;border-radius:10px;padding:8px 4px;color:#3a2a08;overflow:hidden}
+.attc img{width:44px;height:44px;object-fit:contain}
+.attc small{font-size:11px;text-align:center;line-height:1.2}
+.attc.big{grid-column:span 1;background:linear-gradient(180deg,#fff3c4,#ffe08a);border-color:#e0a020}
+.attc.on{background:#f3ead2}
+.attd{font-size:12px;font-weight:800;color:#7a5a1a}
+.seal7{position:absolute;right:6px;top:24px;width:38px;height:38px;border:3px solid #c8281e;border-radius:8px;color:#c8281e;font:900 24px/32px serif;text-align:center;transform:rotate(-14deg);opacity:.85;background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 2px rgba(200,40,30,.35)}
+.seal7.drop{animation:sealDrop .55s cubic-bezier(.2,1.6,.4,1) .25s both}
+@keyframes sealDrop{0%{transform:rotate(-30deg) scale(3);opacity:0}100%{transform:rotate(-14deg) scale(1);opacity:.85}}
+@media (max-width:520px){.attgrid{grid-template-columns:repeat(3,1fr)}}
+/* 도감 컬렉션 */
+.dexwrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;align-items:start}
+.dexwrap .dex{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+.dexR{display:flex;flex-direction:column;gap:10px;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto;padding-right:2px}
+.colhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.col{border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:10px 12px;transition:box-shadow .3s}
+.col.full{border-color:#e0a020;background:linear-gradient(180deg,#fff8dc,#fff1c2);box-shadow:0 0 0 2px rgba(240,199,94,.5),0 0 18px rgba(255,170,40,.35)}
+.colh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.colh b.serif{font-size:17px}
+.colp{margin-left:auto;font-size:12px;font-weight:700;color:#7a5a1a}
+.colok{color:#fff;background:#c8281e;border-radius:6px;padding:1px 8px;font-family:serif;letter-spacing:2px}
+.colm{display:flex;flex-wrap:wrap;gap:6px}
+.cm{position:relative;width:54px;height:62px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1px solid #d9cba6;background:#efe6cf;color:#9a8b6c}
+.cm img{width:44px;height:44px;object-fit:contain}
+.cm.no b{font-size:20px;line-height:1}
+.cm.dim img{filter:grayscale(1) brightness(.75);opacity:.6}
+.cm.lit{background:radial-gradient(circle at 50% 40%,#fff4c8,#f7d27a 60%,#e8a93a);border-color:#e0a020;color:#7a3a08;box-shadow:0 0 10px rgba(255,170,40,.7)}
+.cm.lit img{filter:drop-shadow(0 0 4px rgba(255,200,80,.9));animation:litPulse 2.4s ease-in-out infinite}
+@keyframes litPulse{50%{filter:drop-shadow(0 0 8px rgba(255,140,30,1))}}
+@media (max-width:900px){.dexwrap{grid-template-columns:1fr}.dexR{position:static;max-height:none}}
+/* 도트 이펙트 */
+.pxp{position:absolute;display:block;image-rendering:pixelated;pointer-events:none;z-index:5}
+.abf.quake,.abox .abf.quake{animation:quake .35s steps(6)}
+@keyframes quake{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-2px)}}
+/* 월드보스 */
+.abpet.abboss{width:min(230px,40vw);height:min(230px,40vw);right:8%;top:6%;filter:drop-shadow(0 0 12px rgba(120,0,40,.6)) drop-shadow(0 6px 4px rgba(0,0,0,.4))}
+.abox.bossf .abf:after{background:linear-gradient(180deg,rgba(40,0,20,.45),rgba(10,0,10,.55))}
+.bossc{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#1e1420,#2c1a24);color:#f3e6d6;border-color:#5a2a3a}
+.bossc .muted{color:#c9b8a6}
+.bossimg{position:relative;width:200px;height:200px;flex:0 0 auto;border-radius:12px;background:radial-gradient(circle at 50% 60%,#5a1a2a,#1a0a14 70%)}
+.bossimg img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,60,60,.35))}
+.bossc.dead .bossimg img{filter:grayscale(1) brightness(.6)}
+.bossdead{position:absolute;inset:auto 10px 10px auto;border:4px solid #c8281e;color:#ff6a5a;font:900 30px/44px serif;padding:0 8px;border-radius:8px;transform:rotate(-12deg);background:rgba(0,0,0,.4)}
+.bossinfo{flex:1 1 300px;display:flex;flex-direction:column;gap:6px}
+.bosshp{position:relative;height:22px;border-radius:11px;background:#3a2a30;border:2px solid #8a5a3a;overflow:hidden}
+.bosshp i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8e1f1a,#e5484d 60%,#ff9a52);transition:width .6s}
+.bosshp span{position:relative;display:block;text-align:center;font-size:12px;font-weight:800;line-height:18px;color:#fff;text-shadow:0 1px 2px #000}
+.bossc .mchip{background:rgba(255,246,220,.12);border-color:rgba(236,213,154,.4);color:#f3e6d6}
+.bosspreview{display:flex;gap:12px;align-items:center;margin-top:10px}
+.bosspreview img{width:96px;height:96px;object-fit:contain;background:#2c1a24;border-radius:10px}
+/* 강화·합성 연출 */
+.overlay.forge{background:rgba(5,8,12,.88)}
+.fbox{width:min(460px,94vw);display:flex;flex-direction:column;align-items:center;gap:10px;color:#e8fff8}
+.fttl{font-weight:800;font-size:17px;color:#ffd36e;text-align:center}
+.fstage{--sp:2.6s;--sh:0px;position:relative;width:300px;height:300px;display:flex;align-items:center;justify-content:center}
+.frune{position:absolute;inset:20px;border-radius:50%;border:3px dashed rgba(240,199,94,.7);animation:spin var(--sp) linear infinite}
+.frune.r2{inset:52px;border:2px dotted rgba(124,200,255,.8);animation-direction:reverse}
+.fstage.stop .frune{animation-play-state:paused;opacity:.4}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fglow{position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.55),rgba(0,0,0,0) 70%);animation:gpulse .6s ease-in-out infinite alternate}
+@keyframes gpulse{to{transform:scale(1.15);opacity:.7}}
+.fglow.ok{background:radial-gradient(circle,#fff 0%,#ffd36e 35%,rgba(0,0,0,0) 70%);animation:none;transform:scale(1.8)}
+.fglow.bad{background:radial-gradient(circle,rgba(255,80,60,.8),rgba(0,0,0,0) 70%);animation:none}
+.fglow.warn{background:radial-gradient(circle,rgba(255,154,82,.6),rgba(0,0,0,0) 70%);animation:none}
+.fglow.shield{background:radial-gradient(circle,rgba(124,200,255,.2) 50%,rgba(124,200,255,.8) 62%,rgba(0,0,0,0) 70%);animation:none}
+.fglow.dull{background:radial-gradient(circle,rgba(120,120,120,.4),rgba(0,0,0,0) 70%);animation:none}
+.fitem{position:relative;width:120px;height:120px;object-fit:contain;z-index:2;animation:fshake .08s infinite;filter:drop-shadow(0 0 8px rgba(255,220,120,.7))}
+@keyframes fshake{25%{translate:calc(var(--sh)*-1) 0}75%{translate:var(--sh) 0}}
+.fitem.fa,.fitem.fb{position:absolute;width:96px;height:96px}
+.fstage.stop .fitem{animation:none}
+.fitem.pop{animation:fpop .6s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes fpop{0%{transform:scale(.4)}100%{transform:scale(1.25)}}
+.fitem.shatter{animation:fshat .7s steps(6) forwards}
+@keyframes fshat{to{transform:scale(1.4) rotate(18deg);opacity:0;filter:grayscale(1) brightness(2)}}
+.fitem.crack{animation:fcrack .5s steps(5);filter:grayscale(.6) brightness(.8)}
+@keyframes fcrack{30%{transform:rotate(-8deg)}60%{transform:rotate(6deg)}}
+.fitem.fizz{filter:grayscale(1) brightness(.7);animation:none}
+.fitem.shield{filter:drop-shadow(0 0 14px #7cc8ff)}
+.fstage.flash:after{content:"";position:absolute;inset:-40px;background:#fff;animation:fflash .5s ease-out forwards;pointer-events:none}
+@keyframes fflash{from{opacity:.9}to{opacity:0}}
+.fstage.quake{animation:quake .4s steps(6)}
+#ffx{position:absolute;inset:0;pointer-events:none;z-index:3}
+.frate{font-size:14px;color:#c9d8d5}.frate b{color:#ffd36e}
+.fgauge{width:80%;height:10px;border-radius:5px;background:#2a3a40;overflow:hidden;border:1px solid #4a6a70}
+.fgauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3b8beb,#7cc8ff,#ffd36e)}
+.fres{min-height:80px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.fres b{font-size:30px}
+@media (max-width:1440px){nav.main button{padding:8px 9px;font-size:14px}}
