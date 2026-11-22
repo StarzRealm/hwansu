@@ -25,6 +25,7 @@ const TOT=[280,680,2000,3700,6470,11260,29640,48770,61600,119090,198920];
 const K=TOT.map((t,i)=>{let s=0;for(let l=1;l<EVO_LV[i];l++)s+=10*Math.pow(l,1.5);return t/s;});
 const need=(lv,st)=>Math.max(1,Math.round(10*Math.pow(lv,1.5)*K[st-1]));
 const maxLv=st=>st>=12?1:EVO_LV[st-1];
+const ENC_W={egg:2,gear:4,secret:6,dosa:8,susluck:10,blesssec:12,bless:14,luck:14,snack:14,lost:16};
 const LUCK=[[5,8],[5,10],[6,13],[7,17],[9,22],[11,28],[14,36],[18,46],[22,60],[28,78],[35,100],[35,100]];
 const REFUND={4:5,5:8,6:14,7:22,8:33,9:48,10:65,11:84,12:100};
 const HEART_T=[10,25,45,70,100], HEART_CP=[0,2,4,7,10,15], HEART_EXP=[0,2,4,6,8,10];
@@ -109,22 +110,25 @@ function finishTraining(p,t){
  const ratio=cp(p)/sp.rec;let fail=10,great=15;if(ratio<1){fail=Math.min(85,10+(1-ratio)*70);great=5;}else if(ratio>=1.5){fail=5;great=22;}
  const r=rnd()*100,out=r<fail?'fail':r<fail+great?'great':'ok';
  let exp=sp.exp*{fail:.3,ok:1,great:2}[out]*(1+(st.exp+HEART_EXP[hearts(p)])/100)*(cfg.expMult||1);
- const lvFrom=p.lv;let enc=null,coins=0;
- const er=rnd()*100;let gearT=null;
- if(er<1){if(acc.slots.some(q=>!q))enc='egg';}
- else if(er<6)enc='gear';
- else if(er<11)enc='secret';
- else if(er<21){const pool=['bless','luck','snack','lost'];if(p.st>=5)pool.push('dosa');enc=pool[Math.floor(rnd()*pool.length)];}
- if(enc==='bless')exp*=1.5;
+ const lvFrom=p.lv;let coins=0;
+ let gearT=null;
+ // 인카운트: 개수를 먼저 정하고(1개 10%·2개 5%·3개 1%), 가중치 풀에서 겹치지 않게 뽑아요
+ const er=rnd()*100,en=er<1?3:er<6?2:er<16?1:0;
+ const pool=Object.keys(ENC_W).filter(k=>(k!=='egg'||acc.slots.some(q=>!q))&&(k!=='dosa'||p.st>=5));let encs=[];
+ for(let j=0;j<en&&pool.length;j++){const tot=pool.reduce((s2,k)=>s2+ENC_W[k],0);let x=rnd()*tot,pick=pool.length-1;for(let z=0;z<pool.length;z++){x-=ENC_W[pool[z]];if(x<0){pick=z;break;}}encs.push(pool.splice(pick,1)[0]);}
+ const has=k=>encs.includes(k);
+ if(has('bless'))exp*=1.5;
  addExp(p,Math.round(exp));
- if(enc==='luck'){const [lo,hi]=LUCK[p.st-1];coins=lo+Math.floor(rnd()*(hi-lo+1));acc.coins+=coins;}
- if(enc==='egg'){const k=acc.slots.findIndex(q=>!q);acc.slots[k]=newPet();acc.notice[k]=null;dexAdd(0);}
- if(enc==='gear'){gearT=['w','a','s'][Math.floor(rnd()*3)];acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1e6),t:gearT,g:0,p:0,aff:'fire'});}
- if(enc==='secret'){acc.inv.sec_instant=(acc.inv.sec_instant||0)+1;}
- if(enc==='snack'){p.hu=Math.min(100,p.hu+30);p.th=Math.min(100,p.th+30);}
- if(enc==='lost'){addEl(p,randEl(),2);}
- if(enc==='dosa'){lvUp(p,1);}
- p.result={spot:sp.n,out,enc,exp:Math.round(exp),lvFrom,lvTo:p.lv,coins,gearT,max:p.lv>=maxLv(p.st)};
+ if(has('luck')){const [lo,hi]=LUCK[p.st-1];coins=lo+Math.floor(rnd()*(hi-lo+1));acc.coins+=coins;}
+ if(has('egg')){const k=acc.slots.findIndex(q=>!q);acc.slots[k]=newPet();acc.notice[k]=null;dexAdd(0);}
+ if(has('gear')){gearT=['w','a','s'][Math.floor(rnd()*3)];acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1e6),t:gearT,g:0,p:0,aff:'fire'});}
+ if(has('secret')){acc.inv.sec_instant=(acc.inv.sec_instant||0)+1;}
+ let susK=null;if(has('susluck')){const z=rnd();susK=z<.6?'sus_s':z<.9?'sus_m':'sus_l';acc.inv[susK]=(acc.inv[susK]||0)+1;}
+ if(has('blesssec')){acc.inv.sec_bless=(acc.inv.sec_bless||0)+1;}
+ if(has('snack')){p.hu=Math.min(100,p.hu+30);p.th=Math.min(100,p.th+30);}
+ if(has('lost')){addEl(p,randEl(),2);}
+ if(has('dosa')){lvUp(p,1);}
+ p.result={spot:sp.n,out,enc:encs[0]||null,encs,exp:Math.round(exp),lvFrom,lvTo:p.lv,coins,gearT,susK,max:p.lv>=maxLv(p.st)};
  p.train=null;
  const d=daily(p);if(acc.autoSleep===true&&d.sleep<2){p.sleep=t+8*H;d.sleep++;}
 }
@@ -336,8 +340,8 @@ function claimMail(id){const list=acc.mail||[];const take=id==='*'?list.slice():
  const ids=new Set(take.map(m=>m.id));acc.mail=list.filter(m=>!ids.has(m.id));
  if(got.length){SFX.play('coins');toast('받았어요! '+got.slice(0,4).join(', ')+(got.length>4?' 외 '+(got.length-4)+'개':''));}else SFX.play('ok');
  commit();}
-function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);if(r.enc)setTimeout(()=>SFX.play({luck:'coins',egg:'egg',gear:'equip',secret:'magic'}[r.enc]||'heal'),900);const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)',egg:'환수 알 발견! (빈 슬롯에 알이 들어왔어요)',gear:'떠돌이 장비 (일반 '+(TN[r.gearT]||'장비')+' 획득)',secret:'비기 발견 (수련즉시완료비서 +1)'};
-  res='<div class="overlay"><div class="modal" role="dialog" aria-label="수련 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(r.spot)+' 수련 결과</span><span class="serif" style="font-size:34px;font-weight:700;color:'+(r.out==='fail'?'#c9d8d5':'#ffd36e')+'">'+{fail:'실패…',ok:'성공',great:'대성공!'}[r.out]+'</span><img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain">'+(r.enc?'<div class="chip" style="background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.5);color:#fff8e6">인카운트 · '+encN[r.enc]+'</div>':'')+'<b style="font-size:22px">+'+fmt(r.exp)+' EXP</b><span class="muted" style="color:#c9d8d5">Lv '+r.lvFrom+' → '+r.lvTo+(r.max?' (MAX)':'')+'</span><button class="btn" data-ack="'+i+'" style="background:#f0c75e">확인</button></div></div>';}return res;}
+function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);const EL_=r.encs||(r.enc?[r.enc]:[]);EL_.forEach((k,j)=>setTimeout(()=>SFX.play({luck:'coins',egg:'egg',gear:'equip',secret:'magic',susluck:'magic',blesssec:'up'}[k]||'heal'),900+j*600));const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)',egg:'환수 알 발견! (빈 슬롯에 알이 들어왔어요)',gear:'떠돌이 장비 (일반 '+(TN[r.gearT]||'장비')+' 획득)',secret:'비기 발견 (수련즉시완료비서 +1)',susluck:'수상한 행운 ('+(ITEMS[r.susK]?ITEMS[r.susK].n:'수상한 기운')+' +1)',blesssec:'축복비서 발견 (강화축복비서 +1)'};
+  res='<div class="overlay"><div class="modal" role="dialog" aria-label="수련 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(r.spot)+' 수련 결과</span><span class="serif" style="font-size:34px;font-weight:700;color:'+(r.out==='fail'?'#c9d8d5':'#ffd36e')+'">'+{fail:'실패…',ok:'성공',great:'대성공!'}[r.out]+'</span><img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain">'+(EL_.length>1?'<span style="color:#ffd36e;font-weight:700">✨ 인카운트 '+EL_.length+'개 동시 발생!</span>':'')+EL_.map(k=>'<div class="chip" style="background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.5);color:#fff8e6">인카운트 · '+encN[k]+'</div>').join('')+'<b style="font-size:22px">+'+fmt(r.exp)+' EXP</b><span class="muted" style="color:#c9d8d5">Lv '+r.lvFrom+' → '+r.lvTo+(r.max?' (MAX)':'')+'</span><button class="btn" data-ack="'+i+'" style="background:#f0c75e">확인</button></div></div>';}return res;}
 
 /* ================= 공통 렌더 / 로그인 ================= */
 const MODE=(document.body.dataset.mode||'player');
