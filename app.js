@@ -60,11 +60,11 @@ const ITEMS={
  sus_l:{n:'수상한 기운 (대)',p:15,img:'i/sus_l.png',cat:'성장',d:'즉시 레벨 +1, 무작위 오행 +5~6, 10% 질병',daily:1},
  sec_active:{n:'환수행동력 회복 비서',p:10,img:'i/sec_active.gif',cat:'성장',d:'행동력 +50',daily:1},
  reset_ki:{n:'오행초기화기운',p:50,img:'i/reset_ki.gif',cat:'기타',d:'오행 점수를 0으로, 고정 해제'},
- tal_time:{n:'시간단축비서 (30분)',p:5,img:'i/sec_t30.gif',cat:'성장',d:'진행 중인 수련의 남은 시간 30분 단축'},
- sec_t60:{n:'시간단축비서 (1시간)',p:0,img:'i/sec_t60.gif',cat:'보상',d:'진행 중인 수련의 남은 시간 1시간 단축 (보상 전용)'},
- sec_t180:{n:'시간단축비서 (3시간)',p:0,img:'i/sec_t180.gif',cat:'보상',d:'진행 중인 수련의 남은 시간 3시간 단축 (보상 전용)'},
- sec_t300:{n:'시간단축비서 (5시간)',p:0,img:'i/sec_t300.gif',cat:'보상',d:'진행 중인 수련의 남은 시간 5시간 단축 (보상 전용)'},
- sec_t480:{n:'시간단축비서 (8시간)',p:0,img:'i/sec_t480.gif',cat:'보상',d:'진행 중인 수련의 남은 시간 8시간 단축 (보상 전용)'},
+ tal_time:{n:'시간단축비서 (30분)',p:5,img:'i/sec_t30.gif',cat:'성장',d:'진행 중인 수련·심부름의 남은 시간 30분 단축'},
+ sec_t60:{n:'시간단축비서 (1시간)',p:0,img:'i/sec_t60.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 1시간 단축 (보상 전용)'},
+ sec_t180:{n:'시간단축비서 (3시간)',p:0,img:'i/sec_t180.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 3시간 단축 (보상 전용)'},
+ sec_t300:{n:'시간단축비서 (5시간)',p:0,img:'i/sec_t300.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 5시간 단축 (보상 전용)'},
+ sec_t480:{n:'시간단축비서 (8시간)',p:0,img:'i/sec_t480.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 8시간 단축 (보상 전용)'},
  sec_slot:{n:'슬롯추가비서',p:0,img:'i/sec_slot.gif',cat:'보상',d:'환수 슬롯을 1칸 늘려요 (최대 '+5+'칸)'},
  sec_aff:{n:'호감도비서',p:10,img:'i/sec_aff.gif',cat:'성장',d:'호감도 +10',daily:1},
  sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
@@ -251,7 +251,7 @@ const A={
  resetKi(){const p=P();if(!p)return;if(!take('reset_ki'))return;EL.forEach(e=>{p.el[e]=0;p.elT[e]=0;});p.lock=null;SFX.play('mystic');toast('오행이 초기화됐어요.');commit();},
  admItem(k){const p=P();if(!p)return;if(!take(k))return;
   const TCUT={tal_time:30,sec_t60:60,sec_t180:180,sec_t300:300,sec_t480:480};
-  if(TCUT[k]){if(!p.train){acc.inv[k]++;return toast('진행 중인 수련이 없어요. (심부름에는 쓸 수 없어요)');}const cut=TCUT[k]*60000,left=p.train.end-now();SFX.play('magic');if(left<=cut){p.train.end=now();advance(p,now());toast('수련이 바로 끝났어요!');}else{p.train.end-=cut;toast('남은 수련 시간이 '+fmtDur(cut)+' 줄었어요.');}}
+  if(TCUT[k]){const job=p.train||p.errand,nm=p.train?'수련':'심부름';if(!job){acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요.');}const cut=TCUT[k]*60000,left=job.end-now();SFX.play('magic');if(left<=cut){job.end=now();if(p.train)advance(p,now());else tickAll();toast(nm+'이 바로 끝났어요!');}else{job.end-=cut;toast('남은 '+nm+' 시간이 '+fmtDur(cut)+' 줄었어요.');}}
   if(k==='sec_aff'){if(p.aff>=100){acc.inv[k]++;return toast('호감도가 이미 가득해요.');}addAff(p,10);SFX.play('magic');toast('호감도가 10 올랐어요.');}
   if(k==='sec_instant'){if(p.train){p.train.end=now();advance(p,now());}else if(p.errand){p.errand.end=now();tickAll();SFX.play('magic');}else{acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요.');}}
   if(k==='sec_cure'){p.sick=null;p.acc.sickA=0;(SFX.play('heal'),toast('나았어요!'));}
