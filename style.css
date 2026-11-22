@@ -113,3 +113,51 @@ nav.main button{position:relative}
 .mchip{display:inline-flex;align-items:center;gap:4px;background:#fff6dc;border:1px solid #ecd59a;border-radius:20px;padding:3px 10px 3px 4px;font-size:13px}
 .mchip img{width:26px;height:26px;object-fit:contain}
 .mform textarea{font:inherit;padding:8px;border-radius:8px;border:1px solid #cdbf9c;box-sizing:border-box}
+/* 환수 대전 */
+.eltag{display:inline-flex;align-items:center;gap:3px;border:1px solid;border-radius:10px;padding:0 7px 0 3px;font-size:11px;font-weight:700;vertical-align:middle;margin-left:4px;line-height:18px}
+.eltag img{width:14px;height:14px}
+.advg{font-size:11px;font-weight:700;color:#1f7a3a;background:#dff5e3;border-radius:8px;padding:0 6px}
+.advb{font-size:11px;font-weight:700;color:#b02a1f;background:#fbe1dd;border-radius:8px;padding:0 6px}
+.opps{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px;margin-top:8px}
+.opp{display:flex;align-items:center;gap:10px;border:1px solid var(--line,#e2d6b8);border-radius:10px;padding:8px 10px;background:#fffdf6}
+.opp>img{width:52px;height:52px;object-fit:contain}
+.opp .t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.blog{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #e2d6b8;font-size:14px;flex-wrap:wrap}
+.abox{position:relative;width:min(720px,96vw);background:#0f1d22;border:2px solid #f0c75e;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.abf{position:relative;height:min(380px,62vw);min-height:260px;background:url(bg.jpg) center 60%/cover}
+.abf:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,20,30,.15),rgba(10,20,30,.35))}
+.abpet{position:absolute;z-index:2;width:min(150px,28vw);height:min(150px,28vw);object-fit:contain;filter:drop-shadow(0 6px 4px rgba(0,0,0,.35))}
+.abpet-d{right:12%;top:16%}
+.abpet-a{left:12%;bottom:6%;transform:scaleX(-1)}
+.abp{position:absolute;z-index:3;background:rgba(255,248,230,.95);border:2px solid #3a2a08;border-radius:10px;padding:6px 10px;min-width:200px;font-size:13px;color:#2a2010}
+.abp-d{left:4%;top:6%}
+.abp-a{right:4%;bottom:8%}
+.abp-top{display:flex;align-items:center;gap:4px}.abp-top small{margin-left:auto;font-weight:700}
+.abp-own{font-size:11px;color:#6a5a3a}
+.abp-hp{display:flex;align-items:center;gap:6px;margin-top:3px}.abp-hp span{font-size:10px;font-weight:800;color:#c47a00}
+.abp-tr{flex:1;height:9px;background:#d9cfb8;border-radius:5px;overflow:hidden;border:1px solid #6a5a3a}
+.abp-tr i{display:block;height:100%;width:100%;transition:width .45s ease,background .3s}
+.abp-num{text-align:right;font-size:11px;font-weight:700}
+.abmsg{min-height:58px;padding:12px 16px;background:#fff8e6;border-top:3px solid #3a2a08;color:#2a2010;font-size:16px;line-height:1.5}
+.abbtn{display:flex;gap:8px;justify-content:flex-end;padding:0 12px 12px;background:#fff8e6}
+.abbtn:empty{display:none}
+#abfx{position:absolute;inset:0;z-index:4;pointer-events:none}
+.abhit{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;animation:abhit .55s ease-out forwards;mix-blend-mode:screen}
+@keyframes abhit{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.abdmg{position:absolute;transform:translateX(-50%);font-weight:900;font-size:26px;color:#fff;-webkit-text-stroke:1.5px #3a0a06;animation:abdmg 1s ease-out forwards;white-space:nowrap}
+.abdmg.crit{color:#ffd36e;font-size:34px}.abdmg.adv{color:#7cf0a0}.abdmg.miss{color:#c9d8d5;font-size:20px}
+@keyframes abdmg{0%{opacity:0;margin-top:10px}15%{opacity:1}100%{opacity:0;margin-top:-50px}}
+.lunge-a{animation:lungeA .45s ease}.lunge-d{animation:lungeD .45s ease}
+@keyframes lungeA{40%{transform:scaleX(-1) translate(-60px,-30px)}}
+@keyframes lungeD{40%{transform:translate(-60px,30px)}}
+.abpet.shake{animation:shk .4s}
+.abpet-a.shake{animation:shkA .4s}
+@keyframes shk{20%{transform:translateX(-8px)}40%{transform:translateX(8px);filter:brightness(2.2)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes shkA{20%{transform:scaleX(-1) translateX(-8px)}40%{transform:scaleX(-1) translateX(8px);filter:brightness(2.2)}60%{transform:scaleX(-1) translateX(-6px)}80%{transform:scaleX(-1) translateX(4px)}}
+.abpet.faint{animation:faint .8s forwards}
+@keyframes faint{to{opacity:0;transform:translateY(40px)}}
+.abpet-a.faint{animation:faintA .8s forwards}
+@keyframes faintA{to{opacity:0;transform:scaleX(-1) translateY(40px)}}
+.abres{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(8,16,20,.82);animation:fadeIn .4s}
+@keyframes fadeIn{from{opacity:0}}
+@media (max-width:560px){.abp{min-width:150px;font-size:12px;padding:4px 7px}.abmsg{font-size:14px}}
