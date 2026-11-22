@@ -325,3 +325,5 @@ nav.main button{position:relative}
 .side.ornate .el{margin:7px 0}
 @media (max-width:560px){.side.ornate>.card{border-width:20px;border-image-width:20px}}
 .side.ornate h2{min-width:170px;box-sizing:border-box}
+/* 스킬 스프라이트 */
+.fxs{position:absolute;display:block;z-index:5;pointer-events:none;background-repeat:no-repeat;background-size:800% 100%;background-position:0 0;image-rendering:pixelated;filter:drop-shadow(0 0 6px rgba(255,255,255,.35))}

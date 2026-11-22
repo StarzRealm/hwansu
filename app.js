@@ -473,10 +473,27 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);
  h+='<div class="card" style="flex:1 1 320px"><h2>이번 주 대전 기록</h2>'+(PV.logs&&PV.logs.length?PV.logs.map(b=>{const mw=b.role==='atk'?b.win:!b.win,op=b.role==='atk'?b.d:b.a,dm=b.role==='atk'?b.da:b.dd;
    return '<div class="blog"><b style="color:'+(mw?'#2e7d3a':'#b02a1f')+'">'+(b.role==='atk'?'공격 ':'방어 ')+(mw?'승리':'패배')+'</b><span style="flex:1">vs '+esc(op.nick)+' <small class="muted">('+esc(NAMES[op.pet.no])+')</small></span><span class="muted">'+(dm>0?'+':'')+dm+'</span><button class="btn soft sm" data-replay="'+esc(b.id)+'">다시 보기</button></div>';}).join(''):'<p class="muted">이번 주 기록이 없어요.</p>')+'</div></div>';
  return h;}
+
+/* ===== 스킬 스프라이트 (fx/fx_NNN.png, 한 줄 8칸) — 없으면 코드 이펙트로 ===== */
+const FXOK={};
+function fxUrl(no){return 'fx/fx_'+String(no).padStart(3,'0')+'.png?'+IMG_V;}
+function fxPreload(nos){nos.forEach(no=>{if(no==null||FXOK[no]!==undefined)return;FXOK[no]=null;const im=new Image();im.onload=()=>{FXOK[no]=true;};im.onerror=()=>{FXOK[no]=false;};im.src=fxUrl(no);});}
+function fxSprite(P,sk,box,from,to){if(P.boss||FXOK[P.no]!==true)return null;
+ const B=box.getBoundingClientRect(),fa=from.getBoundingClientRect(),ta=to.getBoundingClientRect();
+ const ax=fa.left-B.left+fa.width/2,ay=fa.top-B.top+fa.height/2,tx=ta.left-B.left+ta.width/2,ty=ta.top-B.top+ta.height/2,R=Math.min(ta.width,ta.height)/2;
+ const L=box.querySelector('#abfx')||box,d=document.createElement('i'),S=Math.max(130,R*2.7),flip=ax>tx;let w=S,h=S,x=tx-S/2,y=ty-S/2,tf='',origin='50% 50%',dur=520;
+ if(sk.fx==='pillar'||sk.fx==='thunder'){w=S*.8;h=S*1.6;x=tx-w/2;y=ty+R*.75-h;}
+ else if(sk.fx==='beam'){const len=Math.hypot(tx-ax,ty-ay)+R*.6;w=len;h=Math.max(44,R*.9);x=ax;y=ay-h/2;origin='0 50%';tf='rotate('+Math.atan2(ty-ay,tx-ax)+'rad)';dur=480;}
+ else if(sk.fx==='wave'){w=S*1.6;h=S*.8;x=tx-w/2;y=ty+R*.6-h;tf=flip?'scaleX(-1)':'';}
+ else if(flip&&(sk.fx==='slash'||sk.fx==='claw'||sk.fx==='rain'))tf='scaleX(-1)';
+ d.className='fxs';d.style.cssText='left:'+Math.round(x)+'px;top:'+Math.round(y)+'px;width:'+Math.round(w)+'px;height:'+Math.round(h)+'px;background-image:url('+fxUrl(P.no)+');transform-origin:'+origin+';transform:'+tf;L.appendChild(d);
+ const a=d.animate([{backgroundPosition:'0% 0'},{backgroundPosition:'100% 0'}],{duration:dur,easing:'steps(8, jump-none)',fill:'forwards'});a.onfinish=()=>d.remove();
+ if(sk.fx==='shock'||sk.fx==='rock'){setTimeout(()=>{box.classList.remove('quake');void box.offsetWidth;box.classList.add('quake');},dur*.45);}
+ return Math.round(dur*.5);}
 function pnm(P){return P.boss?P.name:NAMES[P.no];}
 function pim(P){return P.boss?P.img:img(P.no);}
 function abPlate(nick,P,id){return '<div class="abp-top"><b>'+esc(pnm(P))+'</b>'+elTag(P.el)+'<small>'+(P.boss?'월드보스':'Lv '+P.lv)+'</small></div><div class="abp-own">'+(P.boss?'흑화한 12지신':esc(nick)+' · 전투력 '+fmt(P.cp))+'</div><div class="abp-hp"><span>HP</span><div class="abp-tr"><i id="'+id+'"></i></div></div><div class="abp-num" id="'+id+'n"></div>';}
-function battleAnim(b,role){const L=document.getElementById('layer'),log=JSON.parse(b.logS||'[]'),A=b.a.pet,D=b.d.pet,boss=b.kind==='boss';let sp=1,i=0,done=false,alive=true;
+function battleAnim(b,role){const L=document.getElementById('layer'),log=JSON.parse(b.logS||'[]'),A=b.a.pet,D=b.d.pet,boss=b.kind==='boss';fxPreload([A.boss?null:A.no,D.boss?null:D.no]);let sp=1,i=0,done=false,alive=true;
  L.innerHTML='<div class="overlay"><div class="abox'+(boss?' bossf':'')+'" role="dialog" aria-label="'+(boss?'월드보스 토벌':'환수 대전')+'"><div class="abf" id="abf"><div class="abp abp-d">'+abPlate(b.d.nick,D,'hD')+'</div><img class="px abpet abpet-d'+(boss?' abboss':'')+'" id="pD" src="'+pim(D)+'" alt=""><img class="px abpet abpet-a" id="pA" src="'+pim(A)+'" alt=""><div class="abp abp-a">'+abPlate(b.a.nick,A,'hA')+'</div><div id="abfx"></div></div><div class="abmsg" id="abMsg"></div><div class="abbtn" id="abBtns"><button class="btn soft sm" id="abFast">빨리 보기</button><button class="btn soft sm" id="abSkip">결과 바로 보기</button></div></div></div>';
  const $=id=>document.getElementById(id),msg=t=>{const m=$('abMsg');if(m)m.innerHTML=t;},ok=()=>alive&&$('abf');
  const hp=(ha,hd)=>{[['hA',ha,b.hpA],['hD',hd,b.hpD]].forEach(([id,v,m])=>{const e=$(id);if(!e)return;const w=Math.max(0,v/m*100);e.style.width=w+'%';e.style.background=w>50?'#4caf50':w>20?'#f0b429':'#e5484d';$(id+'n').textContent=fmt(Math.ceil(v))+' / '+fmt(m);});};
@@ -496,7 +513,7 @@ function battleAnim(b,role){const L=document.getElementById('layer'),log=JSON.pa
  function step(){if(done||!ok())return;if(i>=log.length)return finish();const [w,dmg,crit,miss,adv,ha,hd]=log[i++],P=w?D:A,T=w?'pA':'pD',me=w?'pD':'pA',sk=skillOf(P),pc=(PAL[sk.pal]||PAL.fire)[2];
   msg(esc(w?b.d.nick:b.a.nick)+'의 '+esc(pnm(P))+'의 <b style="color:'+pc+'">'+esc(sk.n)+'</b>!');
   const actor=$(me);actor.classList.remove('lunge-a','lunge-d');void actor.offsetWidth;actor.classList.add(w?'lunge-d':'lunge-a');
-  let hitAt=320;try{hitAt=skillFx(sk,$('abf'),actor,$(T));}catch(e){}
+  let hitAt=320;try{const hs=fxSprite(P,sk,$('abf'),actor,$(T));hitAt=hs!=null?hs:skillFx(sk,$('abf'),actor,$(T));}catch(e){}
   setTimeout(()=>{if(done||!ok())return;const base=$('abMsg').innerHTML;
    if(miss){num(T,'빗나감','miss');SFX.play('nope');msg(base+' 하지만 빗나갔다!');}
    else{const t=$(T);t.classList.remove('shake');void t.offsetWidth;t.classList.add('shake');num(T,'-'+fmt(dmg),crit?'crit':adv?'adv':'');SFX.play(crit?'up':'clank');hp(ha,hd);
