@@ -47,6 +47,7 @@ const ITEMS={
  sec_active:{n:'환수행동력 회복 비서',p:10,img:'i/sec_active.gif',cat:'성장',d:'행동력 +50',daily:1},
  reset_ki:{n:'오행초기화기운',p:50,img:'i/reset_ki.gif',cat:'기타',d:'오행 점수를 0으로, 고정 해제'},
  tal_time:{n:'시간단축부적',p:5,img:'i/tal_time.gif',cat:'성장',d:'진행 중인 수련의 남은 시간 10% 단축'},
+ sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
  sec_bless:{n:'강화축복비서',p:25,img:'i/sec_bless.gif',cat:'강화',d:'강화 성공 확률 +10%'},
  sec_protect:{n:'파괴방지비서',p:200,img:'i/sec_protect.gif',cat:'강화',d:'합성 파괴를 막아요'},
  sec_instant:{n:'수련즉시완료비서',p:0,img:'i/sec_instant.gif',cat:'운영자',d:'진행 중 수련 즉시 완료',admin:1},
@@ -167,7 +168,7 @@ function advance(p,to){
  }
  p.ts=to;return ev?'event':null;
 }
-function tickAll(){let changed=false;acc.slots.forEach((p,i)=>{if(!p)return;const r=advance(p,now());if(r==='vanish'){vanish(i,'병을 이기지 못하고 선계로 돌아갔어요.');changed=true;}else if(r)changed=true;});return changed;}
+function tickAll(){let changed=false;acc.slots.forEach((p,i)=>{if(!p)return;const r=advance(p,now());if(acc.slots[i]&&p.errand&&now()>=p.errand.end){finishErrand(p);changed=true;}if(r==='vanish'){vanish(i,'병을 이기지 못하고 선계로 돌아갔어요.');changed=true;}else if(r)changed=true;});return changed;}
 function freeGear(p){}
 function vanish(i,msg){const p=acc.slots[i];SFX.play('sad');acc.notice[i]=NAMES[p.no]+'은(는) '+msg;acc.slots[i]=null;}
 function topEls(p){const mx=Math.max(...EL.map(e=>p.el[e]));return{mx,tops:mx>0?EL.filter(e=>p.el[e]===mx):[]};}
@@ -196,7 +197,7 @@ function badgeOf(p){const e=evoCheck(p);if(SUNGSU.has(p.no))return['b-s','성수
 /* ================= 행동 ================= */
 const P=()=>acc.slots[sel];
 function take(id,n=1){if((acc.inv[id]||0)<n){toast(ITEMS[id].n+'이(가) 없어요. 상점에서 사 주세요.');return false;}acc.inv[id]-=n;return true;}
-function guard(p,opt={}){if(!p)return false;if(p.train&&!opt.train){toast('수련 중이에요.');return false;}if(p.sleep&&!opt.sleep){toast('자는 중이에요. 먼저 깨워 주세요.');return false;}return true;}
+function guard(p,opt={}){if(!p)return false;if(p.errand&&!opt.errand){toast('심부름 중이에요. '+fmtDur(p.errand.end-now())+' 뒤에 돌아와요.');return false;}if(p.train&&!opt.train){toast('수련 중이에요.');return false;}if(p.sleep&&!opt.sleep){toast('자는 중이에요. 먼저 깨워 주세요.');return false;}return true;}
 const A={
  feed(el){const p=P();if(!guard(p))return;if(p.hu>75)return toast('배가 불러요. 포만감 75 이하일 때 줄 수 있어요.');const id=el==='yy'?'ki_yy':'ki_'+el;if(!take(id))return;
   p.hu=Math.min(100,p.hu+25);
@@ -292,7 +293,7 @@ function header(){
  (acc.offset?'<div class="banner" style="background:#7a4512">테스트 시간 +'+(acc.offset/H).toFixed(1)+'시간 앞당겨진 상태예요</div>':'')+'</header>';
 }
 function slotsBar(){return '<div class="slots" role="tablist" aria-label="환수 슬롯">'+[0,1,2].map(i=>{const p=acc.slots[i];if(!p)return '<button role="tab" class="slot'+(sel===i?' on':'')+'" data-sel="'+i+'"><img class="px" src="i/q.png" alt="" style="padding:10px"><span><b>빈 슬롯</b><small>알 코드를 입력하세요</small></span></button>';
- const st=p.train?'수련 중 · '+fmtDur(p.train.end-now()):p.sick!=null?'아파요!':p.sleep?'자는 중':p.st+'단계 · Lv '+p.lv;
+ const st=p.errand?'심부름 중 · '+fmtDur(p.errand.end-now()):p.train?'수련 중 · '+fmtDur(p.train.end-now()):p.sick!=null?'아파요!':p.sleep?'자는 중':p.st+'단계 · Lv '+p.lv;
  return '<button role="tab" class="slot'+(sel===i?' on':'')+'" data-sel="'+i+'"><img class="px" src="'+img(p.no)+'" alt=""><span><b>'+NAMES[p.no]+'</b><small>'+st+'</small></span></button>';}).join('')+'</div>';}
 function bar(lb,v,max,grad,warn){const w=Math.max(0,Math.min(100,v/max*100));return '<div class="stat"><span class="lb">'+lb+'</span><div class="tr"><i style="width:'+w+'%;background:linear-gradient(90deg,'+grad+')"></i></div><span class="v" style="'+(warn?'color:#b02a1f':'')+'">'+fmt(v)+(max!==100?'/'+fmt(max):'')+'</span></div>';}
 function elBars(p){const order=p.lock||[...EL].sort((a,b)=>p.el[b]-p.el[a]||p.elT[a]-p.elT[b]);
@@ -303,7 +304,7 @@ function vHome(){
  if(!p){const n=acc.notice[sel];return slotsBar()+'<div class="card" style="max-width:560px">'+(n?'<p class="warn">'+esc(n)+'</p>':'')+'<h2>알 코드 입력</h2><p class="muted">운영자에게 받은 알 코드를 입력하면 이 슬롯에서 알을 키울 수 있어요. 상점에서 알을 살 수도 있어요 (주 '+EGG_WEEK+'개, '+EGG_PRICE+'코인).</p><form data-form="egg" style="display:flex;gap:8px;flex-wrap:wrap"><label class="f" style="flex:1">알 코드<input type="text" name="code" placeholder="EGG-XXXX-XXXX" required></label><button class="btn teal" style="align-self:flex-end">알 받기</button></form></div>';}
  const e=evoCheck(p),bd=badgeOf(p),st=stats(p),d=daily(p),ad=accDaily(),mx=maxLv(p.st),hr=hearts(p);
  const stCls=p.sick!=null?' sick':p.sleep?' sleep':'';
- const status=p.train?'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">수련 중 · '+esc(SPOTS[p.train.s].n)+' · '+fmtDur(p.train.end-now())+'</span> <button class="btn soft sm" data-a="tcancel" data-v="'+sel+'" style="min-height:0;padding:3px 10px">수련 취소</button>':p.sick!=null?'<span class="chip" style="background:#8f2219;color:#fff">아파요! 소멸까지 '+fmtDur(p.sick+24*H-now())+'</span>':p.sleep?'<span class="chip" style="background:#2c3466;color:#e6e9ff">자는 중 · '+fmtDur(p.sleep-now())+'</span>':'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">수련 가능</span>';
+ const status=p.errand?'<span class="chip" style="background:rgba(160,100,30,.92);color:#fff8e6">심부름 중 · '+esc(ERR[p.errand.m].n)+' · '+fmtDur(p.errand.end-now())+'</span>':p.train?'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">수련 중 · '+esc(SPOTS[p.train.s].n)+' · '+fmtDur(p.train.end-now())+'</span> <button class="btn soft sm" data-a="tcancel" data-v="'+sel+'" style="min-height:0;padding:3px 10px">수련 취소</button>':p.sick!=null?'<span class="chip" style="background:#8f2219;color:#fff">아파요! 소멸까지 '+fmtDur(p.sick+24*H-now())+'</span>':p.sleep?'<span class="chip" style="background:#2c3466;color:#e6e9ff">자는 중 · '+fmtDur(p.sleep-now())+'</span>':'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">수련 가능</span>';
  const warns=[];if(p.cl<=20)warns.push('청결도가 20 이하예요. 1시간마다 병에 걸릴 수 있어요.');if(p.hu<=10)warns.push('배가 너무 고파요!');if(p.th<=10)warns.push('목이 너무 말라요!');
  const lvTxt=p.st>=12?'완성':p.lv>=mx?'Lv '+p.lv+' MAX':'Lv '+p.lv;
  const expW=p.st>=12||p.lv>=mx?100:p.exp/need(p.lv,p.st)*100;
@@ -556,8 +557,8 @@ async function loadBoss(){if(!acc)return;BV.loaded=true;try{const s=await db.doc
   if(BV.cur){const q=await db.collection('bosshits').where('iid','==',BV.cur.iid).get();BV.hits=q.docs.map(d=>d.data()).sort((a,b)=>b.dmg-a.dmg);}else BV.hits=[];}
  catch(e){BV.cur=BV.cur||null;BV.hits=BV.hits||[];if(MODE==='player')toast('월드보스 정보를 불러오지 못했어요.');}
  if(MODE==='admin'||(view==='boss'&&!document.getElementById('layer').innerHTML))render();}
-async function bossAttack(){if(BV.busy)return;const c=BV.cur;if(!c||c.killed)return toast('지금은 공격할 수 있는 보스가 없어요.');const ad=accDaily();if((ad.boss||0)>=BOSS_DAILY)return toast('오늘은 이미 공격했어요. 내일 오전 6시에 다시 도전하세요.');
- const ai=BV.atk!=null&&acc.slots[BV.atk]?BV.atk:acc.slots.findIndex(q=>q),ap=acc.slots[ai];if(!ap)return toast('공격할 환수가 없어요.');if(ap.sick!=null)return toast('아픈 환수는 토벌에 나갈 수 없어요.');if(ap.train)return toast('수련 중인 환수는 토벌에 나갈 수 없어요.');
+async function bossAttack(){if(BV.busy)return;const c=BV.cur;if(!c||c.killed)return toast('지금은 공격할 수 있는 보스가 없어요.');const ad=accDaily();if((ad.boss||0)>=BOSS_DAILY+(ad.bossBonus||0))return toast('오늘 공격 횟수를 다 썼어요. 토벌재도전비서로 한 번 더 도전할 수 있어요.');
+ const ai=BV.atk!=null&&acc.slots[BV.atk]?BV.atk:acc.slots.findIndex(q=>q),ap=acc.slots[ai];if(!ap)return toast('공격할 환수가 없어요.');if(ap.sick!=null)return toast('아픈 환수는 토벌에 나갈 수 없어요.');if(ap.train)return toast('수련 중인 환수는 토벌에 나갈 수 없어요.');if(ap.errand)return toast('심부름 중인 환수는 토벌에 나갈 수 없어요.');
  BV.busy=true;try{const ref=db.doc('boss/current'),s=await ref.get();if(!s.exists){toast('보스가 사라졌어요.');return;}const cur=s.data();if(cur.iid!==c.iid||cur.killed){BV.cur=cur;render();toast('이미 토벌된 보스예요.');return;}
   const A=petSnap(ap),res=simBoss(A,cur,Math.floor(rnd()*4294967296));
   ad.boss=(ad.boss||0)+1;await save();
@@ -579,12 +580,13 @@ function bossCard(c,hits,admin){if(!c)return '<div class="card" style="text-alig
   '<div class="mchips" style="margin-top:6px"><span class="muted" style="font-size:12px;align-self:center">참여 보상</span>'+(mailParts(c.reward||{}).length?mailIcons(c.reward):'<span class="muted" style="font-size:12px">없음</span>')+'</div>'+
   (mailParts(c.mvpReward||{}).length?'<div class="mchips" style="margin-top:4px"><span class="muted" style="font-size:12px;align-self:center">MVP(누적 1위)</span>'+mailIcons(c.mvpReward)+'</div>':'')+'</div></div>';}
 function bossRank(c,hits){const tot=(hits||[]).reduce((s,h)=>s+h.dmg,0)||1;return '<div class="card"><h2>누적 데미지 기록</h2>'+((hits||[]).length?'<table class="t">'+'<tr><th>순위</th><th>유저</th><th style="text-align:right">누적 데미지</th><th style="text-align:right">공격</th><th style="text-align:right">비중</th></tr>'+hits.map((h,i)=>'<tr'+(acc&&h.uid===acc.uid?' style="background:#fff3c4"':'')+'><td><b>'+(i+1)+'</b>'+(i===0?' 👑':'')+'</td><td><img class="px" src="'+img(h.pet?h.pet.no:0)+'" alt="" width="28" height="28" style="object-fit:contain;vertical-align:middle"> '+esc(h.nick)+'</td><td style="text-align:right"><b>'+fmt(h.dmg)+'</b></td><td style="text-align:right">'+h.n+'회</td><td style="text-align:right">'+(h.dmg/tot*100).toFixed(1)+'%</td></tr>').join('')+'</table>':'<p class="muted">아직 공격한 유저가 없어요.</p>')+'</div>';}
-function vBoss(){if(!BV.loaded)setTimeout(loadBoss,0);const c=BV.cur,ad=accDaily(),used=(ad.boss||0)>=BOSS_DAILY;
- let h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h1 class="serif" style="margin:0;font-size:26px">월드보스 토벌</h1><span class="muted">하루 '+BOSS_DAILY+'번 공격 · 서버 모두가 함께 체력을 깎아요</span></div><div style="margin-top:12px">'+bossCard(c,BV.hits)+'</div>';
+function bossRetry(){const ad=accDaily();if((ad.boss||0)<BOSS_DAILY+(ad.bossBonus||0))return toast('아직 공격 기회가 남아 있어요.');if(!take('sec_boss'))return;ad.bossBonus=(ad.bossBonus||0)+1;SFX.play('magic');toast('월드보스 공격 기회가 1번 늘었어요!');commit();}
+function vBoss(){if(!BV.loaded)setTimeout(loadBoss,0);const c=BV.cur,ad=accDaily(),lim=BOSS_DAILY+(ad.bossBonus||0),used=(ad.boss||0)>=lim;
+ let h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h1 class="serif" style="margin:0;font-size:26px">월드보스 토벌</h1><span class="muted">하루 '+BOSS_DAILY+'번 공격 (토벌재도전비서로 추가) · 서버 모두가 함께 체력을 깎아요</span></div><div style="margin-top:12px">'+bossCard(c,BV.hits)+'</div>';
  if(c&&!c.killed){const ai=BV.atk!=null&&acc.slots[BV.atk]?BV.atk:acc.slots.findIndex(q=>q);
   h+='<div class="card"><h2>출전할 환수</h2>'+(ai<0?'<p class="muted">키우는 환수가 없어요.</p>':'<div class="slots" style="margin:0">'+acc.slots.map((q,i)=>{if(!q)return '';const el=ELOF[q.no],a=BEATS[el]===BOSSES[c.no-1].el?'<span class="advg">상성 유리</span>':BEATS[BOSSES[c.no-1].el]===el?'<span class="advb">상성 불리</span>':'';
    return '<button class="slot'+(ai===i?' on':'')+'" data-batk="'+i+'"><img class="px" src="'+img(q.no)+'" alt=""><span><b>'+esc(NAMES[q.no])+' '+a+'</b><small>'+ELK[el]+' · 전투력 '+fmt(cp(q))+(q.sick!=null?' · 아픔':q.train?' · 수련 중':'')+'</small></span></button>';}).join('')+'</div>')+
-   '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn teal" data-bossgo="1" style="min-height:48px;font-size:17px" '+(used||ai<0||BV.busy?'disabled':'')+'>'+(used?'오늘 공격 완료':'공격하기')+'</button><span class="muted">한 번에 최대 '+BOSS_ROUNDS+'번 공격해요. 체력이 0이 되면 그 자리에서 물러나요. 단계가 낮으면 보스에게 금방 쓰러져요.</span></div></div>';}
+   '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn teal" data-bossgo="1" style="min-height:48px;font-size:17px" '+(used||ai<0||BV.busy?'disabled':'')+'>'+(used?'오늘 공격 완료':'공격하기 ('+(lim-(ad.boss||0))+'/'+lim+')')+'</button>'+(used?'<button class="btn sm" data-bossretry="1" '+((acc.inv.sec_boss||0)?'':'disabled')+'><img class="px" src="i/sec_boss.gif" alt="" style="width:22px;height:22px;vertical-align:-6px"> 토벌재도전비서 사용 (보유 '+(acc.inv.sec_boss||0)+')</button>':'')+'<span class="muted">한 번에 최대 '+BOSS_ROUNDS+'번 공격해요. 체력이 0이 되면 그 자리에서 물러나요. 단계가 낮으면 보스에게 금방 쓰러져요.</span></div></div>';}
  if(c&&c.killed){const mine=(BV.hits||[]).find(x=>x.uid===acc.uid);h+='<div class="card" style="text-align:center">'+(mine?(mine.claimed?'<p class="muted">토벌 보상을 이미 받았어요.</p>':'<p>토벌에 참여했어요! 보상을 받으세요.</p><button class="btn" data-bossclaim="1" style="background:#f0c75e">토벌 보상 받기</button>'):'<p class="muted">이번 토벌에는 참여하지 않았어요.</p>')+'</div>';}
  h+=bossRank(c,BV.hits);return h;}
 // 운영자: 월드보스 관리
@@ -624,6 +626,56 @@ function forgeAnim(o){const L=document.getElementById('layer');let done=false;
   $('fres').innerHTML='<b class="serif" style="color:'+col+'">'+esc(o.head)+'</b><span>'+esc(o.sub||'')+'</span><button class="btn" id="fOk" style="background:#f0c75e;margin-top:6px">확인</button>';
   const sb=$('fSkip');if(sb)sb.remove();$('fOk').onclick=()=>{closeLayer();render();syncArena();};}
  $('fSkip').onclick=()=>{$('fg').style.width='100%';reveal();};}
+
+
+/* ================= 선계 심부름 ================= */
+const ERR=[{n:'아랫마을 장터',min:30,bags:1,boost:false,bg:'e/e1.png',d:'장터 상인들의 잔심부름'},{n:'대숲 오솔길',min:60,bags:1,boost:true,bg:'e/e2.png',d:'대숲 너머 약초꾼에게 짐 전하기 · 좋은 보따리 확률 업'},{n:'구름 고갯길',min:180,bags:2,boost:false,bg:'e/e3.png',d:'구름 고개 넘어 이웃 마을 배달'},{n:'선계 상단',min:480,bags:5,boost:false,bg:'e/e4.png',d:'선계 상단과 함께 하늘길 교역'}];
+const BAGS=[{n:'일반 보따리',img:'i/bag1.png',lo:1,hi:5},{n:'상급 보따리',img:'i/bag2.png',lo:3,hi:10},{n:'최상급 보따리',img:'i/bag3.png',lo:10,hi:30}];
+const ERRAND_DAILY=5;
+// 단계가 높을수록 좋은 보따리. 최상급은 6단계부터, 12단계 10% (확률 업 20%)
+function bagOdds(st,boost){let top=st>=6?.10*(st-5)/7:0,mid=.10+.03*(st-1);if(boost){top*=2;mid=Math.min(.7,mid*1.5);}return{top,mid,norm:Math.max(0,1-top-mid)};}
+function rollBag(st,boost){const o=bagOdds(st,boost),r=rnd(),t=r<o.top?2:r<o.top+o.mid?1:0,b=BAGS[t];return{t,c:b.lo+Math.floor(rnd()*(b.hi-b.lo+1))};}
+function finishErrand(p){const m=ERR[p.errand.m],bags=[];for(let k=0;k<m.bags;k++)bags.push(rollBag(p.st,m.boost));const total=bags.reduce((s,b)=>s+b.c,0);acc.coins+=total;p.errandResult={m:p.errand.m,bags,total};p.errand=null;}
+function sendErrand(m){const p=P();if(!guard(p))return;if(p.errand)return toast('이미 심부름 중이에요.');if(p.sick!=null)return toast('아파서 심부름을 갈 수 없어요.');if(p.st<2)return toast('알은 심부름을 갈 수 없어요. 부화한 뒤에 보내 주세요.');
+ const ad=accDaily();if((ad.errand||0)>=ERRAND_DAILY)return toast('오늘 심부름 횟수를 다 썼어요 (하루 '+ERRAND_DAILY+'번).');
+ ad.errand=(ad.errand||0)+1;p.errand={m,start:now(),end:now()+ERR[m].min*MIN};SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+ERR[m].n+'(으)로 심부름을 떠났어요.');commit();}
+function errandOverlay(){const i=acc.slots.findIndex(q=>q&&q.errandResult);if(i<0)return '';const p=acc.slots[i],r=p.errandResult,m=ERR[r.m];
+ return '<div class="overlay"><div class="modal errres" role="dialog" aria-label="심부름 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(m.n)+' 심부름 완료</span><img class="px" src="'+img(p.no)+'" alt="" width="80" height="80" style="object-fit:contain"><b class="serif" style="font-size:20px;color:#fff8e6">'+esc(NAMES[p.no])+'이(가) 보따리를 들고 왔어요!</b><div class="bagrow">'+r.bags.map((b,k)=>'<button class="bagb t'+b.t+'" data-bagopen="'+k+'" title="'+BAGS[b.t].n+'"><img class="px" src="'+BAGS[b.t].img+'" alt=""><small>'+BAGS[b.t].n+'</small><span class="bagc">+'+b.c+'</span></button>').join('')+'</div><span class="muted" style="color:#c9d8d5">보따리를 눌러 열어 보세요</span><div class="bagtot" id="bagTot" style="display:none">코인 <b>+'+r.total+'</b></div><button class="btn" data-errack="'+i+'" style="background:#f0c75e">'+(r.bags.length>1?'모두 열고 ':'')+'받기</button></div></div>';}
+function bagOpen(btn){if(btn.classList.contains('open'))return;btn.classList.add('open');const t=+[...btn.classList].find(c=>/^t\d$/.test(c)).slice(1);SFX.play(t===2?'fanfare':t===1?'coins':'buy');
+ if(document.querySelectorAll('.bagb:not(.open)').length===0){const e=document.getElementById('bagTot');if(e)e.style.display='';}}
+function vTrainHub(){const m=S.tmode||'train';return '<div class="tmode">'+[['train','선계수련'],['errand','선계 심부름'],['game','환수 야바위']].map(([k,n])=>'<button class="'+(m===k?'on':'')+'" data-tmode="'+k+'">'+n+'</button>').join('')+'</div>'+(m==='errand'?slotsBar()+vErrand():m==='game'?slotsBar()+vGame():vTrain());}
+function vErrand(){const p=P();if(!p)return '<div class="card"><p class="muted">환수를 먼저 키워 주세요.</p></div>';const ad=accDaily(),left=ERRAND_DAILY-(ad.errand||0);
+ let h='<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><b class="serif" style="font-size:20px">선계 심부름</b><div class="muted">환수를 심부름 보내면 코인이 든 보따리를 가져와요. 심부름 중에는 수련·돌보기를 할 수 없어요.</div></div><b style="color:#2b5a5e">오늘 남은 심부름 '+left+' / '+ERRAND_DAILY+'</b></div>';
+ h+='<div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img class="px" src="'+img(p.no)+'" alt="" width="64" height="64" style="object-fit:contain"><div style="flex:1"><b>'+esc(NAMES[p.no])+'</b> <span class="muted">'+p.st+'단계</span><div class="muted" style="font-size:13px">보따리 확률 (보통 / 확률 업): '+[false,true].map(bo=>{const o=bagOdds(p.st,bo);return '일반 '+Math.round(o.norm*100)+'% · 상급 '+Math.round(o.mid*100)+'% · 최상급 '+(o.top*100).toFixed(1)+'%';}).join('  /  ')+(p.st<6?' <br>최상급 보따리는 6단계부터 나와요.':'')+'</div></div>'+
+  (p.errand?'<div class="errnow"><b>'+esc(ERR[p.errand.m].n)+' 심부름 중</b><div class="stat" style="margin:4px 0"><div class="tr"><i style="width:'+Math.min(100,(now()-p.errand.start)/(p.errand.end-p.errand.start)*100)+'%;background:linear-gradient(90deg,#c9822b,#f0c98a)"></i></div></div><span class="muted">남은 시간 '+fmtDur(p.errand.end-now())+'</span></div>':'')+'</div>';
+ h+='<div class="errgrid">'+ERR.map((m,k)=>'<div class="errc"><div class="errbg" style="background-image:url('+m.bg+')"><span class="errt">'+(m.min<60?m.min+'분':(m.min/60)+'시간')+'</span>'+(m.boost?'<span class="errup">확률 UP</span>':'')+'</div><div class="errb"><b class="serif" style="font-size:17px">'+esc(m.n)+'</b><small class="muted">'+esc(m.d)+'</small><div class="errbags">보따리 '+Array.from({length:m.bags}).map(()=>'<img class="px" src="i/bag1.png" alt="">').join('')+' ×'+m.bags+'</div>'+
+  '<button class="btn teal" data-errand="'+k+'" '+(p.errand||p.train||p.sleep||p.sick!=null||p.st<2||left<=0?'disabled':'')+'>'+(p.errand?'심부름 중':p.train?'수련 중':p.sleep?'자는 중':p.sick!=null?'아파서 못 가요':p.st<2?'알은 못 가요':left<=0?'오늘 횟수 끝':'심부름 보내기')+'</button></div></div>').join('')+'</div>';
+ const others=acc.slots.map((q,i)=>q&&q.errand&&i!==sel?'<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><img class="px" src="'+img(q.no)+'" alt="" width="36" height="36" style="object-fit:contain"><b>'+esc(NAMES[q.no])+'</b><span class="muted">'+esc(ERR[q.errand.m].n)+' · '+fmtDur(q.errand.end-now())+'</span></div>':'').join('');
+ if(others)h+='<div class="card"><h2>다른 환수 심부름</h2>'+others+'</div>';
+ return h;}
+/* ================= 환수 야바위 (하루 1번) ================= */
+const YB_REWARD=5;
+function vGame(){const p=P(),ad=accDaily(),used=(ad.game||0)>=1;
+ return '<div class="card" style="text-align:center"><b class="serif" style="font-size:22px">환수 야바위</b><p class="muted" style="margin:4px 0 10px">선택한 환수가 그릇 하나에 숨어요. 그릇이 섞인 뒤 환수가 숨은 그릇을 찾으면 코인 <b>'+YB_REWARD+'개</b>! 하루 한 번만 할 수 있어요.</p>'+
+ (p?'<img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain"><div><b>'+esc(NAMES[p.no])+'</b>와(과) 함께 놀기</div>':'<p class="muted">환수가 없어요.</p>')+
+ '<button class="btn teal" data-ybstart="1" style="margin-top:10px;min-height:48px;font-size:17px" '+(used||!p?'disabled':'')+'>'+(used?'오늘은 이미 놀았어요':'야바위 시작')+'</button></div>';}
+function ybStart(){const p=P(),ad=accDaily();if(!p)return;if((ad.game||0)>=1)return toast('야바위는 하루 한 번만 할 수 있어요.');ad.game=1;save();
+ const L=document.getElementById('layer'),X=[18,50,82];let slot=[0,1,2],hid=Math.floor(rnd()*3),phase='show';
+ L.innerHTML='<div class="overlay"><div class="ybox"><b class="serif" style="font-size:22px;color:#ffd36e">환수 야바위</b><div class="ystage" id="yst"><img class="px ypet" id="ypet" src="'+img(p.no)+'" alt="" style="left:'+X[hid]+'%">'+[0,1,2].map(k=>'<div class="ycup" id="yc'+k+'" data-cup="'+k+'" style="left:'+X[k]+'%"></div>').join('')+'</div><div class="ymsg" id="ymsg">'+esc(NAMES[p.no])+'이(가) 그릇 아래로 숨어요!</div><div id="ybtn"></div></div></div>';
+ const $=id=>document.getElementById(id),cup=k=>$('yc'+k);
+ [0,1,2].forEach(k=>cup(k).classList.add('up'));
+ setTimeout(()=>{[0,1,2].forEach(k=>cup(k).classList.remove('up'));SFX.play('thud');},1100);
+ const swaps=[];for(let n=0;n<11;n++){const a=Math.floor(rnd()*3);let b=Math.floor(rnd()*2);if(b>=a)b++;swaps.push([a,b]);}
+ let n=0;const pet=$('ypet');
+ function doSwap(){if(!$('yst'))return;if(n>=swaps.length){phase='pick';$('ymsg').textContent='어느 그릇에 숨었을까? 골라 보세요!';[0,1,2].forEach(k=>cup(k).classList.add('pickable'));return;}
+  const [sa,sb]=swaps[n++],ca=slot[sa],cb=slot[sb],dur=Math.max(170,520-n*36);[ca,cb].forEach(c=>{cup(c).style.transition='left '+dur+'ms ease-in-out, transform '+dur+'ms ease-in-out';});
+  slot[sa]=cb;slot[sb]=ca;cup(ca).style.left=X[sb]+'%';cup(cb).style.left=X[sa]+'%';cup(ca).style.transform='translate(-50%,-26px)';cup(cb).style.transform='translate(-50%,10px)';
+  if(ca===hid||cb===hid){const nh=ca===hid?sb:sa;pet.style.transition='left '+dur+'ms ease-in-out';pet.style.left=X[nh]+'%';}
+  SFX.play('tap');setTimeout(()=>{cup(ca).style.transform='';cup(cb).style.transform='';setTimeout(doSwap,60);},dur);}
+ setTimeout(()=>{$('ymsg').textContent='섞는 중…';doSwap();},1800);
+ $('yst').onclick=ev=>{const c=ev.target.closest('.ycup');if(!c||phase!=='pick')return;phase='done';const k=+c.dataset.cup,win=k===hid;[0,1,2].forEach(q=>{cup(q).classList.remove('pickable');});c.classList.add('up');if(!win)setTimeout(()=>cup(hid).classList.add('up'),500);
+  if(win){acc.coins+=YB_REWARD;SFX.play('fanfare');$('ymsg').innerHTML='<b style="color:#ffd36e">찾았다!</b> 코인 +'+YB_REWARD;pet.classList.add('happy');}else{SFX.play('sad');$('ymsg').innerHTML='아쉬워요… 여기 숨어 있었어요! 내일 다시 도전해요.';}
+  save();$('ybtn').innerHTML='<button class="btn" id="ybOk" style="background:#f0c75e;margin-top:8px">확인</button>';$('ybOk').onclick=()=>{closeLayer();render();};};}
 
 function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);const EL_=r.encs||(r.enc?[r.enc]:[]);EL_.forEach((k,j)=>setTimeout(()=>SFX.play({luck:'coins',egg:'egg',gear:'equip',secret:'magic',susluck:'magic',blesssec:'up'}[k]||'heal'),900+j*600));const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)',egg:'환수 알 발견! (빈 슬롯에 알이 들어왔어요)',gear:'떠돌이 장비 (일반 '+(TN[r.gearT]||'장비')+' 획득)',secret:'비기 발견 (수련즉시완료비서 +1)',susluck:'수상한 행운 ('+(ITEMS[r.susK]?ITEMS[r.susK].n:'수상한 기운')+' +1)',blesssec:'축복비서 발견 (강화축복비서 +1)'};
   res='<div class="overlay"><div class="modal" role="dialog" aria-label="수련 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(r.spot)+' 수련 결과</span><span class="serif" style="font-size:34px;font-weight:700;color:'+(r.out==='fail'?'#c9d8d5':'#ffd36e')+'">'+{fail:'실패…',ok:'성공',great:'대성공!'}[r.out]+'</span><img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain">'+(EL_.length>1?'<span style="color:#ffd36e;font-weight:700">✨ 인카운트 '+EL_.length+'개 동시 발생!</span>':'')+EL_.map(k=>'<div class="chip" style="background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.5);color:#fff8e6">인카운트 · '+encN[k]+'</div>').join('')+(r.noExp?'<span style="color:#ff8a7a;font-size:13px">전투력 차이가 너무 커서 경험치를 얻지 못했어요</span>':'')+'<b style="font-size:22px">+'+fmt(r.exp)+' EXP</b><span class="muted" style="color:#c9d8d5">Lv '+r.lvFrom+' → '+r.lvTo+(r.max?' (MAX)':'')+'</span><button class="btn" data-ack="'+i+'" style="background:#f0c75e">확인</button></div></div>';}return res;}
@@ -698,8 +750,8 @@ function render(){
  if(!acc){app.innerHTML=loginView(S.loginMsg||'');return;}
  if(MODE==='admin'){app.innerHTML=isAdmin()?adminHeader()+'<main>'+adminBody()+'</main>':'<main><div class="card">운영자 계정이 아니에요. <button class="btn sm" data-a2="logout">로그아웃</button></div></main>';return;}
  const keep=document.activeElement&&document.activeElement.id;
- const body={home:vHome,train:vTrain,gear:vGear,bag:vBag,shop:vShop,code:vCode,dex:vDex,pvp:vArena,boss:vBoss,mail:vMail}[view]||vHome;
- app.innerHTML=header()+'<main>'+body()+'</main>'+resultOverlay();
+ const body={home:vHome,train:vTrainHub,gear:vGear,bag:vBag,shop:vShop,code:vCode,dex:vDex,pvp:vArena,boss:vBoss,mail:vMail}[view]||vHome;
+ app.innerHTML=header()+'<main>'+body()+'</main>'+resultOverlay()+errandOverlay();
  if(keep){const el=document.getElementById(keep);if(el)el.focus();}
 }
 function loginView(msg){
@@ -851,6 +903,12 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.batk!=null){BV.atk=+ds.batk;return render();}
  if(ds.bossgo)return bossAttack();
  if(ds.bossclaim)return bossClaim();
+ if(ds.bossretry)return bossRetry();
+ if(ds.tmode){S.tmode=ds.tmode;return render();}
+ if(ds.errand!=null)return sendErrand(+ds.errand);
+ if(ds.bagopen!=null)return bagOpen(t);
+ if(ds.errack!=null){const q=acc.slots[+ds.errack];if(q){q.errandResult=null;SFX.play('coins');toast('코인을 받았어요!');return commit();}}
+ if(ds.ybstart)return ybStart();
  if(ds.arep!=null)return setRep(+ds.arep);
  if(ds.atk!=null){PV.atk=+ds.atk;return render();}
  if(ds.fight)return fight(ds.fight);
@@ -897,7 +955,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
   return saveTgt({egg:'알 넣기',finish:'수련 즉시 완료',wake:'깨우기',cure:'병 치료',unlock:'오행 고정 해제',daily:'오늘 횟수 초기화',del:'환수 삭제'}[k]+' (슬롯 '+(i+1)+')');}
  if(ds.xegdel){await db.doc('eggcodes/'+ds.xegdel).delete();log('알 코드 취소 '+ds.xegdel);return AD.loadEggs();}
 });
-setInterval(()=>{if(MODE!=='player'||!acc||document.getElementById('layer').innerHTML)return;if(acc.att&&acc.att.last!==dayKey(now())){const st=attCheck();if(st){save();render();attModal(true);return;}}const ch=tickAll();const a=document.activeElement;const typing=a&&(a.tagName==='INPUT'||a.tagName==='SELECT');if(!typing&&(view==='home'||view==='train'))render();if(ch)save();},2000);
+setInterval(()=>{if(MODE!=='player'||!acc||document.getElementById('layer').innerHTML)return;if(acc.att&&acc.att.last!==dayKey(now())){const st=attCheck();if(st){save();render();attModal(true);return;}}const ch=tickAll();const a=document.activeElement;const typing=a&&(a.tagName==='INPUT'||a.tagName==='SELECT');if(!typing&&(view==='home'||view==='train')&&!document.querySelector('.errres'))render();if(ch)save();},2000);
 
 /* ================= 저장소 연결 (Firebase) ================= */
 const FBV='10.14.1';

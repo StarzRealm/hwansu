@@ -252,3 +252,46 @@ nav.main button{position:relative}
 .fres{min-height:80px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .fres b{font-size:30px}
 @media (max-width:1440px){nav.main button{padding:8px 9px;font-size:14px}}
+/* 선계 심부름 · 야바위 */
+.tmode{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tmode button{padding:8px 16px;border-radius:20px;border:1px solid var(--line);background:var(--paper);font-weight:700;color:#5a4a2a}
+.tmode button.on{background:#2b5a5e;color:#fff;border-color:#2b5a5e}
+.errgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:14px}
+.errc{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper);display:flex;flex-direction:column}
+.errbg{position:relative;height:120px;background-size:cover;background-position:center;image-rendering:pixelated}
+.errt{position:absolute;left:8px;top:8px;background:rgba(20,30,40,.75);color:#fff;font-weight:800;border-radius:8px;padding:2px 10px;font-size:13px}
+.errup{position:absolute;right:8px;top:8px;background:#e5484d;color:#fff;font-weight:800;border-radius:8px;padding:2px 8px;font-size:12px}
+.errb{padding:10px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.errb .btn{margin-top:auto}
+.errbags{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:700;color:#7a5a1a}
+.errbags img{width:24px;height:24px}
+.errnow{min-width:220px}
+.modal.errres{max-width:560px;width:94vw}
+.bagrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.bagb{position:relative;width:96px;height:110px;border-radius:12px;border:2px solid #c9a24a;background:#fff8e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;animation:bagIn .5s cubic-bezier(.2,1.5,.4,1) both}
+.bagb:nth-child(2){animation-delay:.1s}.bagb:nth-child(3){animation-delay:.2s}.bagb:nth-child(4){animation-delay:.3s}.bagb:nth-child(5){animation-delay:.4s}
+@keyframes bagIn{from{transform:translateY(30px) scale(.5);opacity:0}}
+.bagb img{width:64px;height:64px;image-rendering:pixelated}
+.bagb small{font-size:11px;color:#6a5a3a}
+.bagb.t1{border-color:#e0a020;background:#fff3c4}
+.bagb.t2{border-color:#e5484d;background:linear-gradient(180deg,#fff1c2,#ffd36e);box-shadow:0 0 14px rgba(255,160,40,.8)}
+.bagb:not(.open) img{animation:bagWob 1.2s ease-in-out infinite}
+@keyframes bagWob{50%{transform:rotate(-6deg) scale(1.05)}}
+.bagc{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font:900 26px/1 serif;color:#b8860b;text-shadow:0 2px 0 #fff;background:rgba(255,248,230,.85);border-radius:10px}
+.bagb.t2 .bagc{color:#c8281e}
+.bagb.open .bagc{display:flex;animation:bagPop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes bagPop{from{transform:scale(.3)}}
+.bagtot{font-size:20px;color:#fff8e6}.bagtot b{color:#ffd36e;font-size:30px}
+.ybox{width:min(560px,96vw);display:flex;flex-direction:column;align-items:center;gap:10px;background:#1c2a30;border:2px solid #f0c75e;border-radius:14px;padding:16px}
+.ystage{position:relative;width:100%;height:220px;background:radial-gradient(ellipse at 50% 85%,#7a4a22 0%,#4a2a14 45%,#1c2a30 75%);border-radius:12px;overflow:hidden}
+.ypet{position:absolute;bottom:26px;width:84px;height:84px;object-fit:contain;transform:translateX(-50%);z-index:1}
+.ypet.happy{animation:yhop .5s ease-in-out 3}
+@keyframes yhop{50%{transform:translate(-50%,-24px)}}
+.ycup{position:absolute;bottom:18px;width:118px;height:104px;transform:translateX(-50%);z-index:2;border-radius:50% 50% 14% 14%/62% 62% 12% 12%;background:linear-gradient(90deg,#7a4512,#d99a3a 30%,#f5d08a 42%,#c9822b 60%,#6a3a0e);box-shadow:inset 0 -10px 0 #5a300c,0 6px 6px rgba(0,0,0,.4);transition:transform .45s ease}
+.ycup:before{content:"";position:absolute;left:50%;top:-12px;width:28px;height:16px;transform:translateX(-50%);border-radius:50% 50% 30% 30%;background:linear-gradient(90deg,#7a4512,#f0c98a,#7a4512)}
+.ycup:after{content:"";position:absolute;left:8%;right:8%;top:42%;height:6px;background:repeating-linear-gradient(90deg,#8e1f1a 0 8px,#f0c75e 8px 12px);opacity:.8}
+.ycup.up{transform:translate(-50%,-110px)!important}
+.ycup.pickable{cursor:pointer;animation:ypick .9s ease-in-out infinite}
+.ycup.pickable:hover{filter:brightness(1.2)}
+@keyframes ypick{50%{box-shadow:inset 0 -10px 0 #5a300c,0 0 18px rgba(255,211,110,.9)}}
+.ymsg{color:#e8fff8;font-size:17px;min-height:26px;text-align:center}
