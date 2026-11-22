@@ -357,7 +357,7 @@ const COLS2=[
  {t:'흉풍의 궁기',a:83,b:91},{t:'탐식의 도철',a:83,b:100},{t:'심연의 혼돈',a:102,b:110},{t:'패악의 도올',a:102,b:119},
  {t:'십이지신',m:[144,147,94,140,113,130,151,133,137,123,126,154],sub:'자·축·인·묘·진·사·오·미·신·유·술·해'}];
 function colCard(c){const m=c.m||colPath(c.a,c.b).filter(i=>FORMS[i].st>=4),on=i=>c.own?!!acc.dex[i]:!!(acc.dex[i]&&acc.dex[i].freed),fr=m.filter(on).length,full=fr===m.length;
- return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.t)+'</b><small class="muted">'+esc(c.sub||NAMES[m[0]]+' → '+NAMES[m[m.length-1]])+'</small><span class="colp">'+(full?'<b class="colok">完成</b>':(c.own?'획득 ':'해방 ')+fr+'/'+m.length)+'</span></div><div class="colm">'+
+ return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.t)+'</b><span class="colp">'+(full?'<b class="colok">完成</b>':(c.own?'획득 ':'해방 ')+fr+'/'+m.length)+'</span></div><div class="colm">'+
   m.map(i=>{const d=acc.dex[i],no=String(i).padStart(2,'0'),lit=on(i);if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
    return '<div class="cm'+(lit?' lit':' dim')+'" title="'+esc(NAMES[i])+(lit?(c.own?' (획득)':' (해방)'):'')+'"><img class="px" src="'+img(i)+'" alt=""><span>'+no+'</span></div>';}).join('')+'</div></div>'};}
 function vCollections(){const all=COLS.map(([a,b,t])=>({t,a,b})).concat(COLS2),cs=all.map(colCard),done=cs.filter(c=>c.full).length;
