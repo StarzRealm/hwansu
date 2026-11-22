@@ -64,6 +64,7 @@ const ITEMS={
  sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
  egg_n:{n:'환수 알',p:0,img:'h/00.gif',cat:'알',d:'빈 슬롯이 생기면 부화시킬 수 있어요'},
  egg_yy:{n:'음양알',p:0,img:'h/80.gif',cat:'알',d:'상위 알. 빈 슬롯이 생기면 부화시킬 수 있어요'},
+ sec_yb:{n:'야바위재도전비서',p:3,img:'i/sec_yb.gif',cat:'성장',d:'오늘 환수 야바위 기회 +1',daily:3},
  sec_bless:{n:'강화축복비서',p:25,img:'i/sec_bless.gif',cat:'강화',d:'강화 성공 확률 +10%'},
  sec_protect:{n:'파괴방지비서',p:200,img:'i/sec_protect.gif',cat:'강화',d:'합성 파괴를 막아요'},
  sec_instant:{n:'즉시완료비서',p:0,img:'i/sec_instant.gif',cat:'운영자',d:'진행 중인 수련·심부름 즉시 완료',admin:1},
@@ -687,11 +688,13 @@ function vErrand(){const p=P();if(!p)return '<div class="card"><p class="muted">
  return h;}
 /* ================= 환수 야바위 (하루 1번) ================= */
 const YB_REWARD=5;
-function vGame(){const p=P(),ad=accDaily(),used=(ad.game||0)>=1;
- return '<div class="card" style="text-align:center"><b class="serif" style="font-size:22px">환수 야바위</b><p class="muted" style="margin:4px 0 10px">선택한 환수가 그릇 하나에 숨어요. 그릇이 섞인 뒤 환수가 숨은 그릇을 찾으면 코인 <b>'+YB_REWARD+'개</b>! 하루 한 번만 할 수 있어요.</p>'+
+function ybLim(ad){return 1+(ad.gameBonus||0);}
+function ybRetry(){const ad=accDaily();if((ad.game||0)<ybLim(ad))return toast('아직 야바위 기회가 남아 있어요.');if(!take('sec_yb'))return;ad.gameBonus=(ad.gameBonus||0)+1;SFX.play('magic');toast('야바위 기회가 1번 늘었어요!');commit();}
+function vGame(){const p=P(),ad=accDaily(),used=(ad.game||0)>=ybLim(ad);
+ return '<div class="card" style="text-align:center"><b class="serif" style="font-size:22px">환수 야바위</b><p class="muted" style="margin:4px 0 10px">선택한 환수가 그릇 하나에 숨어요. 그릇이 섞인 뒤 환수가 숨은 그릇을 찾으면 코인 <b>'+YB_REWARD+'개</b>! 하루 한 번 (야바위재도전비서로 추가).</p>'+
  (p?'<img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain"><div><b>'+esc(NAMES[p.no])+'</b>와(과) 함께 놀기</div>':'<p class="muted">환수가 없어요.</p>')+
- '<button class="btn teal" data-ybstart="1" style="margin-top:10px;min-height:48px;font-size:17px" '+(used||!p?'disabled':'')+'>'+(used?'오늘은 이미 놀았어요':'야바위 시작')+'</button></div>';}
-function ybStart(){const p=P(),ad=accDaily();if(!p)return;if((ad.game||0)>=1)return toast('야바위는 하루 한 번만 할 수 있어요.');ad.game=1;save();
+ '<button class="btn teal" data-ybstart="1" style="margin-top:10px;min-height:48px;font-size:17px" '+(used||!p?'disabled':'')+'>'+(used?'오늘 기회 끝':'야바위 시작 ('+(ybLim(ad)-(ad.game||0))+'/'+ybLim(ad)+')')+'</button>'+(used?'<div style="margin-top:8px"><button class="btn sm" data-ybretry="1" '+((acc.inv.sec_yb||0)?'':'disabled')+'><img class="px" src="i/sec_yb.gif" alt="" style="width:22px;height:22px;vertical-align:-6px"> 야바위재도전비서 사용 (보유 '+(acc.inv.sec_yb||0)+')</button></div>':'')+'</div>';}
+function ybStart(){const p=P(),ad=accDaily();if(!p)return;if((ad.game||0)>=ybLim(ad))return toast('오늘 야바위 기회를 다 썼어요. 야바위재도전비서로 한 번 더 할 수 있어요.');ad.game=(ad.game||0)+1;save();
  const L=document.getElementById('layer'),X=[18,50,82];let slot=[0,1,2],hid=Math.floor(rnd()*3),phase='show';
  L.innerHTML='<div class="overlay"><div class="ybox"><b class="serif" style="font-size:22px;color:#ffd36e">환수 야바위</b><div class="ystage" id="yst"><img class="px ypet" id="ypet" src="'+img(p.no)+'" alt="" style="left:'+X[hid]+'%">'+[0,1,2].map(k=>'<div class="ycup" id="yc'+k+'" data-cup="'+k+'" style="left:'+X[k]+'%"></div>').join('')+'</div><div class="ymsg" id="ymsg">'+esc(NAMES[p.no])+'이(가) 그릇 아래로 숨어요!</div><div id="ybtn"></div></div></div>';
  const $=id=>document.getElementById(id),cup=k=>$('yc'+k);
@@ -958,6 +961,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.bagopen!=null)return bagOpen(t);
  if(ds.errack!=null){const q=acc.slots[+ds.errack];if(q){q.errandResult=null;SFX.play('coins');toast('코인을 받았어요!');return commit();}}
  if(ds.ybstart)return ybStart();
+ if(ds.ybretry)return ybRetry();
  if(ds.hatch)return hatch(ds.hatch);
  if(ds.arep!=null)return setRep(+ds.arep);
  if(ds.atk!=null){PV.atk=+ds.atk;return render();}
