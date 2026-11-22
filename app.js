@@ -939,7 +939,7 @@ function twReward(f){const r={c:0,it:{},g:null,title:null};
 function twRewardTxt(r){const a=[];if(r.c)a.push('코인 '+r.c);Object.entries(r.it).forEach(([k,n])=>a.push(ITEMS[k].n+(n>1?' ×'+n:'')));if(r.g!=null)a.push(GN[r.g]+' 장비');if(r.title)a.push('칭호 「'+r.title+'」');return a.join(', ');}
 function twGive(r){acc.coins+=r.c;Object.entries(r.it).forEach(([k,n])=>{acc.inv[k]=(acc.inv[k]||0)+n;});if(r.g!=null)acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1e6),t:['w','a','s'][Math.floor(rnd()*3)],g:r.g,p:0,aff:'fire'});if(r.title){acc.titles=acc.titles||[];if(!acc.titles.includes(r.title))acc.titles.push(r.title);}}
 const TV={tab:'climb',rank:null,prev:null,loaded:false,busy:false};
-function twTickets(){const d=dayKey(now());if(!acc.twTk)acc.twTk={n:TW_CAP,d};const k=acc.twTk;if(k.d!==d){const days=Math.max(0,Math.round((Date.parse(d)-Date.parse(k.d))/864e5));if(k.n<TW_CAP)k.n=Math.min(TW_CAP,k.n+days);k.d=d;}
+function twTickets(){const d=dayKey(now());if(!acc.twTk){const ad=accDaily();acc.twTk={n:Math.max(0,TW_CAP-(ad.tw||0)+(ad.twx||0)),d};}const k=acc.twTk;if(k.d!==d){const days=Math.max(0,Math.round((Date.parse(d)-Date.parse(k.d))/864e5));if(k.n<TW_CAP)k.n=Math.min(TW_CAP,k.n+days);k.d=d;}
  return{used:0,max:k.n,left:k.n};}
 function twStart(){const t=twState();if(t.run)return;if(t.best>=TW_TOP)return toast('이번 시즌 구천탑을 정복했어요!');const k=twTickets();if(k.left<=0)return toast('남은 도전 기회가 없어요. 매일 오전 6시에 1회씩 충전돼요 (최대 '+TW_CAP+'회).');
  if(!acc.slots.some(q=>q&&q.sick==null))return toast('출전할 수 있는 환수가 없어요.');
