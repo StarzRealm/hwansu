@@ -395,3 +395,25 @@ nav.main button{position:relative}
 .twhallrow .rk{font-weight:700;color:#9e2b25}
 table.t tr.me td{background:rgba(201,149,46,.18)}
 @media (max-width:600px){.twch{grid-template-columns:1fr}.twcard{min-height:0;flex-direction:row;flex-wrap:wrap;justify-content:center;text-align:left}.twttl{font-size:28px}}
+/* 구천탑 그림 적용 v39 */
+.twplate{background-image:url(t/ui_floor.png);filter:none;color:#ffe9b0;padding:12px 44px;min-width:180px}
+.twcard{border:0;border-radius:0;background:none;box-shadow:none;border-style:solid;border-width:18px;border-image:url(t/ui_card_n.png) 30 fill/18px stretch;image-rendering:pixelated;padding:4px 2px}
+.twcard.rr{border-image-source:url(t/ui_card_r.png);background:none;box-shadow:none}
+.twcard.rl{border-image-source:url(t/ui_card_l.png);background:none;box-shadow:none;filter:drop-shadow(0 0 8px rgba(255,200,80,.75))}
+.twcard.rs{border-image-source:url(t/ui_card_n.png);background:none;box-shadow:none;filter:hue-rotate(-30deg) saturate(1.6) drop-shadow(0 0 6px rgba(200,40,30,.5))}
+.twcard img{width:72px;height:72px}
+.twpi{position:relative;display:inline-block;flex:none}.twpi>img:first-child{width:56px;height:56px;object-fit:contain;display:block}
+.twfall{position:absolute;right:-6px;top:-6px;width:30px;height:30px;filter:none}
+.twpet.down .twpi>img:first-child{filter:grayscale(1)}
+.twhp.fr{position:relative;height:auto;aspect-ratio:240/32;max-width:240px;border-radius:0;background:url(t/ui_hpbar.png) center/100% 100% no-repeat;image-rendering:pixelated;overflow:visible}
+.twhp.fr i{position:absolute;left:12%;top:34%;height:30%;max-width:76%;border-radius:2px}
+.twtk{width:24px;height:24px;vertical-align:-4px;margin-right:4px}
+.twbf{image-rendering:pixelated;background-position:center bottom}
+.twcut{position:absolute;left:0;right:0;top:34%;height:min(140px,26vw);display:flex;flex-direction:column;align-items:center;justify-content:center;background:url(t/ui_boss_cut.png) center/100% 100% no-repeat;image-rendering:pixelated;color:#ffe9b0;text-shadow:0 2px 0 #2a0a0a,0 0 10px rgba(255,80,40,.8);z-index:6;animation:twcut 1.9s ease-out forwards;pointer-events:none}
+.twcut small{font-size:14px;letter-spacing:3px;color:#ffb48a}.twcut b{font:700 clamp(24px,5vw,38px) "Gowun Batang",serif}
+@keyframes twcut{0%{transform:translateX(110%)}15%{transform:translateX(-3%)}22%{transform:translateX(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-30%)}}
+.twrankc{border:0;border-style:solid;border-width:24px;border-image:url(t/ui_rank.png) 40 fill/24px stretch;image-rendering:pixelated;background:none;box-shadow:none;padding:6px 8px}
+.twplaque{position:relative;width:320px;max-width:100%;aspect-ratio:320/120;margin:4px auto 8px;background:url(t/ui_hall.png) center/100% 100% no-repeat;image-rendering:pixelated}
+.twplaque img{position:absolute;top:47%;width:15%;aspect-ratio:1;transform:translate(-50%,-50%);object-fit:contain}
+.twstat span{background:rgba(16,10,26,.72);backdrop-filter:blur(2px)}
+.twplaque img{top:64%;width:13%}
