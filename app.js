@@ -65,7 +65,7 @@ const ITEMS={
  egg_yy:{n:'음양알',p:0,img:'h/80.gif',cat:'알',d:'상위 알. 빈 슬롯이 생기면 부화시킬 수 있어요'},
  sec_bless:{n:'강화축복비서',p:25,img:'i/sec_bless.gif',cat:'강화',d:'강화 성공 확률 +10%'},
  sec_protect:{n:'파괴방지비서',p:200,img:'i/sec_protect.gif',cat:'강화',d:'합성 파괴를 막아요'},
- sec_instant:{n:'수련즉시완료비서',p:0,img:'i/sec_instant.gif',cat:'운영자',d:'진행 중 수련 즉시 완료',admin:1},
+ sec_instant:{n:'즉시완료비서',p:0,img:'i/sec_instant.gif',cat:'운영자',d:'진행 중인 수련·심부름 즉시 완료',admin:1},
  sec_cure:{n:'질병치료비서',p:0,img:'i/sec_cure.gif',cat:'운영자',d:'확률 없이 즉시 치료',admin:1},
  sec_cancel:{n:'진화취소비서',p:0,img:'i/sec_cancel.gif',cat:'운영자',d:'직전 진화를 되돌려요',admin:1}
 };
@@ -237,8 +237,8 @@ const A={
  energy(){const p=P();if(!p)return;if(!take('sec_active'))return;p.en=Math.min(maxEn(p),p.en+50);SFX.play('heal');toast('행동력 +50');commit();},
  resetKi(){const p=P();if(!p)return;if(!take('reset_ki'))return;EL.forEach(e=>{p.el[e]=0;p.elT[e]=0;});p.lock=null;SFX.play('mystic');toast('오행이 초기화됐어요.');commit();},
  admItem(k){const p=P();if(!p)return;if(!take(k))return;
-  if(k==='tal_time'){if(!p.train){acc.inv[k]++;return toast('진행 중인 수련이 없어요.');}const left=p.train.end-now(),cut=Math.max(0,left*.1);p.train.end-=cut;SFX.play('magic');toast('남은 수련 시간이 '+fmtDur(cut)+' 줄었어요.');}
-  if(k==='sec_instant'){if(!p.train){acc.inv[k]++;return toast('진행 중인 수련이 없어요.');}p.train.end=now();advance(p,now());}
+  if(k==='tal_time'){if(!p.train){acc.inv[k]++;return toast('진행 중인 수련이 없어요. (심부름에는 쓸 수 없어요)');}const left=p.train.end-now(),cut=Math.max(0,left*.1);p.train.end-=cut;SFX.play('magic');toast('남은 수련 시간이 '+fmtDur(cut)+' 줄었어요.');}
+  if(k==='sec_instant'){if(p.train){p.train.end=now();advance(p,now());}else if(p.errand){p.errand.end=now();tickAll();SFX.play('magic');}else{acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요.');}}
   if(k==='sec_cure'){p.sick=null;p.acc.sickA=0;(SFX.play('heal'),toast('나았어요!'));}
   if(k==='sec_cancel'){if(!p.prev){acc.inv[k]++;return toast('되돌릴 진화가 없어요.');}Object.assign(p,p.prev);p.prev=null;SFX.play('mystic');toast('진화를 되돌렸어요.');}
   commit();},
@@ -699,7 +699,7 @@ function ybStart(){const p=P(),ad=accDaily();if(!p)return;if((ad.game||0)>=1)ret
   if(win){acc.coins+=YB_REWARD;SFX.play('fanfare');$('ymsg').innerHTML='<b style="color:#ffd36e">찾았다!</b> 코인 +'+YB_REWARD;pet.classList.add('happy');}else{SFX.play('sad');$('ymsg').innerHTML='아쉬워요… 여기 숨어 있었어요! 내일 다시 도전해요.';}
   save();$('ybtn').innerHTML='<button class="btn" id="ybOk" style="background:#f0c75e;margin-top:8px">확인</button>';$('ybOk').onclick=()=>{closeLayer();render();};};}
 
-function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);const EL_=r.encs||(r.enc?[r.enc]:[]);EL_.forEach((k,j)=>setTimeout(()=>SFX.play({luck:'coins',egg:'egg',gear:'equip',secret:'magic',susluck:'magic',blesssec:'up'}[k]||'heal'),900+j*600));const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)',egg:'환수 알 발견! ('+(r.eggBag?'가방에 보관했어요':'빈 슬롯에 알이 들어왔어요')+')',gear:'떠돌이 장비 (일반 '+(TN[r.gearT]||'장비')+' 획득)',secret:'비기 발견 (수련즉시완료비서 +1)',susluck:'수상한 행운 ('+(ITEMS[r.susK]?ITEMS[r.susK].n:'수상한 기운')+' +1)',blesssec:'축복비서 발견 (강화축복비서 +1)'};
+function resultOverlay(){const i=acc.slots.findIndex(q=>q&&q.result);if(i<0)return '';const p=acc.slots[i];let res='';{const r=p.result;SFX.once(i+'|'+r.spot+'|'+r.exp+'|'+r.lvTo+'|'+r.out,r.out);if(r.lvTo>r.lvFrom)setTimeout(()=>SFX.play('lvup'),0);const EL_=r.encs||(r.enc?[r.enc]:[]);EL_.forEach((k,j)=>setTimeout(()=>SFX.play({luck:'coins',egg:'egg',gear:'equip',secret:'magic',susluck:'magic',blesssec:'up'}[k]||'heal'),900+j*600));const encN={bless:'성수의 축복 (경험치 ×1.5)',luck:'뜻밖의 행운 (코인 +'+r.coins+')',snack:'선녀의 간식 (포만감·목마름 +30)',lost:'길 잃은 기운 (무작위 오행 +2)',dosa:'도사의 집중수련 (레벨 +1)',egg:'환수 알 발견! ('+(r.eggBag?'가방에 보관했어요':'빈 슬롯에 알이 들어왔어요')+')',gear:'떠돌이 장비 (일반 '+(TN[r.gearT]||'장비')+' 획득)',secret:'비기 발견 (즉시완료비서 +1)',susluck:'수상한 행운 ('+(ITEMS[r.susK]?ITEMS[r.susK].n:'수상한 기운')+' +1)',blesssec:'축복비서 발견 (강화축복비서 +1)'};
   res='<div class="overlay"><div class="modal" role="dialog" aria-label="수련 결과"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(r.spot)+' 수련 결과</span><span class="serif" style="font-size:34px;font-weight:700;color:'+(r.out==='fail'?'#c9d8d5':'#ffd36e')+'">'+{fail:'실패…',ok:'성공',great:'대성공!'}[r.out]+'</span><img class="px" src="'+img(p.no)+'" alt="" width="96" height="96" style="object-fit:contain">'+(EL_.length>1?'<span style="color:#ffd36e;font-weight:700">✨ 인카운트 '+EL_.length+'개 동시 발생!</span>':'')+EL_.map(k=>'<div class="chip" style="background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.5);color:#fff8e6">인카운트 · '+encN[k]+'</div>').join('')+(r.noExp?'<span style="color:#ff8a7a;font-size:13px">전투력 차이가 너무 커서 경험치를 얻지 못했어요</span>':'')+'<b style="font-size:22px">+'+fmt(r.exp)+' EXP</b><span class="muted" style="color:#c9d8d5">Lv '+r.lvFrom+' → '+r.lvTo+(r.max?' (MAX)':'')+'</span><button class="btn" data-ack="'+i+'" style="background:#f0c75e">확인</button></div></div>';}return res;}
 
 /* ================= 공통 렌더 / 로그인 ================= */
@@ -818,7 +818,7 @@ function aDetail(){const t=AS.tgt,main=isMain();
  const p=t.slots[AS.slot];
  h+='<h3 class="serif" style="margin:18px 0 6px">환수</h3><div class="slots">'+[0,1,2].map(i=>'<button class="slot'+(AS.slot===i?' on':'')+'" data-xslot="'+i+'">'+(t.slots[i]?'<img class="px" src="'+img(t.slots[i].no)+'" alt=""><span><b>'+NAMES[t.slots[i].no]+'</b><small>'+t.slots[i].st+'단계 Lv '+t.slots[i].lv+(t.slots[i].sick!=null?' · 아픔':'')+(t.slots[i].train?' · 수련 중':'')+'</small></span>':'<span style="padding:12px"><b>빈 슬롯 '+(i+1)+'</b>'+(t.notice&&t.notice[i]?'<small>'+esc(t.notice[i])+'</small>':'')+'</span>')+'</button>').join('')+'</div>';
  if(p){const formOpts=NAMES.map((n,i)=>'<option value="'+i+'" '+(p.no===i?'selected':'')+'>'+String(i).padStart(2,'0')+' '+n+' ('+FORMS[i].st+'단계)</option>').join('');
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px"><label class="f">환수 종류<select id="xNo">'+formOpts+'</select></label><label class="f">레벨<input type="number" id="xLv" value="'+p.lv+'" min="1" max="99" style="width:70px"></label>'+EL.map(e=>'<label class="f">'+ELK[e]+'<input type="number" id="xEl_'+e+'" value="'+p.el[e]+'" min="0" max="50" style="width:64px"></label>').join('')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px">'+[['hu','포만감'],['th','목마름'],['cl','청결도'],['aff','호감도'],['en','행동력']].map(([k,n])=>'<label class="f">'+n+'<input type="number" id="xS_'+k+'" value="'+Math.round(p[k])+'" min="0" style="width:72px"></label>').join('')+'<button class="btn teal sm" data-x="petApply">적용</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-xp="finish">수련 즉시 완료</button><button class="btn sm" data-xp="wake">깨우기</button><button class="btn sm" data-xp="cure">병 치료</button><button class="btn sm" data-xp="unlock">오행 고정 풀기</button><button class="btn sm" data-xp="daily">오늘 횟수 초기화</button><button class="btn sm red" data-xp="del">환수 삭제</button></div>';}
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px"><label class="f">환수 종류<select id="xNo">'+formOpts+'</select></label><label class="f">레벨<input type="number" id="xLv" value="'+p.lv+'" min="1" max="99" style="width:70px"></label>'+EL.map(e=>'<label class="f">'+ELK[e]+'<input type="number" id="xEl_'+e+'" value="'+p.el[e]+'" min="0" max="50" style="width:64px"></label>').join('')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px">'+[['hu','포만감'],['th','목마름'],['cl','청결도'],['aff','호감도'],['en','행동력']].map(([k,n])=>'<label class="f">'+n+'<input type="number" id="xS_'+k+'" value="'+Math.round(p[k])+'" min="0" style="width:72px"></label>').join('')+'<button class="btn teal sm" data-x="petApply">적용</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-xp="finish">수련·심부름 즉시 완료</button><button class="btn sm" data-xp="wake">깨우기</button><button class="btn sm" data-xp="cure">병 치료</button><button class="btn sm" data-xp="unlock">오행 고정 풀기</button><button class="btn sm" data-xp="daily">오늘 횟수 초기화</button><button class="btn sm red" data-xp="del">환수 삭제</button></div>';}
  else h+='<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn teal sm" data-xp="egg">이 슬롯에 알 넣기</button><button class="btn sm" data-xp="yyegg">음양알 넣기</button>'+(t.notice&&t.notice[AS.slot]?'<span class="muted">'+esc(t.notice[AS.slot])+'</span>':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px"><label class="f">복구할 환수<select id="xRestore">'+NAMES.map((n,i)=>'<option value="'+i+'">'+String(i).padStart(2,'0')+' '+n+'</option>').join('')+'</select></label><label class="f">레벨<input type="number" id="xRLv" value="1" min="1" style="width:70px"></label><button class="btn sm" data-x="restore">환수 복구</button><span class="muted">소멸·실수 해방 복구용</span></div>';
  const owned=Object.keys(t.dex).map(Number).sort((a,b)=>a-b);
  h+='<h3 class="serif" style="margin:18px 0 6px">도감 ('+owned.length+'/'+NAMES.length+')</h3><p class="muted" style="margin:0 0 6px">'+(owned.length?owned.map(i=>String(i).padStart(2,'0')+' '+NAMES[i]+(t.dex[i].freed?'(解)':'')).join(', '):'비어 있어요')+'</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f">도감 번호<input type="number" id="xDex" min="0" max="'+(NAMES.length-1)+'" value="0" style="width:80px"></label><button class="btn sm" data-x="dexAdd">채우기</button><button class="btn soft sm" data-x="dexDel">지우기</button><button class="btn soft sm" data-x="dexFree">解 표시 켜기/끄기</button></div>';
@@ -846,9 +846,25 @@ function randPw(){const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0
 function randCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='EGG-';for(let i=0;i<8;i++){s+=c[Math.floor(rnd()*c.length)];if(i===3)s+='-';}return s;}
 function blankAcc(id,uid,role,nick){return{id,uid,role:role||'player',nick:nick||id,banned:false,playerNo:null,lastNonce:0,coins:0,inv:{},gear:[],slots:[null,null,null],notice:[null,null,null],dex:{},mail:[],daily:null,offset:0,autoSleep:false,rev:1,created:Date.now()};}
 function tPet(no){const p=newPet(no);const t=Date.now();p.ts=t;p.lastPat=t;p.born=t;return p;}
-async function saveTgt(msg){const t=AS.tgt;t.rev=(t.rev||0)+1;await db.doc('accounts/'+t.uid).set(t);if(msg)log(t.id+': '+msg);const i=(AS.list||[]).findIndex(a=>a.uid===t.uid);if(i>=0)AS.list[i]=JSON.parse(JSON.stringify(t));toast('저장했어요.');render();}
+const J=x=>JSON.stringify(x===undefined?null:x),CL=x=>x==null?x:JSON.parse(JSON.stringify(x));
+function mergeT(base,tgt,fresh,abs){const out=CL(fresh);base=base||{};
+ const keys=new Set([...Object.keys(base),...Object.keys(tgt)]);
+ for(const k of keys){if(k==='rev'||k==='uid')continue;const b=base[k],t=tgt[k];if(J(b)===J(t))continue;
+  if(k==='coins'&&!abs.coins){out.coins=Math.max(0,(out.coins||0)+(t||0)-(b||0));continue;}
+  if(k==='inv'){out.inv=out.inv||{};new Set([...Object.keys(b||{}),...Object.keys(t||{})]).forEach(x=>{const bb=(b||{})[x]||0,tt=(t||{})[x]||0;if(bb!==tt)out.inv[x]=Math.max(0,(out.inv[x]||0)+tt-bb);});continue;}
+  if(k==='dex'){out.dex=out.dex||{};new Set([...Object.keys(b||{}),...Object.keys(t||{})]).forEach(x=>{if(J((b||{})[x])!==J((t||{})[x])){if((t||{})[x]===undefined)delete out.dex[x];else out.dex[x]=CL(t[x]);}});continue;}
+  if(k==='slots'||k==='notice'){out[k]=out[k]||[null,null,null];for(let i=0;i<3;i++){const bs=(b||[])[i],ts=(t||[])[i],fs=out[k][i];if(J(bs)===J(ts))continue;
+    if(k==='slots'&&bs&&ts&&fs&&fs.born===bs.born&&ts.born===bs.born){new Set([...Object.keys(bs),...Object.keys(ts)]).forEach(x=>{if(J(bs[x])!==J(ts[x])){if(ts[x]===undefined)delete fs[x];else fs[x]=CL(ts[x]);}});}
+    else out[k][i]=CL(ts===undefined?null:ts);}continue;}
+  if(k==='gear'){const bm=new Map((b||[]).map(g=>[g.u,g])),tm=new Map((t||[]).map(g=>[g.u,g]));let g=(out.gear||[]).filter(x=>!(bm.has(x.u)&&!tm.has(x.u)));
+   tm.forEach((v,u)=>{if(!bm.has(u))g.push(CL(v));else if(J(bm.get(u))!==J(v)){const i=g.findIndex(x=>x.u===u);if(i>=0)g[i]=CL(v);}});out.gear=g;continue;}
+  out[k]=CL(t);}
+ out.rev=(fresh.rev||0)+1;return out;}
+async function saveTgt(msg){const t=AS.tgt,s0=await db.doc('accounts/'+t.uid).get();const fresh=s0.exists?s0.data():t;
+ const out=mergeT(AS.base,t,fresh,AS.abs||{});AS.abs=null;await db.doc('accounts/'+t.uid).set(out);if(msg)log(t.id+': '+msg);
+ AS.tgt=normT(Object.assign({uid:t.uid},out));AS.base=CL(AS.tgt);const i=(AS.list||[]).findIndex(a=>a.uid===t.uid);if(i>=0)AS.list[i]=CL(AS.tgt);toast('저장했어요.');render();}
 const AD={
- async loadList(){const q=await db.collection('accounts').get();AS.list=q.docs.map(d=>Object.assign({uid:d.id},d.data())).sort((a,b)=>(a.id>b.id?1:-1));if(AS.tgt){const n=AS.list.find(a=>a.uid===AS.tgt.uid);AS.tgt=n?normT(n):null;}render();},
+ async loadList(){const q=await db.collection('accounts').get();AS.list=q.docs.map(d=>Object.assign({uid:d.id},d.data())).sort((a,b)=>(a.id>b.id?1:-1));if(AS.tgt){const n=AS.list.find(a=>a.uid===AS.tgt.uid);AS.tgt=n?normT(n):null;AS.base=CL(AS.tgt);}render();},
  find(){AS.find=document.getElementById('xFind').value.trim();render();},
  reload(){AD.loadList();},
  close(){AS.tgt=null;render();},
@@ -877,7 +893,7 @@ const AD={
 
  async coinAdd(){const n=Math.abs(+document.getElementById('xCoin').value||0),m=document.getElementById('xMemo').value;AS.tgt.coins=(AS.tgt.coins||0)+n;await saveTgt('코인 +'+n+(m?' ('+m+')':''));},
  async coinSub(){const n=Math.abs(+document.getElementById('xCoin').value||0),m=document.getElementById('xMemo').value;AS.tgt.coins=Math.max(0,(AS.tgt.coins||0)-n);await saveTgt('코인 -'+n+(m?' ('+m+')':''));},
- async coinSet(){const n=Math.max(0,+document.getElementById('xCoin').value||0),m=document.getElementById('xMemo').value,o=AS.tgt.coins||0;AS.tgt.coins=n;await saveTgt('코인 '+o+' → '+n+(m?' ('+m+')':''));},
+ async coinSet(){const n=Math.max(0,+document.getElementById('xCoin').value||0),m=document.getElementById('xMemo').value,o=AS.tgt.coins||0;AS.tgt.coins=n;AS.abs={coins:true};await saveTgt('코인 '+o+' → '+n+(m?' ('+m+')':''));},
  async itemGive(){const k=document.getElementById('xItem').value,n=Math.max(1,+document.getElementById('xQty').value||1);AS.tgt.inv[k]=(AS.tgt.inv[k]||0)+n;await saveTgt(ITEMS[k].n+' ×'+n+' 지급');},
  async invSave(){const ch=[];document.querySelectorAll('[data-xinv]').forEach(el=>{const k=el.dataset.xinv,v=Math.max(0,+el.value||0);if((AS.tgt.inv[k]||0)!==v){ch.push(ITEMS[k].n+' '+(AS.tgt.inv[k]||0)+'→'+v);AS.tgt.inv[k]=v;}});if(!ch.length)return toast('바뀐 게 없어요.');await saveTgt('아이템 수정: '+ch.join(', '));},
  async eqGive(){const t=document.getElementById('xEqT').value,g=+document.getElementById('xEqG').value,pl=Math.min(MAXP[g],Math.max(0,+document.getElementById('xEqP').value||0));AS.tgt.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1000),t,g,p:pl,aff:'fire'});await saveTgt('장비 지급 '+GN[g]+' '+TN[t]+' +'+pl);},
@@ -969,14 +985,14 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  // 운영자
  if(MODE!=='admin'||!isAdmin())return;
  if(ds.xtab){AS.tab=ds.xtab;if(ds.xtab==='eggs'&&!AS.eggs)AD.loadEggs();if(ds.xtab==='logs'&&!AS.logs)AD.loadLogs();return render();}
- if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.slot=0;AS.tgtArena=undefined;render();return AD.loadArenaT();}
+ if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.base=CL(AS.tgt);AS.slot=0;AS.tgtArena=undefined;render();return AD.loadArenaT();}
  if(ds.x&&AD[ds.x]){if(MAIN_ONLY.has(ds.x)&&!isMain())return toast('메인 운영자만 할 수 있어요.');try{return await AD[ds.x]();}catch(e){toast('실패했어요: '+(e&&e.message||e));}}
  if(ds.xslot!=null){AS.slot=+ds.xslot;return render();}
  if(ds.xgdel&&isMain()){const u=ds.xgdel;AS.tgt.slots.forEach(p=>{if(p)['w','a','s'].forEach(k=>{if(p.eq[k]===u)p.eq[k]=null;});});AS.tgt.gear=AS.tgt.gear.filter(g=>g.u!==u);return saveTgt('장비 회수');}
  if(ds.xp&&isMain()){const t=AS.tgt,i=AS.slot,p=t.slots[i],k=ds.xp,tn=Date.now()+(t.offset||0);
   if(k==='egg'||k==='yyegg'){const n0=k==='yyegg'?80:0;t.slots[i]=tPet(n0);t.notice[i]=null;tDex(n0);}
-  else if(p){if(k==='finish'&&p.train)p.train.end=tn;if(k==='wake')p.sleep=null;if(k==='cure'){p.sick=null;p.acc.sickA=0;}if(k==='unlock')p.lock=null;if(k==='daily'){p.daily={d:'',pat:0,play:0,sleep:0};t.daily=null;}if(k==='del')t.slots[i]=null;}
-  return saveTgt({egg:'알 넣기',yyegg:'음양알 넣기',finish:'수련 즉시 완료',wake:'깨우기',cure:'병 치료',unlock:'오행 고정 해제',daily:'오늘 횟수 초기화',del:'환수 삭제'}[k]+' (슬롯 '+(i+1)+')');}
+  else if(p){if(k==='finish'&&p.train)p.train.end=tn;if(k==='finish'&&p.errand)p.errand.end=tn;if(k==='wake')p.sleep=null;if(k==='cure'){p.sick=null;p.acc.sickA=0;}if(k==='unlock')p.lock=null;if(k==='daily'){p.daily={d:'',pat:0,play:0,sleep:0};t.daily=null;}if(k==='del')t.slots[i]=null;}
+  return saveTgt({egg:'알 넣기',yyegg:'음양알 넣기',finish:'수련·심부름 즉시 완료',wake:'깨우기',cure:'병 치료',unlock:'오행 고정 해제',daily:'오늘 횟수 초기화',del:'환수 삭제'}[k]+' (슬롯 '+(i+1)+')');}
  if(ds.xegdel){await db.doc('eggcodes/'+ds.xegdel).delete();log('알 코드 취소 '+ds.xegdel);return AD.loadEggs();}
 });
 setInterval(()=>{if(MODE!=='player'||!acc||document.getElementById('layer').innerHTML)return;if(acc.att&&acc.att.last!==dayKey(now())){const st=attCheck();if(st){save();render();attModal(true);return;}}const ch=tickAll();const a=document.activeElement;const typing=a&&(a.tagName==='INPUT'||a.tagName==='SELECT');if(!typing&&(view==='home'||view==='train')&&!document.querySelector('.errres'))render();if(ch)save();},2000);
@@ -1006,17 +1022,18 @@ async function makeFirebase(){
 function makeMock(){
  const K='hs_mock_v1';let st={docs:{},users:{}};try{st=JSON.parse(localStorage.getItem(K))||st;}catch(e){}
  const persist=()=>{try{localStorage.setItem(K,JSON.stringify(st));}catch(e){}};
+ const sync=()=>{try{st=JSON.parse(localStorage.getItem(K))||st;}catch(e){}};
  let cur=null,listeners=[];const subs={};
  const snap=(path,d)=>({id:path.split('/').pop(),exists:d!==undefined,data:()=>d===undefined?undefined:clean(d),metadata:{hasPendingWrites:false,fromCache:false}});
  const fire=path=>(subs[path]||[]).forEach(f=>f(snap(path,st.docs[path])));
- function dref(path){return{path,id:path.split('/').pop(),get:async()=>snap(path,st.docs[path]),set:async d=>{st.docs[path]=clean(d);persist();setTimeout(()=>fire(path),0);},incr:async(k,n)=>{const o=st.docs[path];if(!o)throw new Error('not-found');o[k]=(o[k]||0)+n;persist();setTimeout(()=>fire(path),0);},update:async d=>{const o=st.docs[path];if(!o)throw new Error('not-found');Object.assign(o,clean(d));persist();setTimeout(()=>fire(path),0);},pushMail:async m=>{const d=st.docs[path];if(!d)throw new Error('not-found');d.mail=(d.mail||[]).concat([clean(m)]);d.rev=(d.rev||0)+1;persist();setTimeout(()=>fire(path),0);},delete:async()=>{delete st.docs[path];persist();},onSnapshot:(n)=>{(subs[path]=subs[path]||[]).push(n);return()=>{subs[path]=subs[path].filter(x=>x!==n);};}};}
- function q(col,f,ord,lim){return{where:(a,o,v)=>q(col,(f||[]).concat([[a,v]]),ord,lim),orderBy:(a,d)=>q(col,f,[a,d],lim),limit:n=>q(col,f,ord,n),get:async()=>{let ks=Object.keys(st.docs).filter(k=>k.startsWith(col+'/')&&k.split('/').length===col.split('/').length+1);let ds=ks.map(k=>snap(k,st.docs[k]));if(f)ds=ds.filter(s=>f.every(([a,v])=>s.data()[a]===v));if(ord)ds.sort((a,b)=>(a.data()[ord[0]]-b.data()[ord[0]])*(ord[1]==='desc'?-1:1));if(lim)ds=ds.slice(0,lim);return{docs:ds,size:ds.length,empty:!ds.length};},doc:id=>dref(col+'/'+id),add:async d=>{const r=dref(col+'/'+Math.random().toString(36).slice(2));await r.set(d);return r;}};}
+ function dref(path){return{path,id:path.split('/').pop(),get:async()=>{sync();return snap(path,st.docs[path]);},set:async d=>{sync();st.docs[path]=clean(d);persist();setTimeout(()=>fire(path),0);},incr:async(k,n)=>{sync();const o=st.docs[path];if(!o)throw new Error('not-found');o[k]=(o[k]||0)+n;persist();setTimeout(()=>fire(path),0);},update:async d=>{sync();const o=st.docs[path];if(!o)throw new Error('not-found');Object.assign(o,clean(d));persist();setTimeout(()=>fire(path),0);},pushMail:async m=>{sync();const d=st.docs[path];if(!d)throw new Error('not-found');d.mail=(d.mail||[]).concat([clean(m)]);d.rev=(d.rev||0)+1;persist();setTimeout(()=>fire(path),0);},delete:async()=>{sync();delete st.docs[path];persist();},onSnapshot:(n)=>{(subs[path]=subs[path]||[]).push(n);return()=>{subs[path]=subs[path].filter(x=>x!==n);};}};}
+ function q(col,f,ord,lim){return{where:(a,o,v)=>q(col,(f||[]).concat([[a,v]]),ord,lim),orderBy:(a,d)=>q(col,f,[a,d],lim),limit:n=>q(col,f,ord,n),get:async()=>{sync();let ks=Object.keys(st.docs).filter(k=>k.startsWith(col+'/')&&k.split('/').length===col.split('/').length+1);let ds=ks.map(k=>snap(k,st.docs[k]));if(f)ds=ds.filter(s=>f.every(([a,v])=>s.data()[a]===v));if(ord)ds.sort((a,b)=>(a.data()[ord[0]]-b.data()[ord[0]])*(ord[1]==='desc'?-1:1));if(lim)ds=ds.slice(0,lim);return{docs:ds,size:ds.length,empty:!ds.length};},doc:id=>dref(col+'/'+id),add:async d=>{const r=dref(col+'/'+Math.random().toString(36).slice(2));await r.set(d);return r;}};}
  const err=c=>{const e=new Error(c);e.code=c;return e;};
  return{db:{doc:dref,collection:c=>q(c)},
-  signIn:async(id,pw)=>{const u=st.users[emailOf(id)];if(!u||u.pw!==pw)throw err('auth/invalid-credential');cur=u.uid;return cur;},
+  signIn:async(id,pw)=>{sync();const u=st.users[emailOf(id)];if(!u||u.pw!==pw)throw err('auth/invalid-credential');cur=u.uid;return cur;},
   signOut:async()=>{cur=null;},
-  register:async(id,pw)=>{const e=emailOf(id);if(st.users[e])throw err('auth/email-already-in-use');const uid='u'+Math.random().toString(36).slice(2,10);st.users[e]={uid,pw};persist();cur=uid;return uid;},
-  createUser:async(id,pw)=>{const e=emailOf(id);if(st.users[e])throw err('auth/email-already-in-use');const uid='u'+Math.random().toString(36).slice(2,10);st.users[e]={uid,pw};persist();return uid;},
+  register:async(id,pw)=>{sync();const e=emailOf(id);if(st.users[e])throw err('auth/email-already-in-use');const uid='u'+Math.random().toString(36).slice(2,10);st.users[e]={uid,pw};persist();cur=uid;return uid;},
+  createUser:async(id,pw)=>{sync();const e=emailOf(id);if(st.users[e])throw err('auth/email-already-in-use');const uid='u'+Math.random().toString(36).slice(2,10);st.users[e]={uid,pw};persist();return uid;},
   onAuth:cb=>{setTimeout(()=>cb(cur),0);}};
 }
 (async function boot(){
