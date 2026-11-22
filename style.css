@@ -327,3 +327,24 @@ nav.main button{position:relative}
 .side.ornate h2{min-width:170px;box-sizing:border-box}
 /* 스킬 스프라이트 */
 .fxs{position:absolute;display:block;z-index:5;pointer-events:none;background-repeat:no-repeat;background-size:800% 100%;background-position:0 0;image-rendering:pixelated;filter:drop-shadow(0 0 6px rgba(255,255,255,.35))}
+
+/* 돌보기 UI v33 */
+.acts .act{border:0;border-radius:0;background:none;border-style:solid;border-width:14px;border-image:url(i/ui_btn.png) 20 fill/14px stretch;image-rendering:pixelated;padding:2px 0;min-height:104px;gap:2px;transition:transform .08s}
+.acts .act:hover:not(:disabled){border-image-source:url(i/ui_btn_hover.png);transform:translateY(-1px)}
+.acts .act:active:not(:disabled){transform:translateY(1px)}
+.acts .act:disabled{border-image-source:url(i/ui_btn_off.png);opacity:.75}
+.acts .act img{width:48px;height:48px;image-rendering:pixelated}
+.acts .act b{color:#3a2414}.acts .act small{color:#6b4f36}
+.bigb{flex:1 1 200px;display:flex;align-items:center;justify-content:center;gap:6px;min-height:60px;padding:0 22px;border:0;cursor:pointer;background:url(i/ui_btn_evolve.png) center/100% 100% no-repeat;image-rendering:pixelated;color:#fff8e6;font-weight:700;font-size:15px;text-shadow:0 1px 0 rgba(0,0,0,.55);transition:transform .08s,filter .1s}
+.bigb img{width:40px;height:40px;margin:-6px 0;image-rendering:pixelated}
+.bigb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bigb.free{background-image:url(i/ui_btn_free.png);flex-basis:150px}
+.bigb.ret{background-image:url(i/ui_btn_return.png);flex-basis:150px}
+.bigb.evo{color:#3a2414;text-shadow:0 1px 0 rgba(255,240,200,.6)}
+.bigb:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.bigb:disabled{filter:grayscale(.8) brightness(.85);opacity:.7;cursor:not-allowed}
+.bigrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;flex:none;height:auto}
+.bigrow .bigb{height:60px;max-height:60px;align-self:center}
+.bigrow .bigb{padding:0 36px;font-size:14px;gap:4px}
+.bigrow .bigb img{width:36px;height:36px}
+@media (max-width:600px){.bigrow .bigb{flex-basis:100%}}
