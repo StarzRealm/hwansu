@@ -305,3 +305,23 @@ nav.main button{position:relative}
 .ycup.pickable{animation:ypick2 .9s ease-in-out infinite}
 .ycup.pickable:hover{filter:drop-shadow(0 0 10px #ffd36e) brightness(1.12)}
 @keyframes ypick2{50%{filter:drop-shadow(0 0 12px rgba(255,211,110,.95)) drop-shadow(0 5px 3px rgba(40,20,0,.45))}}
+/* ===== 상태창 고급 UI (도트 에셋) ===== */
+.side.ornate>.card{border:26px solid transparent;border-image:url(i/ui_panel.png) 32 fill / 26px round;background:transparent;box-shadow:none;border-radius:0;padding:2px 6px 4px;image-rendering:pixelated}
+.side.ornate h2{position:relative;padding-bottom:16px;margin-bottom:6px;background:url(i/ui_title.png) left bottom/170px auto no-repeat;image-rendering:pixelated;color:#4a2a12}
+.side.ornate .stat .tr{height:24px;border-radius:0;overflow:visible;background:url(i/ui_bar.png) 0 0/100% 100% no-repeat;padding:8px 6.3% 7px;box-sizing:border-box;image-rendering:pixelated}
+.side.ornate .stat .tr i{border-radius:2px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.18)}
+.side.ornate .stat .lb{font-weight:700;color:#5a3a1a;min-width:48px}
+.side.ornate .stat .v{font-weight:800;color:#3a2a12}
+.uiheart{width:24px;height:24px;image-rendering:pixelated}
+.uiheart.on{filter:drop-shadow(0 0 3px rgba(255,90,90,.55))}
+.orb .elmed{display:none}
+.side.ornate .orb{width:42px;height:42px;border:0!important;background:none!important;border-radius:50%}
+.side.ornate .orb>img:first-child{display:none}
+.side.ornate .orb .elmed{display:block;width:42px;height:42px;image-rendering:pixelated}
+.side.ornate .orb.glow{box-shadow:0 0 12px 3px rgba(255,211,110,.85)}
+.side.ornate .trk{height:14px;border:0!important;border-radius:0;clip-path:none;overflow:visible;background:url(i/ui_el_bar.png) 0 0/100% 100% no-repeat;padding:6px 3.6% 4px 1.6%;box-sizing:border-box;image-rendering:pixelated}
+.side.ornate .trk i{border-radius:1px}
+.side.ornate .trk.glow{filter:drop-shadow(0 0 4px rgba(255,211,110,.9))}
+.side.ornate .el{margin:7px 0}
+@media (max-width:560px){.side.ornate>.card{border-width:20px;border-image-width:20px}}
+.side.ornate h2{min-width:170px;box-sizing:border-box}
