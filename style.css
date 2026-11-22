@@ -295,3 +295,4 @@ nav.main button{position:relative}
 .ycup.pickable:hover{filter:brightness(1.2)}
 @keyframes ypick{50%{box-shadow:inset 0 -10px 0 #5a300c,0 0 18px rgba(255,211,110,.9)}}
 .ymsg{color:#e8fff8;font-size:17px;min-height:26px;text-align:center}
+.badge.b-x,.chip.b-x{background:linear-gradient(90deg,#2a1030,#6a1a3a);color:#ffd6e0;border:1px solid #c8285a}
