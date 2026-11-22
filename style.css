@@ -348,3 +348,8 @@ nav.main button{position:relative}
 .bigrow .bigb{padding:0 36px;font-size:14px;gap:4px}
 .bigrow .bigb img{width:36px;height:36px}
 @media (max-width:600px){.bigrow .bigb{flex-basis:100%}}
+/* 슬롯 추가 v34 */
+.slot.lockslot{border:2px dashed #b9975a;background:linear-gradient(135deg,rgba(255,248,226,.7),rgba(214,236,226,.55));color:#5a4a2a}
+.slot.lockslot img{width:40px;height:40px;margin:4px;opacity:.9;image-rendering:pixelated}
+.slot.lockslot b{color:#2b5a5e}
+.slot.lockslot:hover{border-style:solid;filter:brightness(1.04)}
