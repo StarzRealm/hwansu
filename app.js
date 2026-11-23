@@ -1044,7 +1044,7 @@ const XM_MON=[['x_m1','눈뭉치 요괴',1,'눈뭉치 던지기','ball','water']
  ['x_m4','심술 눈사람',45,'코당근 박치기','shock','water'],['x_m5','굴뚝 검댕이',103,'검댕 뿜기','vortex','yin'],['x_m6','포장지 요괴',121,'리본 휘감기','vine','fire'],
  ['x_m7','서리 늑대',63,'서리 이빨','bite','metal'],['x_m8','눈보라 정령',106,'칼바람','wave','water']];
 const XM_GATE=[.8,.9,1,1.1,1.3],XM_SHARE=[.15,.15,.15,.15,.4];
-const XM_ART={deco_wreath9:1,deco_snow:1,deco_aurora:1};
+const XM_ART={deco_wreath9:1,deco_snow:1,deco_aurora:1,x_b1:1,x_b2:1,x_b3:1,x_b4:1,x_banner:1,x_bg1:1,x_bg2:1,x_bg3:1,x_bg4:1,x_m1:1,x_m2:1,x_m3:1,x_m4:1,x_m5:1,x_m6:1,x_m7:1,x_m8:1,x_tier1:1,x_tier2:1,x_tier3:1,x_tier4:1,x_tier5:1};
 function xmImg(k,fb){return XM_ART[k]?'x/'+k+'.png?'+IMG_V:fb;}
 function xmOn(){if(TEST)return true;const c=cfg.xm;if(!c||!c.s||!c.e)return false;const d=dayKey(now());return d>=c.s&&d<=c.e;}
 function xmState(){if(!acc.xm||acc.xm.id!==XM_ID)acc.xm={id:XM_ID,free:'',run:null,clr:{},eb:0};return acc.xm;}
