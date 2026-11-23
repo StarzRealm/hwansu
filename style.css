@@ -426,3 +426,9 @@ table.t tr.me td{background:rgba(201,149,46,.18)}
 .testbar .tbb button{border:1px solid #e3d3ad;background:#fff;border-radius:8px;padding:7px 12px;text-align:left;cursor:pointer;color:#3a2414}
 .testbar .tbb button:hover{background:#fff3d4}
 .testbar .tbb button[data-tt=wipe]{color:#b02a1f;border-color:#f0c4bd}
+/* 행동력 툴팁 v47 */
+.entip{position:relative;outline:none}
+.entip .tipbox{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;padding:7px 10px;border-radius:8px;background:rgba(40,26,18,.94);color:#fff4dc;font-size:12px;line-height:1.45;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
+.entip .tipbox::before{content:'';position:absolute;top:-5px;left:40%;border:5px solid transparent;border-top:0;border-bottom-color:rgba(40,26,18,.94)}
+.entip:hover .tipbox,.entip:focus .tipbox,.entip:focus-within .tipbox{display:block}
+.entip:hover .stat{cursor:help}
