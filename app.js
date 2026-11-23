@@ -66,6 +66,7 @@ const ITEMS={
  sec_t300:{n:'시간단축비서 (5시간)',p:0,img:'i/sec_t300.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 5시간 단축 (보상 전용)'},
  sec_t480:{n:'시간단축비서 (8시간)',p:0,img:'i/sec_t480.gif',cat:'보상',d:'진행 중인 수련·심부름의 남은 시간 8시간 단축 (보상 전용)'},
  sec_slot:{n:'슬롯추가비서',p:0,img:'i/sec_slot.gif',cat:'보상',d:'환수 슬롯을 1칸 늘려요 (최대 '+5+'칸)'},
+ sec_fix:{n:'생활수치고정비서',p:5,img:'i/sec_fix.gif',cat:'생활',d:'8시간 동안 포만감·목마름·청결도가 줄지 않아요 (그 사이 끝나는 수련의 차감도 빠져요)',daily:1},
  sec_aff:{n:'호감도비서',p:10,img:'i/sec_aff.gif',cat:'성장',d:'호감도 +10',daily:1},
  sec_tower:{n:'탑재도전비서',p:20,img:'i/sec_tower.gif',cat:'성장',d:'구천탑 도전 기회 +1 (주 1회 구매)',weekly:1},
  sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
@@ -126,6 +127,7 @@ function fix45(){if(MODE!=='player'||!acc||acc.fx45)return false;acc.fx45=1;cons
  if(today==='2026-11-23')acc.slots.forEach(q=>{if(q&&q.daily&&q.daily.d===today)q.daily.sleep=0;});
  if(today<='2026-11-30'){acc.mail=acc.mail||[];acc.mail.push(stampMail({title:'자동 수면 오류 보상',msg:'수련 후 자동 수면이 재우기 횟수를 잘못 차감하는 오류가 있었어요. 오늘 재우기 횟수를 모두 되돌려 드렸고, 불편을 드려 작은 보상을 보내드려요.',coins:10,items:{sec_t60:1},from:'운영자'}));}
  return true;}
+function fixOverlap(p,a,b){if(!p.fix)return 0;const s0=Math.max(a,p.fixS||0),e0=Math.min(b,p.fix);return Math.max(0,e0-s0);}
 function daily(p,t){const d=dayKey(t==null?now():t);if(!p.daily||p.daily.d!==d){if(p.daily&&t!=null&&p.daily.d>d)return{d,pat:0,play:0,sleep:0};p.daily={d,pat:0,play:0,sleep:0};}return p.daily;}
 function weekKey(t){const d=new Date(dayKey(t)+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10);}
 function accWeekly(){const w=weekKey(now());if(!acc.weekly||acc.weekly.w!==w)acc.weekly={w,egg:0};return acc.weekly;}
@@ -142,9 +144,9 @@ function randEl(){return EL[Math.floor(rnd()*5)];}
 function makeSick(p,t){if(p.sick==null){p.sick=t;SFX.play('sick');addAff(p,-5);if(p.train){p.train=null;}}}
 
 function finishTraining(p,t){
- const sp=SPOTS[p.train.s],dur=(p.train.end-p.train.start)/H,st=stats(p),m=.5*(1-st.decay/100);
+ const sp=SPOTS[p.train.s],dur=Math.max(0,(p.train.end-p.train.start)-fixOverlap(p,p.train.start,p.train.end))/H,st=stats(p),m=.5*(1-st.decay/100);
  const ded=(k,rate)=>{const v=p[k];if(v>10)p[k]=Math.max(10,v-rate*dur*m);};
- ded('hu',huRate(p));ded('th',12.5);ded('cl',100/24);
+ ded('hu',huRate(p));ded('th',10);ded('cl',100/24);
  const ratio=cp(p)/sp.rec;let fail=10,great=15;if(ratio<1){fail=Math.min(85,10+(1-ratio)*70);great=5;}else if(ratio>=1.5){fail=5;great=22;}
  const r=rnd()*100,out=r<fail?'fail':r<fail+great?'great':'ok';
  const noExp=out==='fail'&&ratio<FAIL_ZERO;
@@ -178,12 +180,13 @@ function advance(p,to){
   let step=Math.min(to-t,10*MIN);
   if(p.train&&p.train.end>t&&p.train.end<t+step)step=p.train.end-t;
   if(p.sleep&&p.sleep>t&&p.sleep<t+step)step=p.sleep-t;
+  if(p.fix&&p.fix>t&&p.fix<t+step)step=p.fix-t;
   if(p.sick!=null&&p.sick+24*H>t&&p.sick+24*H<t+step)step=p.sick+24*H-t;
   const h=step/H,st=stats(p),training=p.train&&t<p.train.end;
   p.en=Math.min(100+st.en,p.en+5*(1+st.regen/100)*h);
   if(!training){
-   const m=(p.sleep&&t<p.sleep?.5:1)*(1-st.decay/100);
-   p.hu=Math.max(0,p.hu-huRate(p)*m*h);p.th=Math.max(0,p.th-12.5*m*h);p.cl=Math.max(0,p.cl-(100/24)*m*h);
+   const m=(p.fix&&t<p.fix&&t>=(p.fixS||0)?0:1)*(p.sleep&&t<p.sleep?.4:1)*(1-st.decay/100);
+   p.hu=Math.max(0,p.hu-huRate(p)*m*h);p.th=Math.max(0,p.th-10*m*h);p.cl=Math.max(0,p.cl-(100/24)*m*h);
    const zero=p.hu<=0||p.th<=0||p.cl<=0;
    if(zero&&p.sick==null){makeSick(p,t);ev=true;}
    if(zero&&!p.zf){p.zf=true;}
@@ -258,6 +261,7 @@ const A={
  admItem(k){const p=P();if(!p)return;if(!take(k))return;
   const TCUT={tal_time:30,sec_t60:60,sec_t180:180,sec_t300:300,sec_t480:480};
   if(TCUT[k]){const job=p.train||p.errand,nm=p.train?'수련':'심부름';if(!job){acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요.');}const cut=TCUT[k]*60000,left=job.end-now();SFX.play('magic');if(left<=cut){job.end=now();if(p.train)advance(p,now());else tickAll();toast(nm+'이 바로 끝났어요!');}else{job.end-=cut;toast('남은 '+nm+' 시간이 '+fmtDur(cut)+' 줄었어요.');}}
+  if(k==='sec_fix'){if(p.fix&&p.fix>now()){acc.inv[k]++;return toast('이미 생활 수치가 고정되어 있어요. (남은 '+fmtDur(p.fix-now())+')');}p.fixS=now();p.fix=now()+8*H;SFX.play('magic');toast('8시간 동안 생활 수치가 줄지 않아요.');}
   if(k==='sec_aff'){if(p.aff>=100){acc.inv[k]++;return toast('호감도가 이미 가득해요.');}addAff(p,10);SFX.play('magic');toast('호감도가 10 올랐어요.');}
   if(k==='sec_instant'){if(p.train){p.train.end=now();advance(p,now());}else if(p.errand){p.errand.end=now();tickAll();SFX.play('magic');}else{acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요.');}}
   if(k==='sec_cure'){p.sick=null;p.acc.sickA=0;(SFX.play('heal'),toast('나았어요!'));}
@@ -265,7 +269,7 @@ const A={
   commit();},
  tcancel(i){const p=acc.slots[i==null?sel:+i];if(!p||!p.train)return;
   confirmBox('수련 취소',NAMES[p.no]+'의 '+SPOTS[p.train.s].n+' 수련을 멈출까요? 경험치는 받지 못하고, 쓴 행동력과 그동안 줄어든 포만감·목마름·청결도는 돌아오지 않아요.',()=>{advance(p,now());if(!p.train)return render();
-   const dur=(now()-p.train.start)/H,st=stats(p),m=.5*(1-st.decay/100);const ded=(k,rate)=>{const v=p[k];if(v>10)p[k]=Math.max(10,v-rate*dur*m);};ded('hu',huRate(p));ded('th',12.5);ded('cl',100/24);
+   const dur=Math.max(0,(now()-p.train.start)-fixOverlap(p,p.train.start,now()))/H,st=stats(p),m=.5*(1-st.decay/100);const ded=(k,rate)=>{const v=p[k];if(v>10)p[k]=Math.max(10,v-rate*dur*m);};ded('hu',huRate(p));ded('th',10);ded('cl',100/24);
    const nm=SPOTS[p.train.s].n;p.train=null;SFX.play('thud');toast(nm+' 수련을 취소했어요.');commit();});},
  train(i){const p=P();if(!guard(p))return;if(p.sick!=null)return toast('아파서 수련할 수 없어요.');if(p.st>=12)return toast('완성된 환수는 수련이 필요 없어요.');const sp=SPOTS[i];if(p.en<sp.cost)return toast('행동력이 부족해요.');
   if(p.lv>=maxLv(p.st))return toast('최대 레벨이라 경험치를 더 받을 수 없어요. 먼저 진화하세요.');
@@ -353,13 +357,13 @@ function vHome(){
  const lvTxt=p.st>=12?'완성':p.lv>=mx?'Lv '+p.lv+' MAX':'Lv '+p.lv;
  const expW=p.st>=12||p.lv>=mx?100:p.exp/needP(p)*100;
  const acts=[['feed','','i/act_feed.png','기운 먹이기','포만감 '+Math.round(p.hu)],['dew','','i/act_dew.png','설화의 이슬','보유 '+(acc.inv.dew||0)],['soap','','i/act_wash.png','씻기기','비누 '+(acc.inv.soap||0)],['pat','','i/act_pat.png','쓰다듬기','오늘 '+d.pat+'/2'],['play','','i/act_play.png','놀아주기',d.play?'오늘 완료':'행동력 -10'],['sleep','','i/act_sleep.png',p.sleep?'깨우기':'재우기','남은 '+(2-d.sleep)+'회'],['elixir','','i/act_elixir.png','영약환단','보유 '+(acc.inv.elixir||0)],['susm','',ITEMS.sus_s.img,'수상한 기운','소·중·대'],['energy','',ITEMS.sec_active.img,'행동력 비서','보유 '+(acc.inv.sec_active||0)],['resetKi','',ITEMS.reset_ki.img,'오행초기화','보유 '+(acc.inv.reset_ki||0)]];
- const adm=['tal_time','sec_t60','sec_t180','sec_t300','sec_t480','sec_aff','sec_instant','sec_cure','sec_cancel'].filter(k=>acc.inv[k]>0).map(k=>['admItem',k,ITEMS[k].img,ITEMS[k].n,'보유 '+acc.inv[k]]);
+ const adm=['sec_fix','tal_time','sec_t60','sec_t180','sec_t300','sec_t480','sec_aff','sec_instant','sec_cure','sec_cancel'].filter(k=>acc.inv[k]>0).map(k=>['admItem',k,ITEMS[k].img,ITEMS[k].n,'보유 '+acc.inv[k]]);
 
  return slotsBar()+'<div class="row"><section class="grow" aria-label="환수 모습"><div class="stagebox stage'+stCls+'"><div style="position:absolute;left:18px;top:16px;display:flex;flex-direction:column;gap:8px"><div class="plate" style="display:flex;align-items:baseline;gap:8px"><span class="serif" style="font-size:24px;font-weight:700">'+NAMES[p.no]+'</span><span class="muted">no.'+String(p.no).padStart(2,'0')+' · '+p.st+'단계</span>'+elTag(ELOF[p.no])+'</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+(bd?'<span class="chip '+bd[0]+(bd[1]==='성수'?' glow':'')+'">'+bd[1]+'</span>':'')+status+'</div></div><div class="plate cpp" style="position:absolute;right:18px;top:16px;min-width:170px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="muted">전투력</span><b style="font-size:18px;color:#8a2a12">'+fmt(cp(p))+'</b></div><div class="muted" style="display:flex;justify-content:space-between"><span>호감도 보너스</span><span>+'+HEART_CP[hr]+'%</span></div></div><img class="pet px" src="'+img(p.no)+'" alt="'+NAMES[p.no]+'"><div style="position:absolute;left:0;right:0;bottom:0;padding:10px 18px;background:linear-gradient(0deg,rgba(20,40,46,.78),rgba(20,40,46,0));display:flex;align-items:center;gap:12px;color:#fff8e6"><b>'+lvTxt+'</b><div style="flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.25);overflow:hidden"><i style="display:block;height:100%;width:'+expW+'%;background:linear-gradient(90deg,#f0c75e,#fff0b5)"></i></div><span style="font-size:13px">'+(p.st>=12?'최종 완성':p.lv>=mx?'경험치 MAX':fmt(p.exp)+' / '+fmt(needP(p)))+'</span></div></div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><h2 style="margin:0">돌보기</h2><label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" data-a="autoSleep" '+(autoOn(p)?'checked':'')+' style="width:18px;height:18px;accent-color:#2b5a5e">'+NAMES[p.no]+' 수련 후 자동 수면 <span class="muted">(오늘 남은 수면 '+(2-d.sleep)+'회)</span></label></div>'+warns.map(w=>'<p class="warn" style="margin:8px 0 0">'+w+'</p>').join('')+
  '<div class="acts" style="margin-top:12px">'+acts.concat(adm).map(a=>'<button class="act" data-a="'+a[0]+'" data-v="'+a[1]+'"><img class="px" src="'+a[2]+'" alt=""><b>'+a[3]+'</b><small>'+a[4]+'</small></button>').join('')+'</div>'+
  '<div class="bigrow"><button class="bigb evo" data-a="evolve" '+(e.ok?'':'disabled')+'><img class="px" src="i/act_evolve.png" alt=""><span>'+(e.ok?'진화하기 → ???':e.done?'최종 형태':'진화하기 · '+esc(e.reason))+'</span></button><button class="bigb free" data-a="liberate" '+(p.st<4?'disabled':'')+'><img class="px" src="i/act_free.png" alt=""><span>해방하기</span></button><button class="bigb ret" data-a="home" '+(p.st<4?'disabled':'')+'><img class="px" src="i/act_return.png" alt=""><span>선계 귀환'+(p.st>=4?' · '+REFUND[p.st]+'코인':'')+'</span></button></div>'+(e.stuck?'<p class="warn" style="margin:10px 0 0">진화 조건을 맞추지 못해 최종 표시가 붙었어요: '+esc(e.reason)+'. 기운을 더 먹이거나 오행을 초기화하면 다시 진화할 수 있어요.</p>':'')+'</div></section>'+
- '<aside class="side ornate" aria-label="환수 상태"><div class="card"><h2>상태</h2>'+enTip(p,bar('행동력',p.en,maxEn(p),'#3d7d84,#7cc4c2'))+bar('포만감',p.hu,100,'#c9822b,#f0c98a',p.hu<=10)+bar('목마름',p.th,100,'#3b8beb,#a9d6ff',p.th<=10)+bar('청결도',p.cl,100,p.cl<=20?'#c0392b,#f08a7e':'#6fae3a,#bfe59a',p.cl<=20)+
+ '<aside class="side ornate" aria-label="환수 상태"><div class="card"><h2>상태</h2>'+enTip(p,bar('행동력',p.en,maxEn(p),'#3d7d84,#7cc4c2'))+bar('포만감',p.hu,100,'#c9822b,#f0c98a',p.hu<=10)+bar('목마름',p.th,100,'#3b8beb,#a9d6ff',p.th<=10)+bar('청결도',p.cl,100,p.cl<=20?'#c0392b,#f08a7e':'#6fae3a,#bfe59a',p.cl<=20)+(p.fix&&p.fix>now()?'<div class="fixon"><img class="px" src="'+ITEMS.sec_fix.img+'" alt="">생활 수치 고정 중 · 남은 '+fmtDur(p.fix-now())+'</div>':'')+
  '<div class="stat"><span class="lb">호감도</span><span role="img" aria-label="하트 5개 중 '+hr+'개" style="display:flex;gap:3px">'+[0,1,2,3,4].map(i=>'<img class="px uiheart'+(i<hr?' on':'')+'" src="i/ui_heart_'+(i<hr?'full':'empty')+'.png" alt="">').join('')+'</span><span class="muted" style="margin-left:auto">'+Math.round(p.aff)+'/100</span></div></div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0">오행</h2><span class="muted">'+(p.st<12&&CHILD[p.no].length?'다음 진화: '+esc(CHILD[p.no].length===1?condText(CHILD[p.no][0]):'분기점'):'')+'</span></div>'+elBars(p)+'<p class="muted" style="margin:6px 0 0">1위가 50이 되면 순위가 고정되고, 아래 순위는 40/30/10/10이 상한이에요.</p></div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between"><h2 style="margin:0 0 8px">장비</h2><button class="btn soft sm" data-view="gear">장비 관리</button></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">'+['w','a','s'].map(t=>{const g=p.eq[t]?gearOf(p.eq[t]):null;return g?'<div class="gear g'+g.g+'"><img class="px" src="eq/'+g.g+'_'+t+'.gif" alt=""><b class="c'+g.g+'" style="font-size:12px">'+GN[g.g]+' +'+g.p+'</b><small class="muted">'+TN[t]+'</small></div>':'<div class="gear"><div style="width:72px;height:72px;display:flex;align-items:center;justify-content:center" class="muted">비어 있음</div><small class="muted">'+TN[t]+'</small></div>';}).join('')+'</div></div></aside></div>';

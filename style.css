@@ -432,3 +432,5 @@ table.t tr.me td{background:rgba(201,149,46,.18)}
 .entip .tipbox::before{content:'';position:absolute;top:-5px;left:40%;border:5px solid transparent;border-top:0;border-bottom-color:rgba(40,26,18,.94)}
 .entip:hover .tipbox,.entip:focus .tipbox,.entip:focus-within .tipbox{display:block}
 .entip:hover .stat{cursor:help}
+.fixon{display:flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;border-radius:999px;background:rgba(240,199,94,.25);border:1px solid #d8b25a;color:#6b4a10;font-size:12.5px;font-weight:700}
+.fixon img{width:22px;height:22px}
