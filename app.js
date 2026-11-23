@@ -41,7 +41,7 @@ FORMS[162].cond={el:'water'};FORMS[163].cond={el:'water'};FORMS[178].cond={el:'f
    s1 우주비행사: 00 알 → 01 휴먼유체 / 02 컴패니언유체 (무작위) → 휴먼(홀수 03~19) / 컴패니언(짝수 04~20) 중 무작위
    s2: 00 알 → 01 유체 → 02~11 중 무작위 · 이중속성은 낮은 확률(각 5% 미만)
    최종 형태: 9단계 능력치, 최대 Lv 99 · 해방 불가 · 전용 공간 · 이미지 h/s1-00.gif */
-const GBASE=216,GSER=[['s1',21],['s2',12]],GUEST_ST=9,GUEST_MAX=99,G_DUAL_W=.3;
+const GBASE=216,GSER=[['s1',21],['s2',12]],GUEST_ST=9,GUEST_MAX=99,G_DUAL_W=.1,GUEST_CPX=1.3,G_EGG_LV=10,G_BABY_LV=30;
 const GUEST_INFO={
  's1-00':['우주비행사알','fire'],'s1-01':['휴먼유체','yin'],'s1-02':['컴패니언유체','yin'],
  's1-03':['아이쓰','yin|water'],'s1-04':['눈보','yin|water'],'s1-05':['퍄퍄','yang|wood'],'s1-06':['레피','yang|wood'],
@@ -63,7 +63,7 @@ const gidOf=no=>GID[no-GBASE];
 const gSer=no=>gidOf(no).split('-')[0];
 const dexNo=no=>isGuest(no)?gidOf(no):String(no).padStart(2,'0');
 const stN=p=>p&&isGuest(p.no)?(isGFinal(p.no)?'GUEST':(p.st===1?'GUEST 알':'GUEST 유체')):p.st+'단계';
-const maxLvP=p=>isGFinal(p.no)?GUEST_MAX:maxLv(p.st);
+const maxLvP=p=>isGFinal(p.no)?GUEST_MAX:isGuest(p.no)?(p.st===1?G_EGG_LV:G_BABY_LV):maxLv(p.st);
 const guestTag=no=>isGuest(no)?'<img class="guestb" src="i/guest.png" alt="GUEST">':'';
 function gRoll(kids){const w=kids.map(k=>String(ELOF[k]).includes('|')?G_DUAL_W:1),t=w.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let i=0;i<kids.length;i++){r-=w[i];if(r<=0)return kids[i];}return kids[kids.length-1];}
 const CHILD={};Object.keys(FORMS).forEach(k=>CHILD[k]=[]);Object.keys(FORMS).forEach(k=>{const p=FORMS[k].parent;if(p!=null)CHILD[p].push(+k);});
@@ -185,9 +185,9 @@ function benchMove(k,i){const b=acc.bench,bp=b[k],sp=acc.slots[i];
  if(bp)benchOut(bp);if(sp)benchIn(sp);
  acc.slots[i]=bp||null;b[k]=sp||null;if(bp)acc.notice[i]=null;sel=i;
  SFX.play('equip');toast(bp&&sp?NAMES[bp.no]+'와(과) '+NAMES[sp.no]+'의 자리를 바꿨어요.':bp?NAMES[bp.no]+'이(가) 슬롯 '+(i+1)+'에서 다시 성장해요.':NAMES[sp.no]+'이(가) 대기석에서 쉬어요.');closeLayer();commit();}
-const GSP={s1:{n:'우주비행사 정거장',bg:'i/gsp_s1.jpg',c:'#2a4a9a'},s2:{n:'말랑 친구들의 방',bg:'i/gsp_s2.jpg',c:'#d0608a'}};
+const GSP_MAX=30,GSP={s1:{n:'우주비행사 정거장',bg:'i/gsp_s1.jpg',c:'#2a4a9a'},s2:{n:'말랑 친구들의 방',bg:'i/gsp_s2.jpg',c:'#d0608a'}};
 function gspSend(i){const sp=acc.slots[i];if(!sp||!isGuest(sp.no))return;const w=benchBlock(sp);if(w)return toast(w);if(acc.arenaRep!=null&&sp.born===acc.arenaRep)return toast('대전 대표 환수는 옮길 수 없어요. 대표를 바꾼 뒤 옮겨 주세요.');
- const sr=gSer(sp.no);benchIn(sp);gspOf(sr).push(sp);acc.slots[i]=null;acc.notice[i]=null;SFX.play('mystic');toast(NAMES[sp.no]+'이(가) '+GSP[sr].n+'(으)로 돌아갔어요.');closeLayer();commit();}
+ const sr=gSer(sp.no);if(gspOf(sr).length>=GSP_MAX)return toast(GSP[sr].n+'은(는) 최대 '+GSP_MAX+'마리까지 머물 수 있어요.');benchIn(sp);gspOf(sr).push(sp);acc.slots[i]=null;acc.notice[i]=null;SFX.play('mystic');toast(NAMES[sp.no]+'이(가) '+GSP[sr].n+'(으)로 돌아갔어요.');closeLayer();commit();}
 function gspMove(sr,k,i){const L=gspOf(sr),bp=L[k],sp=acc.slots[i];if(!bp)return;
  if(sp){if(!isGuest(sp.no)||gSer(sp.no)!==sr)return toast('같은 시리즈의 게스트 환수하고만 자리를 바꿀 수 있어요.');const w=benchBlock(sp);if(w)return toast(w);if(acc.arenaRep!=null&&sp.born===acc.arenaRep)return toast('대전 대표 환수는 옮길 수 없어요.');}
  benchOut(bp);if(sp){benchIn(sp);L[k]=sp;}else L.splice(k,1);acc.slots[i]=bp;acc.notice[i]=null;sel=i;
@@ -199,9 +199,9 @@ function gspModal(sr,k){const bp=gspOf(sr)[k],L=document.getElementById('layer')
  L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="전용 공간"><div style="display:flex;gap:12px;align-items:center"><img class="px" src="'+img(bp.no)+'" alt="" style="width:72px;height:72px;object-fit:contain"><div><b class="serif" style="font-size:22px;color:#ffd36e">'+esc(NAMES[bp.no])+'</b> '+guestTag(bp.no)+'<div class="muted">no.'+dexNo(bp.no)+' · '+stN(bp)+' · Lv '+bp.lv+' · '+elName(ELOF[bp.no])+'</div></div></div><p class="muted" style="margin:0">성장 슬롯으로 데려갈까요? 같은 시리즈의 게스트가 있으면 서로 자리를 바꿔요.</p><div class="bmlist">'+rows+'</div><button class="btn soft" data-close="1">닫기</button></div></div>';}
 function hasGuest(){return Object.keys(acc.dex||{}).some(k=>isGuest(+k))||gspOf('s1').length||gspOf('s2').length;}
 function vGuest(){const sr=S.gsr||'s1',G=GSP[sr],L=gspOf(sr);
- const inSlot=acc.slots.map((q,i)=>q&&isGuest(q.no)&&gSer(q.no)===sr?'<div class="gsl"><img class="px" src="'+img(q.no)+'" alt=""><span><b>'+esc(NAMES[q.no])+'</b><small>슬롯 '+(i+1)+' · '+stN(q)+' · Lv '+q.lv+'</small></span><button class="btn sm teal" data-gsend="'+i+'">공간으로 보내기</button></div>':'').join('');
- return '<div class="tmode">'+Object.keys(GSP).map(k=>'<button class="'+(sr===k?'on':'')+'" data-gsr="'+k+'">'+GSP[k].n+' ('+gspOf(k).length+')</button>').join('')+'</div>'+
-  '<div class="groom gr-'+sr+'" style="background-image:url('+G.bg+'?'+IMG_V+')"><div class="grh"><img src="i/guest.png" alt="GUEST" class="guestb"><b class="serif">'+G.n+'</b><small>게스트 환수 전용 공간 · 상태가 줄지 않아요 · 눌러서 성장 슬롯으로 데려가기</small></div><div class="grpets">'+
+ const inSlot=acc.slots.map((q,i)=>q&&isGuest(q.no)&&gSer(q.no)===sr?'<div class="gsl"><img class="px" src="'+img(q.no)+'" alt=""><span><b>'+esc(NAMES[q.no])+'</b><small>슬롯 '+(i+1)+' · '+stN(q)+' · Lv '+q.lv+'</small></span><button class="btn sm teal" data-gsend="'+i+'" '+(L.length>=GSP_MAX?'disabled':'')+'>'+(L.length>=GSP_MAX?'공간이 가득 찼어요':'공간으로 보내기')+'</button></div>':'').join('');
+ return '<div class="tmode">'+Object.keys(GSP).map(k=>'<button class="'+(sr===k?'on':'')+'" data-gsr="'+k+'">'+GSP[k].n+' ('+gspOf(k).length+'/'+GSP_MAX+')</button>').join('')+'</div>'+
+  '<div class="groom gr-'+sr+'" style="background-image:url('+G.bg+'?'+IMG_V+')"><div class="grh"><img src="i/guest.png" alt="GUEST" class="guestb"><b class="serif">'+G.n+'</b><span class="chip">'+L.length+' / '+GSP_MAX+'</span><small>게스트 환수 전용 공간 · 상태가 줄지 않아요 · 눌러서 성장 슬롯으로 데려가기</small></div><div class="grpets">'+
   (L.length?L.map((q,k)=>'<button class="grp" data-gsp="'+sr+':'+k+'" style="animation-delay:-'+(k*0.37%3).toFixed(2)+'s"><img class="px" src="'+img(q.no)+'" alt=""><span class="bn">'+esc(NAMES[q.no])+'<small>'+stN(q)+' · Lv '+q.lv+'</small></span></button>').join(''):'<p class="grempty">아직 이 공간에 있는 게스트 환수가 없어요.</p>')+'</div></div>'+
   '<div class="card"><h2>성장 슬롯의 '+G.n+' 게스트</h2>'+(inSlot||'<p class="muted">성장 슬롯에 이 시리즈의 게스트 환수가 없어요.</p>')+'</div>';}
 function benchBar(){const b=acc.bench||[];let h='<div class="bench" style="background-image:url(i/bench_bg.jpg)"><div class="bnh"><b class="serif">환수 대기석</b><small>쉬는 동안 상태가 줄지 않아요 · 자리를 눌러 바꾸기</small></div><div class="bseats">';
@@ -237,7 +237,7 @@ function weekKey(t){const d=new Date(dayKey(t)+'T00:00:00Z');d.setUTCDate(d.getU
 function accWeekly(){const w=weekKey(now());if(!acc.weekly||acc.weekly.w!==w)acc.weekly={w,egg:0};return acc.weekly;}
 const EGG_PRICE=50,EGG_WEEK=1;
 function accDaily(){const d=dayKey(now());if(!acc.daily||acc.daily.d!==d)acc.daily={d,sus_s:0,sus_m:0,sus_l:0,sec_active:0};return acc.daily;}
-function cp(p){const s=p.st-1,st=stats(p);let v=10+50*s*s+5*(s+1)*(p.lv-1)+st.cp;v*=1+HEART_CP[hearts(p)]/100;if(PREMIUM(p.no))v*=1.2;const a=(p.hu+p.th+p.cl)/3;v*=a>=70?1.1:a>=40?1:.7;return Math.round(v);}
+function cp(p){const s=p.st-1,st=stats(p);let v=10+50*s*s+5*(s+1)*(p.lv-1)+st.cp;v*=1+HEART_CP[hearts(p)]/100;if(isGuest(p.no))v*=GUEST_CPX;else if(PREMIUM(p.no))v*=1.2;const a=(p.hu+p.th+p.cl)/3;v*=a>=70?1.1:a>=40?1:.7;return Math.round(v);}
 const huRate=p=>p.st===2?100/3:10;
 function addAff(p,v){p.aff=Math.max(0,Math.min(100,p.aff+v));}
 function addEl(p,e,amt){const cur=p.el[e];let cap=50;if(p.lock){const r=p.lock.indexOf(e);cap=[50,40,30,10,10][r];}const nv=Math.min(cap,cur+amt);if(nv>cur){p.el[e]=nv;p.elT[e]=now();}
@@ -329,7 +329,7 @@ function evoCheck(p){
   else if(c&&c.any&&mx>0&&tops.length>=1&&tops.every(e=>c.any.includes(e)))target=k;
   else if(c&&c.tie&&mx>0&&tops.length===2&&c.tie.every(e=>tops.includes(e)))target=k;
   else if(c&&c.top&&tops.length===1&&tops[0]===c.top){const rest=EL.filter(e=>e!==c.top),m2=Math.max(...rest.map(e=>p.el[e])),sec=rest.filter(e=>p.el[e]===m2);if(m2>0&&sec.every(e=>c.sec.includes(e)))target=k;}}
- let why='';if(!target)why=PREMIUM(p.no)?'진화 조건이 충족되지 않았습니다':mx===0?'오행이 모두 0이에요':tops.length>1?'최상위 오행이 동점이에요':'요구하는 오행이 최상위가 아니에요';
+ let why='';if(!target)why='진화 조건이 충족되지 않았어요';
  const ml=maxLvP(p);
  if(p.lv<ml)return{ok:false,target,reason:'Lv '+ml+' 필요'+(target?'':' · '+why)};
  if(!target)return{ok:false,stuck:true,reason:why};
@@ -338,7 +338,7 @@ function evoCheck(p){
  if(p.sleep)return{ok:false,target,reason:'자는 중이에요'};
  return{ok:true,target};
 }
-function condText(no){const c=FORMS[no]&&FORMS[no].cond;if(!c)return'레벨만';if(c.tie||c.top)return'숨겨진 조건';if(c==='zero')return'오행 모두 0';if(c.el)return'최상위 '+ELK[c.el];if(c.any)return'최상위 '+c.any.map(e=>ELK[e]).join('·');return'최상위 '+GRP[c.grp].map(e=>ELK[e]).join('·');}
+function condText(no){return '';}
 function dexAdd(no){if(!acc.dex[no])acc.dex[no]={d:dayKey(now()).slice(5).replace('-','.'),freed:false};}
 function badgeOf(p){if(isGuest(p.no))return['guest','GUEST'];const e=evoCheck(p);if(SAHYUNG.has(p.no))return['b-x','사흉'];if(SUNGSU.has(p.no))return['b-s','성수'];if(YOUNGSU.has(p.no))return['b-y','영수'];if(e.done||e.stuck)return['b-f','최종'];return null;}
 
@@ -391,7 +391,7 @@ const A={
    acc.mail.push(stampMail({title:st+'단계 해방 · 인게임 보상 안내',from:'선계 관리소',msg:NAMES[no]+'('+st+'단계) 해방 인게임 보상: 「'+gm+'」\n마인크래프트 서버에서 운영자에게 신청하고 받아 가세요. (이 우편은 안내용이라 받을 아이템이 없어요)'}));
    acc.libs=acc.libs||[];acc.libs.push({id:'l'+Date.now().toString(36),no,st,t:Date.now(),game:gm,done:false});
    acc.notice[sel]=NAMES[no]+'을(를) 해방했어요. 보상이 우편함에 도착했어요!';acc.slots[sel]=null;commit();SFX.play('mystic');toast('해방했어요! 우편함을 확인하세요.');});},
- home(){const p=P();if(!p)return;if(p.st<4)return toast('4단계부터 선계 귀환할 수 있어요.');const c=REFUND[p.st];
+ home(){const p=P();if(!p)return;if(isGuest(p.no)&&!isGFinal(p.no))return toast('게스트 알·유체는 선계 귀환할 수 없어요. 완전체가 되면 보낼 수 있어요.');if(p.st<4&&!isGuest(p.no))return toast('4단계부터 선계 귀환할 수 있어요.');const c=isGuest(p.no)?REFUND[GUEST_ST]:REFUND[p.st];
   confirmBox('선계 귀환',NAMES[p.no]+'을(를) 선계로 돌려보내고 환수 코인 '+c+'개를 받을까요?',()=>{SFX.play('mystic');SFX.play('coins');acc.coins+=c;acc.notice[sel]=NAMES[p.no]+'이(가) 선계로 돌아갔어요. (코인 +'+c+')';acc.slots[sel]=null;commit();});},
  autoSleep(){const p=P();if(!p)return;p.autoSleep=!autoOn(p);toast(NAMES[p.no]+': 수련 후 자동 수면 '+(p.autoSleep?'켜짐':'꺼짐'));commit();},
  ack(){const p=P();if(p){p.result=null;commit();}}
@@ -476,10 +476,10 @@ function vHome(){
  return slotsBar()+benchBar()+'<div class="row"><section class="grow" aria-label="환수 모습"><div class="stagebox stage'+stCls+'"><div style="position:absolute;left:18px;top:16px;display:flex;flex-direction:column;gap:8px"><div class="plate" style="display:flex;align-items:baseline;gap:8px"><span class="serif" style="font-size:24px;font-weight:700">'+NAMES[p.no]+'</span><span class="muted">no.'+dexNo(p.no)+' · '+stN(p)+'</span>'+elTag(ELOF[p.no])+'</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+(bd?(bd[0]==='guest'?guestTag(p.no)+'<button class="chip gsendc" data-gsend="'+sel+'">전용 공간으로</button>':'<span class="chip '+bd[0]+(bd[1]==='성수'?' glow':'')+'">'+bd[1]+'</span>'):'')+status+decoBtn()+'</div></div><div class="plate cpp" style="position:absolute;right:18px;top:16px;min-width:170px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="muted">전투력</span><b style="font-size:18px;color:#8a2a12">'+fmt(cp(p))+'</b></div><div class="muted" style="display:flex;justify-content:space-between"><span>호감도 보너스</span><span>+'+HEART_CP[hr]+'%</span></div></div><img class="pet px" src="'+img(p.no)+'" alt="'+NAMES[p.no]+'"><div style="position:absolute;left:0;right:0;bottom:0;padding:10px 18px;background:linear-gradient(0deg,rgba(20,40,46,.78),rgba(20,40,46,0));display:flex;align-items:center;gap:12px;color:#fff8e6"><b>'+lvTxt+'</b><div style="flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.25);overflow:hidden"><i style="display:block;height:100%;width:'+expW+'%;background:linear-gradient(90deg,#f0c75e,#fff0b5)"></i></div><span style="font-size:13px">'+(p.st>=12?'최종 완성':p.lv>=mx?'경험치 MAX':fmt(p.exp)+' / '+fmt(needP(p)))+'</span></div></div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><h2 style="margin:0">돌보기</h2><label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" data-a="autoSleep" '+(autoOn(p)?'checked':'')+' style="width:18px;height:18px;accent-color:#2b5a5e">'+NAMES[p.no]+' 수련 후 자동 수면 <span class="muted">(오늘 남은 수면 '+(2-d.sleep)+'회)</span></label></div>'+warns.map(w=>'<p class="warn" style="margin:8px 0 0">'+w+'</p>').join('')+
  '<div class="acts" style="margin-top:12px">'+acts.concat(adm).map(a=>'<button class="act" data-a="'+a[0]+'" data-v="'+a[1]+'"><img class="px" src="'+a[2]+'" alt=""><b>'+a[3]+'</b><small>'+a[4]+'</small></button>').join('')+'</div>'+
- '<div class="bigrow"><button class="bigb evo" data-a="evolve" '+(e.ok?'':'disabled')+'><img class="px" src="i/act_evolve.png" alt=""><span>'+(e.ok?'진화하기 → ???':e.done?'최종 형태':'진화하기 · '+esc(e.reason))+'</span></button><button class="bigb free" data-a="liberate" '+(p.st<4?'disabled':'')+'><img class="px" src="i/act_free.png" alt=""><span>해방하기</span></button><button class="bigb ret" data-a="home" '+(p.st<4?'disabled':'')+'><img class="px" src="i/act_return.png" alt=""><span>선계 귀환'+(p.st>=4?' · '+REFUND[p.st]+'코인':'')+'</span></button></div>'+(e.stuck?'<p class="warn" style="margin:10px 0 0">진화 조건을 맞추지 못해 최종 표시가 붙었어요: '+esc(e.reason)+'. 기운을 더 먹이거나 오행을 초기화하면 다시 진화할 수 있어요.</p>':'')+'</div></section>'+
+ '<div class="bigrow"><button class="bigb evo" data-a="evolve" '+(e.ok?'':'disabled')+'><img class="px" src="i/act_evolve.png" alt=""><span>'+(e.ok?'진화하기 → ???':e.done?'최종 형태':'진화하기 · '+esc(e.reason))+'</span></button><button class="bigb free" data-a="liberate" '+(p.st<4||isGuest(p.no)?'disabled':'')+'><img class="px" src="i/act_free.png" alt=""><span>'+(isGuest(p.no)?'해방 불가 (게스트)':'해방하기')+'</span></button><button class="bigb ret" data-a="home" '+((isGuest(p.no)?!isGFinal(p.no):p.st<4)?'disabled':'')+'><img class="px" src="i/act_return.png" alt=""><span>선계 귀환'+(isGuest(p.no)?(isGFinal(p.no)?' · '+REFUND[GUEST_ST]+'코인':' 불가'):p.st>=4?' · '+REFUND[p.st]+'코인':'')+'</span></button></div>'+(e.stuck?'<p class="warn" style="margin:10px 0 0">지금 오행으로는 진화할 수 없어요.</p>':'')+'</div></section>'+
  '<aside class="side ornate" aria-label="환수 상태"><div class="card"><h2>상태</h2>'+enTip(p,bar('행동력',p.en,maxEn(p),'#3d7d84,#7cc4c2'))+bar('포만감',p.hu,100,'#c9822b,#f0c98a',p.hu<=10)+bar('목마름',p.th,100,'#3b8beb,#a9d6ff',p.th<=10)+bar('청결도',p.cl,100,p.cl<=20?'#c0392b,#f08a7e':'#6fae3a,#bfe59a',p.cl<=20)+(p.fix&&p.fix>now()?'<div class="fixon"><img class="px" src="'+ITEMS.sec_fix.img+'" alt="">생활 수치 고정 중 · 남은 '+fmtDur(p.fix-now())+'</div>':'')+
  '<div class="stat"><span class="lb">호감도</span><span role="img" aria-label="하트 5개 중 '+hr+'개" style="display:flex;gap:3px">'+[0,1,2,3,4].map(i=>'<img class="px uiheart'+(i<hr?' on':'')+'" src="i/ui_heart_'+(i<hr?'full':'empty')+'.png" alt="">').join('')+'</span><span class="muted" style="margin-left:auto">'+Math.round(p.aff)+'/100</span></div></div>'+
- '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0">오행</h2><span class="muted">'+(p.st<12&&CHILD[p.no].length?'다음 진화: '+esc(CHILD[p.no].length===1?condText(CHILD[p.no][0]):'분기점'):'')+'</span></div>'+elBars(p)+'<p class="muted" style="margin:6px 0 0">1위가 50이 되면 순위가 고정되고, 아래 순위는 40/30/10/10이 상한이에요.</p></div>'+
+ '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0">오행</h2></div>'+elBars(p)+'<p class="muted" style="margin:6px 0 0">1위가 50이 되면 순위가 고정되고, 아래 순위는 40/30/10/10이 상한이에요.</p></div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between"><h2 style="margin:0 0 8px">장비</h2><button class="btn soft sm" data-view="gear">장비 관리</button></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">'+['w','a','s','n'].map(t=>{const g=p.eq[t]?gearOf(p.eq[t]):null;return g?'<button class="gear g'+g.g+'" data-gpick="'+g.u+'"><img class="px" src="'+gearImg(g)+'" alt=""><b class="c'+g.g+'" style="font-size:12px">'+GN[g.g]+(t==='n'&&NG_OPT[g.o]?' '+NG_OPT[g.o].n:'')+' +'+g.p+'</b><small class="muted">'+TN[t]+'</small></button>':'<button class="gear" data-view="gear"><div style="width:72px;height:72px;display:flex;align-items:center;justify-content:center" class="muted">비어 있음</div><small class="muted">'+TN[t]+'</small></button>';}).join('')+'</div></div></aside></div>';
 }
 function vTrain(){const p=P();
@@ -633,7 +633,7 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);
 
 /* ===== 스킬 스프라이트 (fx/fx_NNN.png, 한 줄 8칸) — 없으면 코드 이펙트로 ===== */
 const FXOK={};
-function fxUrl(no){return 'fx/fx_'+(isGuest(no)?(gSer(no)==='s1'?'s1':gidOf(no)):String(no).padStart(3,'0'))+'.png?'+IMG_V;}
+function fxUrl(no){return 'fx/fx_'+(isGuest(no)?gidOf(no):String(no).padStart(3,'0'))+'.png?'+IMG_V;}
 function fxPreload(nos){nos.forEach(no=>{if(no==null||FXOK[no]!==undefined)return;FXOK[no]=null;const im=new Image();im.onload=()=>{FXOK[no]=true;};im.onerror=()=>{FXOK[no]=false;};im.src=fxUrl(no);});}
 function fxSprite(P,sk,box,from,to){if(P.boss||FXOK[P.no]!==true)return null;
  const B=box.getBoundingClientRect(),fa=from.getBoundingClientRect(),ta=to.getBoundingClientRect();
@@ -702,7 +702,19 @@ const SKILLS=[
  ['음양 구르기','shock','neutral'],['음양 방울','orbs','neutral'],['일광 세례','pillar','yang'],['햇살 씨앗탄','ball','yang'],['열풍 회오리','vortex','yang'],['양기 포효','shock','yang'],['질풍 할퀴기','claw','wood'],['광풍참','slash','wood'],['악풍 깃칼','rain','wood'],['폭풍 낙뢰','thunder','thunder'],['파멸의 돌풍','vortex','wood'],['흉풍 멸천','vortex','dark'],['양기 발톱','claw','yang'],['태양 맹호참','slash','yang'],['일양 천강','pillar','yang'],['철턱 깨물기','bite','fire'],['포식의 아가리','bite','fire'],['탐욕의 불꽃','burst','fire'],['폭식 짓밟기','shock','fire'],['무한 포식','vortex','fire'],['도철 탐천','bite','dark'],['월광 세례','pillar','yin'],['그림자 씨앗탄','ball','yin'],['심연 물방울','orbs','yin'],['음기 포효','shock','yin'],['기류 물줄기','beam','water'],['몽환 안개','vortex','water'],['와류 해일','wave','water'],['심연 낙인','pillar','yin'],['혼세 파도','wave','yin'],['혼돈 붕괴','vortex','dark'],['음영 브레스','beam','yin'],['심음 소용돌이','vortex','yin'],['태음 월광포','beam','yin'],['철완 강타','shock','metal'],['분노 할퀴기','claw','metal'],['파쇄 낙석','rock','metal'],['불굴 돌진','slash','metal'],['광폭 난무','claw','blood'],['도올 패천','shock','dark'],['화요 불꽃','burst','fire'],['불씨 쪼기','bite','fire'],['화계 깃불','rain','fire'],['염화 신조탄','pillar','fire'],['불꽃 물기','bite','fire'],['열화 질주','wave','fire'],['홍련 포효','burst','fire'],['수요 물방울','orbs','water'],['물방울 독니','bite','water'],['수류 휘감기','vine','water'],['벽수 해일','wave','water'],['이슬 박치기','shock','water'],['수연 안개','vortex','water'],['천수 빙우','ice','ice'],['목요 새싹탄','ball','wood'],['가지 휘두르기','slash','wood'],['거목 내려찍기','rock','wood'],['울목 덩굴창','spike','wood'],['새싹 발차기','shock','wood'],['수목 꽃잎','vine','petal'],['청목 월광참','slash','wood'],['금요 쇳가루','rain','metal'],['철니 물기','bite','metal'],['강철 할퀴기','claw','metal'],['금속 낫베기','slash','metal'],['철뿔 박치기','shock','metal'],['청동 돌진','wave','metal'],['철갑 지진','rock','metal'],['토요 흙탄','ball','earth'],['흙먼지 질주','wave','earth'],['대지 발굽','shock','earth'],['후토 융기','spike','earth'],['흙돼지 돌진','shock','earth'],['대지 엄니','bite','earth'],['지덕 산사태','rock','earth'],
  ['방울 굴리기','shock','fire'],['눈꽃 흩뿌리기','rain','ice'],['눈송이 바람','wave','ice'],['눈덩이 굴리기','ball','water'],['당근코 박치기','shock','ice'],['목도리 휘감기','wave','fire'],['눈꽃 결정탄','orbs','ice'],['서리 마법','beam','ice'],['얼음 왕관의 칙령','pillar','ice'],['신사의 인사','shock','ice'],['산타모자 눈폭탄','ball','fire'],['큰 눈사태','pillar','ice'],['겹눈 굴리기','ball','ice'],['눈눈눈 탑쌓기','pillar','ice'],['성탄의 대설','rain','holy'],['네모 눈벽돌','shock','ice'],['얼음 결정 박치기','spike','ice'],['고드름 낙하','rain','ice'],['혹한의 숨결','ice','ice'],['겨울밤 오로라','beam','yin'],['서리 장난','vortex','yin'],['장난감 나팔','shock','fire'],['리본 선물탄','ball','fire'],['빨간모자 돌진','slash','fire'],['아기 산타의 종','orbs','fire'],['상자 박치기','shock','earth'],['선물 산사태','burst','fire'],['깜짝 상자','burst','fire'],['굴뚝 재 뿌리기','vortex','earth'],['한별 선물','orbs','holy'],['두별 선물','orbs','holy'],['세별 선물','pillar','holy'],['겨울별 축복','rain','holy'],['산타의 썰매 행차','burst','yang'],['졸음 자장가','wave','water'],['눈토끼 뜀박질','shock','ice'],['여우 눈보라','vortex','ice'],['북극곰 앞발','claw','ice'],['예티 포효','burst','ice'],['크람푸스의 채찍','slash','yin'],['잔가지 찌르기','spike','wood'],['나뭇잎 회오리','vortex','wood'],['리스 휘감기','wave','wood'],['트리 별빛','pillar','holy'],['나무 조각칼','slash','wood'],['장난감 총검','spike','metal'],['호두 깨기','shock','metal'],['종소리','shock','metal'],['징글벨 울림','orbs','metal'],['캐롤 합창','wave','holy'],['성탄 대종','pillar','metal'],['반죽 던지기','ball','earth'],['진저 박치기','shock','earth'],['진저 왕의 지팡이','slash','earth'],['아기 뿔치기','shock','earth'],['반짝 코빛','beam','fire'],['썰매 돌진','slash','earth'],['루돌프의 빛나는 코','beam','holy'],['흰 뿔 찌르기','spike','ice'],['얼음꽃 개화','orbs','ice'],['설화의 뿔빛','pillar','ice']
 ].map(([n,fx,pal])=>({n,fx,pal}));
-GID.forEach((id,k)=>{if(id.startsWith('s1'))SKILLS[GBASE+k]={n:'우주비행사 미니빔',fx:'beam',pal:'ice',img:'s1'};});
+const S1SK={'s1-00':['캡슐 착륙','shock','fire'],'s1-01':['꼬마 별 손짓','orbs','yin'],'s1-02':['물개 유령 버블','vortex','yin'],
+ 's1-03':['은하 빙결 사격','beam','ice'],'s1-04':['혜성 눈덩이','ball','ice'],
+ 's1-05':['솔라 넝쿨 앵커','vine','wood'],'s1-06':['광합성 안테나 빔','beam','yang'],
+ 's1-07':['로켓 부스터 펀치','burst','fire'],'s1-08':['혜성꼬리 불꽃 회전','vortex','fire'],
+ 's1-09':['행성 씨앗 투척','ball','wood'],'s1-10':['성운 뿌리 감기','vine','wood'],
+ 's1-11':['월광 중력장','orbs','yin'],'s1-12':['달토끼 크레이터 점프','shock','yin'],
+ 's1-13':['선플레어 고글 플래시','pillar','yang'],'s1-14':['새알심 유성우','rain','yang'],
+ 's1-15':['운석 낙하 호출','rock','earth'],'s1-16':['공룡 크레이터 쿵','shock','earth'],
+ 's1-17':['로즈골드 별 수리검','slash','metal'],'s1-18':['반짝 위성 공전','orbs','metal'],
+ 's1-19':['은하 해류 베기','slash','water'],'s1-20':['조개 물방울 포','wave','water']};
+Object.entries(S1SK).forEach(([id,[n,fx,pal]])=>{SKILLS[gno(id)]={n,fx,pal};});
+const S2SK={'s2-00':['알 데굴데굴','shock','fire'],'s2-01':['말랑 유령 돌진','vortex','yang'],'s2-02':['눈송이 솜주먹','ice','ice'],'s2-03':['풀숲 모자 기습','rain','wood'],'s2-04':['여우꼬리 불춤','burst','fire'],'s2-05':['워낭 박치기','shock','metal'],'s2-06':['은빛 뿔 콩콩','spike','metal'],'s2-07':['와플 내려찍기','rock','earth'],'s2-08':['크레용 별 낙서','orbs','yang'],'s2-09':['몽글 거품방울','orbs','petal'],'s2-10':['도넛 물보라','wave','water'],'s2-11':['밤하늘 목도리','vine','dark']};
+Object.entries(S2SK).forEach(([id,[n,fx,pal]])=>{SKILLS[gno(id)]={n,fx,pal};});
 function skillOf(P){if(P.boss)return P.skill||{n:'흑화의 일격',fx:'burst',pal:'dark'};const s=SKILLS[P.no]||{n:SKILL[P.el],fx:'ball'};return{n:s.n,fx:s.fx,pal:s.pal||P.el};}
 // 도트 입자: 정사각형 픽셀을 계단식으로 움직여요
 function skillFx(sk,box,from,to){const pal=PAL[sk.pal]||PAL.fire,B=box.getBoundingClientRect(),fa=from.getBoundingClientRect(),ta=to.getBoundingClientRect();
