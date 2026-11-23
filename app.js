@@ -995,7 +995,7 @@ function twStart(){const t=twState();if(t.run)return;if(t.best>=TW_TOP)return to
 function twBlessN(best){return Math.min(3,Math.floor(best/20));}
 function twRetreat(){const t=twState();if(!t.run)return;confirmBox('등반 끝내기','지금 등반을 끝낼까요? 다음 도전은 기회 1회를 써서 모든 환수가 체력이 가득 찬 상태로 '+(t.best+1)+'층부터 시작해요.',()=>{t.run=null;SFX.play('wake');commit();});}
 function twTicketUse(){const k=twTickets();if(k.left>0)return toast('아직 도전 기회가 남아 있어요.');if(!take('sec_tower'))return;acc.twTk.n++;SFX.play('magic');toast('구천탑 도전 기회 +1');commit();}
-async function twSync(){if(!db||!acc||MODE!=='player')return;const t=twState();try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,title:(acc.titles||[]).slice(-1)[0]||null});}catch(e){}}
+async function twSync(){if(!db||!acc||MODE!=='player')return false;const t=twState();if(!t.best)return false;try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,title:(acc.titles||[]).slice(-1)[0]||null});TV.err=null;return true;}catch(e){TV.err=(e&&(e.code||e.message))||'error';console.warn('twSync',e);return false;}}
 async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.slots[i];if(!run)return toast('먼저 도전을 시작해 주세요.');if(run.choice)return toast('먼저 보상을 하나 골라 주세요.');if(!q)return;
  const key=petKey(q,i);if(run.down.includes(key))return toast('쓰러진 환수는 이번 등반에서 나갈 수 없어요.');if(q.sick!=null)return toast('아픈 환수는 나갈 수 없어요.');
  const f=t.best+1;if(f>TW_TOP)return;TV.busy=true;
@@ -1009,7 +1009,7 @@ async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.sl
   const bz='tw_bg'+String(twZone(f)).padStart(2,'0');battleAnim({kind:'tower',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:'',pet:D},hpA:res.hpA,hpA0:res.hpA0,hpD:res.hpD,hpD0:res.hpD0,logS:JSON.stringify(res.log),win:res.win,floor:f,lbl:'구천탑 '+f+'층',wtxt:f+'층 돌파!',rlbl:'첫 돌파 보상',cut:f===TW_TOP?'최종 보스':f+'층 수문장',bgUrl:TW_ART[bz]?'t/'+bz+'.png?'+IMG_V:'',reward:rw?twRewardTxt(rw):'',ended,endTxt:ended?(f>=TW_TOP&&res.win?'구천탑 정복!':'출전할 환수가 없어 등반이 끝났어요.'):'',left:twUsable(run).length},'atk');
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
 async function loadTower(){TV.loaded=true;try{const s=twSeason(),p=twPrevSeason();
-  const a=await db.collection('tower').where('season','==',s).get();TV.rank=a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);
+  const getT=async()=>{const a=await db.collection('tower').where('season','==',s).get();return a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};let L=await getT();{const t=twState(),me=L.find(r=>r.uid===acc.uid);if(t.best>0&&(!me||me.best<t.best)){if(await twSync())L=await getT();}}TV.rank=L;
   const b=await db.collection('tower').where('season','==',p).get();TV.prev=b.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
  catch(e){TV.rank=TV.rank||[];TV.prev=TV.prev||[];}
  if(view==='tower'&&!document.getElementById('layer').innerHTML)render();}
@@ -1035,7 +1035,7 @@ function vTowerRank(){const L=TV.rank;if(!L)return '<div class="card"><p class="
  if(TV.prev&&TV.prev.length)h+='<div class="card twhall"><h2>지난 시즌 명예의 전당</h2>'+(TW_ART.ui_hall?'<div class="twplaque">'+TV.prev.map((r,i)=>r.no!=null?'<img class="px" style="left:'+[24.4,50,75.6][i]+'%" src="'+img(r.no)+'" alt="">':'').join('')+'</div>':'')+'<div class="twhallrow">'+TV.prev.map((r,i)=>'<div>'+(TW_ART['ui_medal'+(i+1)]?'<img class="px medal" src="t/ui_medal'+(i+1)+'.png?'+IMG_V+'" alt="">':'')+'<span class="rk">'+(i+1)+'위</span>'+(r.no!=null?'<img class="px" src="'+img(r.no)+'" alt="">':'')+'<b>'+esc(r.nick)+'</b><small>'+r.best+'층</small></div>').join('')+'</div></div>';
  h+='<div class="card twrankc"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">이번 시즌 순위</h2><button class="btn soft sm" data-twreload="1">새로고침</button></div><p class="muted">최고 층이 높은 순, 같으면 먼저 도달한 사람이 위예요.</p>'+
   (L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>닉네임</th><th>최고 층</th><th>돌파 환수</th><th>도달 시각</th></tr>'+L.slice(0,50).map((r,i)=>'<tr'+(r.uid===acc.uid?' class="me"':'')+'><td>'+(i<3&&TW_ART['ui_medal'+(i+1)]?'<img class="px" src="t/ui_medal'+(i+1)+'.png?'+IMG_V+'" alt="'+(i+1)+'위" style="width:30px;height:30px;vertical-align:middle">':'<b>'+(i+1)+'</b>')+'</td><td>'+esc(r.nick)+(r.title?' <span class="chip glow" style="font-size:11px">'+esc(r.title)+'</span>':'')+'</td><td><b>'+r.best+'층</b></td><td>'+(r.no!=null?'<img class="px" src="'+img(r.no)+'" alt="" style="width:32px;height:32px;vertical-align:middle"> '+NAMES[r.no]:'')+'</td><td>'+new Date(r.t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</td></tr>').join('')+'</table></div>':'<p class="muted">아직 기록이 없어요. 첫 번째 등반자가 되어 보세요!</p>')+
-  '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'층':'기록 없음')+'</p></div>';
+  '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'층':'기록 없음')+'</p>'+(TV.err?'<p class="muted" style="color:#b02a1f">순위를 서버에 저장하지 못했어요 ('+esc(String(TV.err))+'). 운영자에게 알려 주세요.</p>':'')+'</div>';
  return h;}
 
 /* ================= 크리스마스 이벤트: 동지 설화 던전 ================= */
@@ -1079,7 +1079,7 @@ async function xmFight(i){if(TV.busy)return;const x=xmState(),run=x.run,q=acc.sl
   const mk=run.tier+'_'+g,mh=run.mhp&&run.mhp.k===mk?run.mhp.hp:null,res=towerSim(A,ha0,D,bf,Math.floor(rnd()*4294967296),mh);run.last=key;run.n++;run.mhp=res.win?null:{k:mk,hp:res.hd};
   let got=0,first=null,ended=false,cleared=false;
   if(res.win){run.hp[key]=res.ha/res.hpA;got=T.endless?T.coin:Math.max(1,Math.round(T.coin*XM_SHARE[g]));acc.evc=(acc.evc||0)+got;run.earned+=got;run.g++;
-   if(T.endless){if(run.g>x.eb){x.eb=run.g;xmSync();}run.choice=twRoll(1,run,'noloot');}
+   if(T.endless){if(run.g>x.eb){x.eb=run.g;x.ebT=Date.now();xmSync();}run.choice=twRoll(1,run,'noloot');}
    else if(run.g>=5){cleared=true;if(!x.clr[run.tier]){x.clr[run.tier]=1;first=T.first;acc.coins+=T.first;if(T.title){acc.titles=acc.titles||[];if(!acc.titles.includes(T.title))acc.titles.push(T.title);}}x.run=null;ended=true;}
    else run.choice=twRoll(g===3?10:1,run,'noloot');}
   else{run.hp[key]=0;run.down.push(key);if(!xmUsable(run).length){x.run=null;ended=true;}}
@@ -1088,9 +1088,10 @@ async function xmFight(i){if(TV.busy)return;const x=xmState(),run=x.run,q=acc.sl
    lbl:'설화 던전 · '+T.n+' '+(g+1)+'관문',wtxt:cleared?T.n+' 클리어!':(g+1)+'관문 돌파!',rlbl:'획득',reward:res.win?'이벤트 코인 +'+got+(first?' · 첫 클리어 코인 +'+first+(T.title?' · 칭호 「'+T.title+'」':''):''):'',cut:T.endless?(g+1)+'관문 강적':T.n+' 보스',bgUrl:XM_ART[bgk]?'x/'+bgk+'.png?'+IMG_V:'',
    ended,endTxt:cleared?'이번 입장에서 이벤트 코인 '+run.earned+'개를 모았어요.':ended?'출전할 환수가 없어 이번 입장이 끝났어요. 모은 이벤트 코인 '+run.earned+'개':'',left:xmUsable(run).length},'atk');
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
-async function xmSync(){if(!db||!acc||MODE!=='player')return;const x=xmState();try{await db.doc('xmrank/'+acc.uid).set({uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,ev:XM_ID,best:x.eb,t:Date.now(),title:(acc.titles||[]).slice(-1)[0]||null});}catch(e){}}
+async function xmSync(){if(!db||!acc||MODE!=='player')return false;const x=xmState();if(!x.eb)return false;try{await db.doc('xmrank/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',ev:XM_ID,best:x.eb,t:x.ebT||Date.now(),title:(acc.titles||[]).slice(-1)[0]||null});XV.err=null;return true;}catch(e){XV.err=(e&&(e.code||e.message))||'error';console.warn('xmSync',e);return false;}}
 const XV={tab:'dun',rank:null};
-async function xmLoadRank(){try{const a=await db.collection('xmrank').where('ev','==',XM_ID).get();XV.rank=a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);}catch(e){XV.rank=[];}if(view==='xmas'&&!document.getElementById('layer').innerHTML)render();}
+async function xmLoadRank(){const get=async()=>{const a=await db.collection('xmrank').where('ev','==',XM_ID).get();return a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};
+ try{let L=await get();const x=xmState(),me=L.find(r=>r.uid===acc.uid);if(x.eb>0&&(!me||me.best<x.eb)){if(await xmSync())L=await get();}XV.rank=L;}catch(e){XV.rank=XV.rank||[];XV.err=(e&&(e.code||e.message))||'error';}if(view==='xmas'&&!document.getElementById('layer').innerHTML)render();}
 // 이벤트 상점
 const XM_SHOP=[
  {k:'egg',n:'성탄알',p:100,img:'h/155.gif',d:'크리스마스 한정 환수 알',ready:()=>XM_EGG_READY},
@@ -1134,7 +1135,7 @@ function vXmShop(){const ad=accDaily();return '<div class="card xmshop"><h2>이�
 function vXmRank(){const L=XV.rank;if(!L)return '<div class="card"><p class="muted">순위를 불러오는 중…</p></div>';const me=L.findIndex(r=>r.uid===acc.uid);
  return '<div class="card twrankc"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">끝없는 겨울밤 순위</h2><button class="btn soft sm" data-xmreload="1">새로고침</button></div><p class="muted">한 번 입장에서 가장 많이 넘긴 관문 수로 매겨요. 같으면 먼저 도달한 사람이 위예요.</p>'+
  (L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>닉네임</th><th>최고 관문</th></tr>'+L.slice(0,50).map((r,i)=>'<tr'+(r.uid===acc.uid?' class="me"':'')+'><td>'+(i<3&&TW_ART['ui_medal'+(i+1)]?'<img class="px" src="t/ui_medal'+(i+1)+'.png?'+IMG_V+'" alt="'+(i+1)+'위" style="width:30px;height:30px;vertical-align:middle">':'<b>'+(i+1)+'</b>')+'</td><td>'+esc(r.nick)+(r.title?' <span class="chip glow" style="font-size:11px">'+esc(r.title)+'</span>':'')+'</td><td><b>'+r.best+'관문</b></td></tr>').join('')+'</table></div>':'<p class="muted">아직 기록이 없어요.</p>')+
- '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'관문':'기록 없음')+'</p></div>';}
+ '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'관문':(xmState().eb?'내 최고 '+xmState().eb+'관문 · 순위 저장 대기 중':'기록 없음'))+'</p>'+(XV.err?'<p class="muted" style="color:#b02a1f">순위를 서버에 저장하지 못했어요 ('+esc(String(XV.err))+'). 운영자에게 알려 주세요.</p>':'')+'</div>';}
 // 꾸미기: 환수 창 배경·테두리·눈
 const DECO_OPT={bg:[['','기본 선계'],['bg_aurora','오로라 선계 설경']],frame:[['','없음'],['fr_wreath','크리스마스 리스']],fx:[['','없음'],['fx_snow','눈 내리기']]};
 function decoAny(){return acc.decoOwn&&Object.keys(acc.decoOwn).length>0;}
