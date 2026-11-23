@@ -82,6 +82,7 @@ const ITEMS={
  sec_fix:{n:'생활수치고정비서',p:5,img:'i/sec_fix.gif',cat:'생활',d:'8시간 동안 포만감·목마름·청결도가 줄지 않아요 (그 사이 끝나는 수련의 차감도 빠져요)',daily:1},
  sec_aff:{n:'호감도비서',p:10,img:'i/sec_aff.gif',cat:'성장',d:'호감도 +10',daily:1},
  sec_tower:{n:'탑재도전비서',p:20,img:'i/sec_tower.gif',cat:'성장',d:'구천탑 도전 기회 +1 (주 1회 구매)',weekly:1},
+ sec_pvp:{n:'대전재도전비서',p:10,img:'i/sec_pvp.gif',cat:'성장',d:'오늘 이미 싸운 대전 상대에게 한 번 더 도전 (하루 공격 횟수와 별도)',daily:2},
  sec_boss:{n:'토벌재도전비서',p:15,img:'i/sec_boss.gif',cat:'성장',d:'오늘 월드보스 공격 횟수 +1',daily:1},
  egg_n:{n:'환수 알',p:0,img:'h/00.gif',cat:'알',d:'빈 슬롯이 생기면 부화시킬 수 있어요'},
  egg_x:{n:'성탄알',p:0,img:'h/155.gif',cat:'알',d:'크리스마스 한정 알. 빈 슬롯이 생기면 부화시킬 수 있어요'},
@@ -487,8 +488,10 @@ async function loadArena(){if(!acc)return;PV.loaded=true;try{const wk=sunKey(now
  catch(e){PV.list=PV.list||[];PV.logs=PV.logs||[];toast('대전 정보를 불러오지 못했어요.');}
  if(view==='pvp'&&!document.getElementById('layer').innerHTML)render();}
 async function setRep(i){const q=acc.slots[i];if(!q)return;if(!q.born)q.born=Date.now()+i;acc.arenaRep=q.born;SFX.play('equip');toast(NAMES[q.no]+'을(를) 대표 환수로 정했어요.');await commit();await syncArena(true);loadArena();}
-async function fight(uid){if(PV.busy)return;const ad=accDaily();if((ad.pvp||0)>=PVP_DAILY)return toast('오늘 공격 횟수를 다 썼어요. 내일 오전 6시에 다시 할 수 있어요.');
- if((ad.pvpTo||[]).includes(uid))return toast('같은 상대는 하루에 한 번만 도전할 수 있어요.');
+async function fight(uid,re){if(PV.busy)return;const ad=accDaily();
+ if(re){if(!(ad.pvpTo||[]).includes(uid))return toast('재도전비서는 오늘 이미 싸운 상대에게만 쓸 수 있어요.');if(!(acc.inv.sec_pvp>0))return toast('대전재도전비서가 없어요. 상점에서 살 수 있어요.');}
+ else{if((ad.pvp||0)>=PVP_DAILY)return toast('오늘 공격 횟수를 다 썼어요. 내일 오전 6시에 다시 할 수 있어요.');
+ if((ad.pvpTo||[]).includes(uid))return toast('같은 상대는 하루에 한 번만 도전할 수 있어요. (대전재도전비서로 한 번 더 할 수 있어요)');}
  const me=repPet();if(!me)return toast('먼저 대표 환수를 정해 주세요.');
  const ai=PV.atk!=null&&acc.slots[PV.atk]?PV.atk:me.i,ap=acc.slots[ai];if(!ap)return toast('출전할 환수를 골라 주세요.');if(ap.sick!=null)return toast('아픈 환수는 대전에 나갈 수 없어요.');
  PV.busy=true;try{
@@ -496,7 +499,7 @@ async function fight(uid){if(PV.busy)return;const ad=accDaily();if((ad.pvp||0)>=
   const myRef=db.doc('arena/'+acc.uid);let ms=await myRef.get();if(!ms.exists){await syncArena(true);ms=await myRef.get();}const mine=ms.exists?ms.data():null;
   const A=petSnap(ap),D=dd.pet,res=simBattle(A,D,Math.floor(rnd()*4294967296));
   const wk=sunKey(now()),ea=aEff(mine),ed=aEff(dd),na=Math.max(0,ea.m+(res.win?PVP_WIN:-PVP_LOSE)),nd=Math.max(0,ed.m+(res.win?-DEF_LOSE:DEF_WIN));
-  ad.pvp=(ad.pvp||0)+1;ad.pvpTo=(ad.pvpTo||[]).concat([uid]);await save();
+  if(re){acc.inv.sec_pvp--;ad.pvpRe=(ad.pvpRe||0)+1;}else{ad.pvp=(ad.pvp||0)+1;ad.pvpTo=(ad.pvpTo||[]).concat([uid]);}await save();
   await myRef.update({week:wk,medals:na,w:ea.w+(res.win?1:0),l:ea.l+(res.win?0:1),dw:ea.dw,dl:ea.dl});
   await dRef.update({week:wk,medals:nd,w:ed.w,l:ed.l,dw:ed.dw+(res.win?0:1),dl:ed.dl+(res.win?1:0)});
   const b={t:Date.now(),week:wk,auid:acc.uid,duid:uid,a:{nick:acc.nick||acc.id,pet:A},d:{nick:dd.nick,pet:D},win:res.win,da:na-ea.m,dd:nd-ed.m,ma:na,md:nd,hpA:res.hpA,hpD:res.hpD,logS:JSON.stringify(res.log)};
@@ -516,7 +519,7 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);
   const opp=(PV.list||[]).filter(a=>a.uid!==acc.uid).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>Math.abs(x.em-e.m)-Math.abs(y.em-e.m)||y.em-x.em).slice(0,10);
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><b>상대 고르기 <small class="muted">· 마패가 비슷한 순</small></b><button class="btn soft sm" data-pvprefresh="1">새로고침</button></div>';
   h+=PV.list==null?'<p class="muted">불러오는 중…</p>':opp.length?'<div class="opps">'+opp.map(a=>{const adv=isAdv(atkEl,a.pet.el)?'<span class="advg">상성 유리</span>':isAdv(a.pet.el,atkEl)?'<span class="advb">상성 불리</span>':'';
-   return '<div class="opp"><img class="px" src="'+img(a.pet.no)+'" alt=""><div class="t"><b>'+esc(a.nick)+'</b><small>'+esc(NAMES[a.pet.no])+' '+elTag(a.pet.el)+' '+adv+'</small><small>전투력 '+fmt(a.pet.cp)+' · <img class="px" src="i/mapae.png" alt="" style="width:16px;height:16px;vertical-align:-3px"> '+a.em+'</small></div>'+((ad.pvpTo||[]).includes(a.uid)?'<button class="btn soft sm" disabled>오늘 도전함</button>':'<button class="btn sm" data-fight="'+esc(a.uid)+'" '+(used||PV.busy?'disabled':'')+'>도전</button>')+'</div>';}).join('')+'</div>':'<p class="muted">아직 도전할 상대가 없어요.</p>';
+   return '<div class="opp"><img class="px" src="'+img(a.pet.no)+'" alt=""><div class="t"><b>'+esc(a.nick)+'</b><small>'+esc(NAMES[a.pet.no])+' '+elTag(a.pet.el)+' '+adv+'</small><small>전투력 '+fmt(a.pet.cp)+' · <img class="px" src="i/mapae.png" alt="" style="width:16px;height:16px;vertical-align:-3px"> '+a.em+'</small></div>'+((ad.pvpTo||[]).includes(a.uid)?((acc.inv.sec_pvp||0)>0?'<button class="btn sm" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+' title="대전재도전비서 1개 사용"><img class="px" src="'+ITEMS.sec_pvp.img+'" alt="" style="width:20px;height:20px;vertical-align:-5px"> 재도전 ('+acc.inv.sec_pvp+')</button>':'<button class="btn soft sm" disabled>오늘 도전함</button>'):'<button class="btn sm" data-fight="'+esc(a.uid)+'" '+(used||PV.busy?'disabled':'')+'>도전</button>')+'</div>';}).join('')+'</div>':'<p class="muted">아직 도전할 상대가 없어요.</p>';
   h+='<p class="muted" style="margin-bottom:0">상성: 물 → 불 → 쇠 → 나무 → 땅 → 물 (화살표 쪽을 이겨요). 양·음은 오행 모두에게 강하고, 양과 음은 서로 상성이에요. 유리하면 추가 데미지, 불리하면 받는 피해가 늘어요.</p></div>';}
  const rank=(PV.list||[]).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>y.em-x.em).slice(0,10);
  h+='<div class="row"><div class="card" style="flex:1 1 320px"><h2>이번 주 순위</h2>'+(rank.length?'<table class="t">'+rank.map((a,i)=>'<tr'+(a.uid===acc.uid?' style="background:#fff3c4"':'')+'><td style="width:34px"><b>'+(i+1)+'</b></td><td><img class="px" src="'+img(a.pet.no)+'" alt="" width="32" height="32" style="object-fit:contain;vertical-align:middle"> '+esc(a.nick)+'</td><td style="text-align:right;white-space:nowrap"><img class="px" src="i/mapae.png" alt="" style="width:20px;height:20px;vertical-align:-4px"> <b>'+a.em+'</b></td></tr>').join('')+'</table>':'<p class="muted">아직 없어요.</p>')+'</div>';
@@ -899,7 +902,7 @@ const TW_B90=[['b90a','흑화 주작',24,'검은 불새','pillar','fire'],['b90b
 const TW_SHADOW=[7,13,21,27,33,36,46,51,58,61,66,70,75,87,92,96,107,112,115,123,129,136,143,150,153];
 const TW_RANDEL=['fire','water','wood','earth','metal','yang','yin'];
 // 받은 그림 파일 표시 (그림이 들어오면 키를 추가)
-const TW_ART={b10:1,b100:1,b20:1,b30:1,b40:1,b50:1,b60:1,b70:1,b80:1,b90a:1,b90b:1,b90c:1,b90d:1,c_atk_s:1,c_bet:1,c_coin_m:1,c_coin_s:1,c_def_s:1,c_drain:1,c_elem:1,c_first:1,c_fox:1,c_heal_all:1,c_heal_l:1,c_heal_s:1,c_revive:1,c_toad:1,m01a:1,m01b:1,m01c:1,m02a:1,m02b:1,m02c:1,m03a:1,m03b:1,m03c:1,m04a:1,m04b:1,m04c:1,m05a:1,m05b:1,m05c:1,m06a:1,m06b:1,m06c:1,m07a:1,m07b:1,m07c:1,m08a:1,m08b:1,m08c:1,m10a:1,m10b:1,tw_bg01:1,tw_bg02:1,tw_bg03:1,tw_bg04:1,tw_bg05:1,tw_bg06:1,tw_bg07:1,tw_bg08:1,tw_bg09:1,tw_bg10:1,ui_boss_cut:1,ui_card_l:1,ui_card_n:1,ui_card_r:1,ui_fall:1,ui_floor:1,ui_hall:1,ui_hpbar:1,ui_medal1:1,ui_medal2:1,ui_medal3:1,ui_rank:1,ui_ticket:1,ui_tw_banner:1};
+const TW_ART={c_atk_m:1,b10:1,b100:1,b20:1,b30:1,b40:1,b50:1,b60:1,b70:1,b80:1,b90a:1,b90b:1,b90c:1,b90d:1,c_atk_s:1,c_bet:1,c_coin_m:1,c_coin_s:1,c_def_s:1,c_drain:1,c_elem:1,c_first:1,c_fox:1,c_heal_all:1,c_heal_l:1,c_heal_s:1,c_revive:1,c_toad:1,m01a:1,m01b:1,m01c:1,m02a:1,m02b:1,m02c:1,m03a:1,m03b:1,m03c:1,m04a:1,m04b:1,m04c:1,m05a:1,m05b:1,m05c:1,m06a:1,m06b:1,m06c:1,m07a:1,m07b:1,m07c:1,m08a:1,m08b:1,m08c:1,m10a:1,m10b:1,tw_bg01:1,tw_bg02:1,tw_bg03:1,tw_bg04:1,tw_bg05:1,tw_bg06:1,tw_bg07:1,tw_bg08:1,tw_bg09:1,tw_bg10:1,ui_boss_cut:1,ui_card_l:1,ui_card_n:1,ui_card_r:1,ui_fall:1,ui_floor:1,ui_hall:1,ui_hpbar:1,ui_medal1:1,ui_medal2:1,ui_medal3:1,ui_rank:1,ui_ticket:1,ui_tw_banner:1};
 function twImg(k,fb){return TW_ART[k]?'t/'+k+'.png?'+IMG_V:fb;}
 function twSeason(t){return dayKey(t||now()).slice(0,7);}
 function twPrevSeason(){const [y,m]=twSeason().split('-').map(Number);return m===1?(y-1)+'-12':y+'-'+String(m-1).padStart(2,'0');}
@@ -1328,7 +1331,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.hatch)return hatch(ds.hatch);
  if(ds.arep!=null)return setRep(+ds.arep);
  if(ds.atk!=null){PV.atk=+ds.atk;return render();}
- if(ds.fight)return fight(ds.fight);
+ if(ds.refight)return fight(ds.refight,true);if(ds.fight)return fight(ds.fight);
  if(ds.replay)return replay(ds.replay);
  if(ds.pvprefresh){PV.list=null;render();return loadArena();}
  if(ds.sel!=null){sel=+ds.sel;selSpot=null;S.forgeSel=[];return render();}
