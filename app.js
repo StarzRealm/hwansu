@@ -107,14 +107,14 @@ const NG_OPT={def:{n:'방어',ic:'🛡️',d:'받는 피해 감소',k:1,cap:.25}
 const NG_KEYS=['def','eva','crit','drain'];
 const NG_BASE=[[1,2,.3],[2,3,.4],[3,5,.5],[5,7,.6],[7,9,.7],[8.5,10,.55]]; // 등급별 [최소, 최대, 강화당 증가] (%) · 방어/치명 기준, 회피/흡수는 ×2/3, 추가 옵션은 ×1/2
 const NG_SUBS=[0,0,1,2,3,3];
-const NG_ART={};
+const NG_ART={};['def','eva','crit','drain'].forEach(o=>{for(let g=0;g<6;g++)NG_ART[o+'_'+g]=1;});
 function ngVal(o,g,p,r,sub){const b=NG_BASE[g];return Math.round((b[0]+(b[1]-b[0])*(r||0)+b[2]*(p||0))*NG_OPT[o].k*(sub?.5:1)*10)/10;}
 function ngFill(gr){gr.subs=gr.subs||[];gr.subs=gr.subs.slice(0,NG_SUBS[gr.g]);while(gr.subs.length<NG_SUBS[gr.g]){const left=NG_KEYS.filter(k=>k!==gr.o&&!gr.subs.some(x=>x.o===k));if(!left.length)break;gr.subs.push({o:left[Math.floor(rnd()*left.length)],r:rnd()});}return gr;}
 function ngNew(g){return ngFill({u:'n'+Date.now().toString(36)+Math.floor(rnd()*1e6),t:'n',g,p:0,o:NG_KEYS[Math.floor(rnd()*4)],r:rnd(),subs:[]});}
 function ngLines(gr){return [[gr.o,ngVal(gr.o,gr.g,gr.p,gr.r,false),true]].concat((gr.subs||[]).map(x=>[x.o,ngVal(x.o,gr.g,gr.p,x.r,true),false]));}
 function ngBat(p){const r={def:0,eva:0,crit:0,drain:0};const u=p&&p.eq&&p.eq.n,gr=u?gearOf(u):null;if(gr)ngLines(gr).forEach(([o,v])=>{r[o]+=v/100;});NG_KEYS.forEach(k=>{r[k]=Math.min(NG_OPT[k].cap,Math.round(r[k]*1000)/1000);});return r;}
 function batOf(P){return(P&&P.bat)||{def:0,eva:0,crit:0,drain:0};}
-function gearImg(g){return g.t==='n'?(NG_ART[g.o+'_'+g.g]?'eq/n_'+g.o+'_'+g.g+'.png?'+IMG_V:'eq/'+g.g+'_s.gif'):'eq/'+g.g+'_'+g.t+'.gif';}
+function gearImg(g){return g.t==='n'?(NG_ART[g.o+'_'+g.g]?'eq/n_'+g.o+'_'+g.g+'.gif?'+IMG_V:'eq/'+g.g+'_s.gif'):'eq/'+g.g+'_'+g.t+'.gif';}
 function gearName(g){return GN[g.g]+' '+(g.t==='n'?NG_OPT[g.o].n+'의 ':'')+TN[g.t];}
 const SL={cp:'전투력',en:'행동력 최대',res:'질병 저항',decay:'생활 수치 감소 속도 감소',regen:'행동력 회복 속도',exp:'획득 경험치',aff:'오행 친화'};
 const PCT={res:1,decay:1,regen:1,exp:1,aff:1};
