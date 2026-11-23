@@ -130,7 +130,7 @@ const MAX_SLOTS=5,SLOT_PRICE={3:300,4:999};
 function slotPrice(){return SLOT_PRICE[acc.slots.length]||0;}
 function addSlot(){if(acc.slots.length>=MAX_SLOTS)return false;acc.slots.push(null);acc.notice=acc.notice||[];while(acc.notice.length<acc.slots.length)acc.notice.push(null);return true;}
 function slotFx(){SFX.play('mystic');SFX.play('fanfare');toast('환수 슬롯이 '+acc.slots.length+'칸으로 늘었어요!');}
-function giveEgg(no){no=no||0;const k=acc.slots.findIndex(q=>!q);if(k>=0){acc.slots[k]=newPet(no);acc.notice[k]=null;dexAdd(no);return k;}const key=no===80?'egg_yy':no===155?'egg_x':'egg_n';acc.inv[key]=(acc.inv[key]||0)+1;return -1;}
+function giveEgg(no){no=no||0;const key=no===80?'egg_yy':no===155?'egg_x':'egg_n';acc.inv[key]=(acc.inv[key]||0)+1;return -1;}
 function hatch(key){const k=acc.slots[sel]==null?sel:acc.slots.findIndex(q=>!q);if(k<0)return toast('빈 슬롯이 없어요. 해방하거나 선계로 돌려보낸 뒤 부화시켜 주세요.');if(!take(key))return;const no=key==='egg_yy'?80:key==='egg_x'?155:0;acc.slots[k]=newPet(no);acc.notice[k]=null;dexAdd(no);sel=k;view='home';SFX.play('egg');toast(ITEMS[key].n+'을(를) 슬롯 '+(k+1)+'에 꺼냈어요!');commit();}
 function newPet(no){return{no:no||0,st:1,lv:1,exp:0,el:{fire:0,water:0,wood:0,earth:0,metal:0},elT:{fire:0,water:0,wood:0,earth:0,metal:0},lock:null,hu:100,th:100,cl:100,aff:0,en:100,sick:null,sleep:null,train:null,eq:{w:null,a:null,s:null},ts:now(),acc:{roll:0,low:0,zero:0,nopat:0,sickA:0},zf:false,daily:{d:'',pat:0,play:0,sleep:0},prev:null,result:null,lastPat:now(),born:now()};}
 function gearOf(u){return acc.gear.find(g=>g.u===u);}
@@ -351,7 +351,7 @@ function attCheck(){if(MODE!=='player'||!acc)return 0;const t=dayKey(now()),y=da
 function attModal(fresh){const a=acc.att||{streak:0},st=a.last===dayKey(now())?a.streak:0;const L=document.getElementById('layer');
  L.innerHTML='<div class="overlay" data-close="1"><div class="modal att" role="dialog" aria-label="출석부"><b class="serif" style="font-size:24px;color:#ffd36e">출석부</b><p style="margin:0;color:#e8fff8">'+(st?'연속 <b style="color:#ffd36e">'+st+'일째</b> 출석 중!':'오늘 아직 출석하지 않았어요.')+'</p>'+
  '<div class="attgrid">'+ATT.map((r,i)=>{const w=attReward(r),on=i<st,now_=fresh&&i===st-1;return '<div class="attc'+(on?' on':'')+(i===6?' big':'')+'"><span class="attd">'+(i+1)+'일차</span><img class="px" src="'+w.img+'" alt=""><small>'+esc(w.n)+'</small>'+(on?'<span class="seal7'+(now_?' drop':'')+'">完</span>':'')+'</div>';}).join('')+'</div>'+
- (fresh?'<p style="margin:0;color:#ffd36e;font-weight:700">오늘의 보상: '+esc(attReward(ATT[st-1]).n)+' 획득!'+(ATT[st-1].egg&&acc.attEggBag?' (빈 슬롯이 없어 가방에 보관했어요)':'')+'</p>':'')+
+ (fresh?'<p style="margin:0;color:#ffd36e;font-weight:700">오늘의 보상: '+esc(attReward(ATT[st-1]).n)+' 획득!'+(ATT[st-1].egg?' (가방에 보관했어요)':'')+'</p>':'')+
  '<small style="color:#c9d8d5">매일 오전 6시에 새 출석이 열려요. 하루라도 빠지면 1일차부터 다시 시작해요.</small><button class="btn" data-close="1" style="background:#f0c75e">확인</button></div></div>';
  if(fresh)setTimeout(()=>SFX.play(st===7?'fanfare':'egg'),350);}
 function header(){
@@ -452,7 +452,7 @@ function claimMail(id){const list=acc.mail||[];const want=id==='*'?list.slice().
   got.push(...mailParts(m));done.add(m.id);});
  acc.mail=list.filter(m=>!done.has(m.id));
  
- if(got.length){SFX.play(got.some(t=>t.startsWith('환수 알')||t.startsWith('음양알'))?'egg':'coins');toast('받았어요! '+got.slice(0,4).join(', ')+(got.length>4?' 외 '+(got.length-4)+'개':'')+(blocked?' (알 '+blocked+'개는 빈 슬롯이 없어 가방에 보관했어요)':''));}else SFX.play('ok');
+ if(got.length){SFX.play(got.some(t=>t.startsWith('환수 알')||t.startsWith('음양알'))?'egg':'coins');toast('받았어요! '+got.slice(0,4).join(', ')+(got.length>4?' 외 '+(got.length-4)+'개':'')+(blocked?' (알 '+blocked+'개는 가방에 보관했어요)':''));}else SFX.play('ok');
  commit();}
 
 /* ================= 환수 대전 (비동기) ================= */
@@ -1106,7 +1106,7 @@ function xmBuy(k){if(!xmOn())return toast('이벤트 상점은 이벤트 기간�
  if((acc.evc||0)<it.p)return toast('이벤트 코인이 부족해요.');
  confirmBox('이벤트 상점',it.n+'을(를) 이벤트 코인 '+it.p+'개로 살까요?',()=>{if((acc.evc||0)<it.p)return;acc.evc-=it.p;if(it.daily)ad['xs_'+k]=(ad['xs_'+k]||0)+1;
   if(k==='seal')acc.inv.xm_seal=(acc.inv.xm_seal||0)+1;
-  if(k==='egg'){const r=giveEgg(155);if(r>=0)toast('성탄알을 슬롯 '+(r+1)+'에 넣었어요!');}
+  if(k==='egg'){giveEgg(155);}
   if(it.deco){acc.decoOwn=acc.decoOwn||{};acc.decoOwn[k]=1;acc.deco=acc.deco||{};acc.deco[it.deco]=k;}
   SFX.play(it.deco?'fanfare':'buy');toast(it.n+' 구매!'+(it.deco?' 바로 적용했어요. 환수 화면의 꾸미기에서 바꿀 수 있어요.':''));commit();});}
 function xmTop(){const x=xmState(),free=xmFree(),ad=accDaily();
@@ -1314,7 +1314,7 @@ document.addEventListener('submit',async ev=>{const f=ev.target;ev.preventDefaul
  if(!acc)return;
  if(k==='egg'){const code=String(fd.get('code')).trim().toUpperCase();if(!/^EGG-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code))return toast('알 코드 형식이 아니에요.');const d=await db.doc('eggcodes/'+code).get();if(!d.exists)return toast('없는 알 코드예요.');const e=d.data();if(e.used)return toast('이미 사용한 알 코드예요.');if(e.target&&e.target!==acc.id)return toast('다른 사람 전용 알 코드예요.');
   try{await db.doc('eggcodes/'+code).set(Object.assign({},e,{used:true,by:acc.id,byUid:acc.uid,usedT:Date.now()}));}catch(er){return toast('알 코드를 쓰지 못했어요.');}
-  const slot=giveEgg(e.kind==='yy'?80:0);if(slot>=0){sel=slot;view='home';}SFX.play('egg');toast(slot>=0?'알을 받았어요!':'알을 받았어요! 빈 슬롯이 없어 가방에 보관했어요.');await commit();}
+  giveEgg(e.kind==='yy'?80:0);SFX.play('egg');toast('알을 받았어요! 가방에 보관했어요. 가방에서 원하는 슬롯에 부화시켜 주세요.');await commit();}
  if(k==='coin'){const m=String(fd.get('code')).trim().match(/^(\d+)-(\d+)-(\d+)-(\d+)$/);if(!m)return toast('코드 형식이 아니에요. 예: 3-7-10-4821');const [id,n,c,chk]=m.slice(1).map(Number);if((id*37+n*53+c*71+1234)%9973!==chk)return toast('잘못된 코드예요.');if(acc.playerNo&&acc.playerNo!==id)return toast('본인 플레이어 번호의 코드가 아니에요.');if(n<=(acc.lastNonce||0))return toast('이미 사용한 코드예요.');acc.playerNo=id;acc.lastNonce=n;acc.coins+=c;SFX.play('coins');toast('환수 코인 '+c+'개가 들어왔어요!');await commit();}
 }finally{busy=false;}});
 document.addEventListener('error',ev=>{const t=ev.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&/\/(h|b)\//.test(t.src)){t.dataset.fb='1';t.src='i/q.png';}},true);
@@ -1368,7 +1368,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
   const pr=slotPrice();if(acc.coins<pr)return toast('코인이 부족해요. ('+(acc.slots.length+1)+'번째 슬롯 '+pr+'코인)');
   return confirmBox('슬롯 추가',(acc.slots.length+1)+'번째 환수 슬롯을 '+pr+'코인에 열까요?',()=>{if(acc.coins<pr||acc.slots.length>=MAX_SLOTS)return;acc.coins-=pr;addSlot();SFX.play('buy');slotFx();commit();});}
  if(ds.buyegg){const wk=accWeekly();if(wk.egg>=EGG_WEEK)return toast('이번 주에는 더 살 수 없어요 (주 '+EGG_WEEK+'개).');if(acc.coins<EGG_PRICE)return toast('코인이 부족해요.');
-  acc.coins-=EGG_PRICE;wk.egg++;const k=giveEgg(0);SFX.play('egg');toast(k>=0?'환수 알을 샀어요! 슬롯 '+(k+1)+'에 들어갔어요.':'환수 알을 샀어요! 빈 슬롯이 없어 가방에 보관했어요.');return commit();}
+  acc.coins-=EGG_PRICE;wk.egg++;giveEgg(0);SFX.play('egg');toast('환수 알을 샀어요! 가방에 보관했어요.');return commit();}
  if(ds.buyeq){if(acc.coins<30)return toast('코인이 부족해요.');acc.coins-=30;acc.gear.push({u:'g'+Date.now()+Math.floor(rnd()*1000),t:ds.buyeq,g:0,p:0,aff:'fire'});SFX.play('buy');toast('일반 '+TN[ds.buyeq]+' 구매!');return commit();}
  if(ds.gsel){const u=ds.gsel;const i=S.forgeSel.indexOf(u);if(i>=0)S.forgeSel.splice(i,1);else{S.forgeSel.push(u);if(S.forgeSel.length>2)S.forgeSel.shift();}return render();}
  if(t.matches('[data-bless]')){S.bless=t.checked;return render();}
