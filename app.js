@@ -1035,7 +1035,7 @@ const XM_MON=[['x_m1','눈뭉치 요괴',1,'눈뭉치 던지기','ball','water']
  ['x_m4','심술 눈사람',45,'코당근 박치기','shock','water'],['x_m5','굴뚝 검댕이',103,'검댕 뿜기','vortex','yin'],['x_m6','포장지 요괴',121,'리본 휘감기','vine','fire'],
  ['x_m7','서리 늑대',63,'서리 이빨','bite','metal'],['x_m8','눈보라 정령',106,'칼바람','wave','water']];
 const XM_GATE=[.8,.9,1,1.1,1.3],XM_SHARE=[.15,.15,.15,.15,.4];
-const XM_ART={};
+const XM_ART={deco_wreath9:1,deco_snow:1,deco_aurora:1};
 function xmImg(k,fb){return XM_ART[k]?'x/'+k+'.png?'+IMG_V:fb;}
 function xmOn(){if(TEST)return true;const c=cfg.xm;if(!c||!c.s||!c.e)return false;const d=dayKey(now());return d>=c.s&&d<=c.e;}
 function xmState(){if(!acc.xm||acc.xm.id!==XM_ID)acc.xm={id:XM_ID,free:'',run:null,clr:{},eb:0};return acc.xm;}
@@ -1127,13 +1127,14 @@ function decoModal(){const L=document.getElementById('layer'),d=acc.deco||{};con
 let DECO_EL=null,DECO_T=null,SNOW=null;
 function decoMount(){const box=document.querySelector('.stagebox');const d=(acc&&acc.deco)||{};
  if(!box||view!=='home'){return;}
- box.classList.toggle('deco-aurora',d.bg==='bg_aurora');
+ box.classList.toggle('deco-aurora',d.bg==='bg_aurora');box.classList.toggle('has-wreath',d.frame==='fr_wreath');
  if(!d.frame&&!d.fx){if(DECO_EL)DECO_EL.remove();return;}
- if(!DECO_EL){DECO_EL=document.createElement('div');DECO_EL.className='decolayer';DECO_EL.innerHTML='<canvas class="snowc"></canvas><div class="wreath"></div>';}
- DECO_EL.querySelector('.wreath').style.display=d.frame==='fr_wreath'?'':'none';DECO_EL.querySelector('.wreath').classList.toggle('fb',!XM_ART.deco_wreath_a);DECO_EL.querySelector('.snowc').style.display=d.fx==='fx_snow'?'':'none';
+ if(!DECO_EL){DECO_EL=document.createElement('div');DECO_EL.className='decolayer';DECO_EL.innerHTML='<canvas class="snowc"></canvas><div class="snowimg"></div><div class="wreath"><img class="px wbow" src="x/deco_wreath_bow.png?'+IMG_V+'" alt=""></div>';}
+ DECO_EL.querySelector('.wreath').style.display=d.frame==='fr_wreath'?'':'none';const wr=DECO_EL.querySelector('.wreath');wr.classList.toggle('anim',!!XM_ART.deco_wreath9);wr.classList.toggle('fb',!XM_ART.deco_wreath9&&!XM_ART.deco_wreath_a);wr.querySelector('.wbow').style.display=XM_ART.deco_wreath9?'':'none';
+ const snowOn=d.fx==='fx_snow',useImg=!!XM_ART.deco_snow;DECO_EL.querySelector('.snowimg').style.display=snowOn&&useImg?'':'none';DECO_EL.querySelector('.snowc').style.display=snowOn&&!useImg?'':'none';DECO_EL.querySelector('.snowc').style.display=d.fx==='fx_snow'?'':'none';
  if(DECO_EL.parentNode!==box)box.appendChild(DECO_EL);
  if(!DECO_T)DECO_T=setInterval(()=>{if(DECO_EL)DECO_EL.classList.toggle('blink');},700);
- if(d.fx==='fx_snow'&&!SNOW)snowStart();}
+ if(d.fx==='fx_snow'&&!SNOW&&!XM_ART.deco_snow)snowStart();}
 function snowStart(){const flakes=[];let last=0;SNOW=true;
  const loop=ts=>{requestAnimationFrame(loop);if(!DECO_EL||!DECO_EL.isConnected||DECO_EL.querySelector('.snowc').style.display==='none')return;if(ts-last<33)return;last=ts;
   const c=DECO_EL.querySelector('.snowc'),w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;const S=3;if(c.width!==Math.round(w/S)||c.height!==Math.round(h/S)){c.width=Math.round(w/S);c.height=Math.round(h/S);flakes.length=0;}

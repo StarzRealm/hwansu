@@ -434,3 +434,39 @@ table.t tr.me td{background:rgba(201,149,46,.18)}
 .entip:hover .stat{cursor:help}
 .fixon{display:flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;border-radius:999px;background:rgba(240,199,94,.25);border:1px solid #d8b25a;color:#6b4a10;font-size:12.5px;font-weight:700}
 .fixon img{width:22px;height:22px}
+/* 크리스마스 이벤트 v49 */
+.xmtop{background:linear-gradient(120deg,#0e1f3a,#1d4a5e 55%,#7a1e24);border-color:#d9e6f0;box-shadow:0 3px 0 #5a7a90}
+.xmtop .twttl{color:#f4fbff;text-shadow:0 2px 0 #0a1830,0 0 12px rgba(160,220,255,.6)}
+.xmc{width:20px;height:20px;vertical-align:-4px;margin-right:3px;image-rendering:pixelated}
+.xmtiers{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.xmtier{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:linear-gradient(180deg,#f6fbff,#e6f1f8);border-color:#b8d3e4}
+.xmtier .xmti{height:64px;display:flex;align-items:center;justify-content:center;font-size:40px}.xmtier .xmti img{width:64px;height:64px}
+.xmtier b{font-size:18px}.xmtier small{font-size:12px;color:var(--sub)}
+.xmtier.lock{opacity:.55;filter:grayscale(.6)}
+.xmfloor{background:radial-gradient(circle at 50% 40%,#ffffff,#e3eef6)}
+.xmfb{filter:brightness(1.15) saturate(.4) hue-rotate(160deg) drop-shadow(0 0 6px rgba(140,210,255,.9))}
+.item.own{opacity:.75}
+.decobtn{cursor:pointer;border:1px solid #d8b25a;background:#fff8e6;color:#6b4a10;font-weight:700}
+.stagebox.deco-aurora{background:linear-gradient(180deg,rgba(20,30,70,.0),rgba(20,30,70,0)),url(x/deco_aurora.png) center 42%/cover,linear-gradient(180deg,#0b1636 0%,#1a3a6a 35%,#3fb6a8 48%,#a7e8d8 56%,#eaf6ff 70%,#ffffff 100%)}
+.decolayer{position:absolute;inset:0;pointer-events:none;z-index:3}
+.decolayer .snowc{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.decolayer .wreath{position:absolute;inset:0;border-style:solid;border-width:38px;border-image:url(x/deco_wreath_a.png) 120 fill/38px round;image-rendering:pixelated}
+.decolayer.blink .wreath{border-image-source:url(x/deco_wreath_b.png)}
+@media (max-width:900px){.xmtiers{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.decolayer .wreath{border-width:26px;border-image-width:26px}}
+.decolayer .wreath.fb{border:16px solid #1d6a3c;border-image:none;border-radius:12px;box-shadow:inset 0 0 0 3px #c9952e,inset 0 0 18px rgba(0,0,0,.35)}
+.decolayer .wreath.fb::before{content:'';position:absolute;inset:-12px;border:6px dotted #ffd84a;border-radius:14px;filter:drop-shadow(0 0 4px #ffd84a)}
+.decolayer.blink .wreath.fb::before{border-color:#ff5a5a;filter:drop-shadow(0 0 4px #ff5a5a)}
+.decolayer .wreath.fb::after{content:'🎀';position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:28px}
+/* 꾸미기 그림 적용 v51 */
+.decolayer .wreath.anim{border-width:52px;border-image:url(x/deco_wreath_9slice.png) 64/52px round;border-radius:0}
+.decolayer .wreath .wbow{position:absolute;top:-50px;left:50%;width:120px;height:auto;transform:translateX(-50%);image-rendering:pixelated;filter:drop-shadow(0 2px 0 rgba(0,0,0,.3))}
+.decolayer .snowimg{position:absolute;inset:0;background:url(x/deco_snow.png) repeat;background-size:384px 384px;image-rendering:pixelated}
+.stagebox.deco-aurora .plate,.stagebox.deco-aurora .cpp{background:rgba(255,250,240,.9)}
+@media (max-width:640px){.decolayer .wreath.anim{border-width:36px;border-image-width:36px}.decolayer .wreath .wbow{top:-36px;width:84px}.decolayer .snowimg{background-size:256px 256px}}
+.decolayer{z-index:2}
+.stagebox>div:not(.decolayer){z-index:4}
+.stagebox.has-wreath>div:first-child{left:58px!important;top:46px!important}
+.stagebox.has-wreath>.cpp{right:58px!important;top:46px!important}
+.stagebox.has-wreath>div:not(.decolayer):not(.plate):not(:first-child){left:52px!important;right:52px!important;bottom:52px!important;border-radius:8px}
+@media (max-width:640px){.stagebox.has-wreath>div:first-child{left:40px!important;top:34px!important}.stagebox.has-wreath>.cpp{right:40px!important;top:auto!important;bottom:76px!important}.stagebox.has-wreath>div:not(.decolayer):not(.plate):not(:first-child){left:36px!important;right:36px!important;bottom:36px!important}}
