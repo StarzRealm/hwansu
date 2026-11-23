@@ -814,7 +814,7 @@ const SFX=(()=>{
 document.addEventListener('pointerdown',()=>{if(MODE==='player')SFX.init();},{capture:true});
 let HS=null, unsubMe=null;
 function normAcc(d){const a=JSON.parse(JSON.stringify(d));a.notice=a.notice||[null,null,null];a.gear=a.gear||[];a.inv=a.inv||{};a.dex=a.dex||{};a.slots=a.slots||[null,null,null];a.mail=a.mail||[];a.offset=0;return a;}
-function render(){
+function render(){if(TEST)setTimeout(testBar,0);
  const app=document.getElementById('app');
  if(!acc){app.innerHTML=loginView(S.loginMsg||'');return;}
  if(MODE==='admin'){app.innerHTML=isAdmin()?adminHeader()+'<main>'+adminBody()+'</main>':'<main><div class="card">운영자 계정이 아니에요. <button class="btn sm" data-a2="logout">로그아웃</button></div></main>';return;}
@@ -879,42 +879,48 @@ function twMon(f){const z=twZone(f),Z=TW_ZONES[z],boss=f%10===0,sea=twSeason();l
  let fb=d[2];if(z===9&&!boss)fb=TW_SHADOW[twHash(f*13+Number(sea.replace('-','')))%TW_SHADOW.length];
  const name=z===9&&!boss?'그림자 '+NAMES[fb]:d[1];
  return{boss:true,tw:1,big:boss,key:d[0],name,img:twImg(d[0],img(fb)),fb:!TW_ART[d[0]],el,cp:twRec(f),lv:f,tag:boss?(f===100?'최종 보스':f+'층 수문장'):f+'층',sub:'구천탑 · '+Z.n,skill:{n:d[3],fx:d[4],pal:el==='neutral'?'neutral':el}};}
-function twStat(D){const s=bStat(D);return{hp:Math.round(s.hp*.8),atk:s.atk*.75};}
-function twBuff(run){const b={atk:0,taken:0,drain:0,first:0,elem:0};(run.picks||[]).forEach(k=>{const e=TWC[k];if(e&&e.bf)Object.entries(e.bf).forEach(([x,v])=>{b[x]+=v;});});return b;}
+function twStat(D){const s=bStat(D),f=D.lv||1;return{hp:Math.round(s.hp*(.9+f*.004)),atk:s.atk*(.85+f*.004)};}
+const TW_MAX={atk:.4,taken:-.25,drain:.15};
+function twBuff(run){const b={atk:0,taken:0,drain:0,first:0,elem:0};(run.picks||[]).forEach(k=>{const e=TWC[k];if(e&&e.bf)Object.entries(e.bf).forEach(([x,v])=>{b[x]+=v;});});
+ b.atk=Math.min(TW_MAX.atk,b.atk);b.taken=Math.max(TW_MAX.taken,b.taken);b.drain=Math.min(TW_MAX.drain,b.drain);b.first=b.first?1:0;b.elem=b.elem?1:0;return b;}
 function towerSim(A,ha0,D,bf,seed){let x=seed>>>0;const R=()=>{x=(x+0x6D2B79F5)>>>0;let t=x;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
  const sa=bStat(A),sd=twStat(D);let ha=Math.max(1,Math.min(sa.hp,ha0)),hd=sd.hp,turn=0,first=true;const log=[];
  while(ha>0&&hd>0&&turn<200){const aT=turn%2===0,at=aT?A:D,df=aT?D:A;
   const miss=R()<.05,crit=!miss&&R()<.1,adv=isAdv(at.el,df.el)?1:0;
   let m=(0.85+R()*0.3)*(crit?1.5:1)*(adv?ADV_ATK*WEAK_TAKE:1);
-  if(aT){m*=1+bf.atk;if(adv&&bf.elem)m*=1.25;if(first&&bf.first)m*=2;first=false;}else m*=Math.max(.3,1+bf.taken);
+  if(aT){m*=1+bf.atk;if(adv&&bf.elem)m*=1.15;if(first&&bf.first)m*=1.5;first=false;}else m*=Math.max(.3,1+bf.taken);
   const dmg=miss?0:Math.max(1,Math.round((aT?sa.atk:sd.atk)*m));
   if(aT){hd=Math.max(0,hd-dmg);if(bf.drain&&dmg)ha=Math.min(sa.hp,ha+Math.round(dmg*bf.drain));}else ha=Math.max(0,ha-dmg);
   log.push([aT?0:1,dmg,crit?1:0,miss?1:0,adv,ha,hd]);turn++;}
  return{log,win:hd<=0,hpA:sa.hp,hpA0:Math.round(ha0),hpD:sd.hp,ha};}
 // 로그라이크 선택지
 const TWC={
- heal_s:{n:'선계 약수',r:0,d:'방금 싸운 환수 체력 30% 회복',fb:null},
- heal_all:{n:'주먹밥 보따리',r:0,d:'살아 있는 환수 전원 체력 15% 회복',fb:'i/act_feed.png'},
- atk_s:{n:'날 선 발톱',r:0,d:'이번 등반 공격력 +8%',fb:'eq/0_w.gif',bf:{atk:.08}},
- def_s:{n:'단단한 비늘',r:0,d:'이번 등반 받는 피해 -8%',fb:'eq/0_a.gif',bf:{taken:-.08}},
- coin_s:{n:'코인 주머니',r:0,d:'환수 코인 +3',fb:'i/bag1.png'},
- sus_s:{n:'수상한 기운 (소)',r:0,d:'수상한 기운(소) 1개',fb:null},
- heal_l:{n:'영약 한 모금',r:1,d:'방금 싸운 환수 체력 60% 회복',fb:null},
- drain:{n:'흡혈 부적',r:1,d:'이번 등반 가한 피해의 10% 회복',fb:'i/sec_cure.gif',bf:{drain:.1}},
- first:{n:'선공의 깃털',r:1,d:'이번 등반 매 전투 첫 공격 피해 2배',fb:'i/act_play.png',bf:{first:1}},
- elem:{n:'오행 공명',r:1,d:'이번 등반 상성 유리 시 피해 +25%',fb:'i/act_evolve.png',bf:{elem:1}},
- coin_m:{n:'큰 코인 주머니',r:1,d:'환수 코인 +8',fb:'i/bag2.png'},
- sus_m:{n:'수상한 기운 (중)',r:1,d:'수상한 기운(중) 1개',fb:null},
- revive:{n:'부활초',r:2,d:'쓰러진 환수 1마리를 체력 50%로 부활 (없으면 전원 50% 회복)',fb:'i/act_return.png'},
- fox:{n:'구미호의 구슬',r:2,d:'이번 등반 공격력 +20%, 받는 피해 +10%',fb:'h/08.gif',bf:{atk:.2,taken:.1}},
- toad:{n:'황금 두꺼비',r:2,d:'환수 코인 +20',fb:'i/bag3.png'},
- t60:{n:'시간단축비서 (1시간)',r:2,d:'시간단축비서(1시간) 1개',fb:null},
- bet:{n:'도깨비 내기',r:3,d:'50%: 코인 +12 / 50%: 방금 싸운 환수 체력 -25%',fb:'i/yb_cup.png'}};
+ heal_s:{n:'선계 약수',r:0,w:10,v:.2,d:'방금 싸운 환수 체력 20% 회복',fb:null},
+ heal_all:{n:'주먹밥 보따리',r:0,w:8,v:.1,d:'살아 있는 환수 전원 체력 10% 회복',fb:'i/act_feed.png'},
+ atk_s:{n:'날 선 발톱',r:0,w:10,d:'이번 등반 공격력 +5% (최대 +40%)',fb:'eq/0_w.gif',bf:{atk:.05}},
+ def_s:{n:'단단한 비늘',r:0,w:10,d:'이번 등반 받는 피해 -4% (최대 -25%)',fb:'eq/0_a.gif',bf:{taken:-.04}},
+ coin_s:{n:'코인 주머니',r:0,w:3,d:'환수 코인 +1',fb:'i/bag1.png'},
+ sus_s:{n:'수상한 기운 (소)',r:0,w:4,d:'수상한 기운(소) 1개',fb:null},
+ heal_l:{n:'영약 한 모금',r:1,w:10,v:.4,d:'방금 싸운 환수 체력 40% 회복',fb:null},
+ drain:{n:'흡혈 부적',r:1,w:6,d:'이번 등반 가한 피해의 3% 회복 (최대 15%)',fb:'i/sec_cure.gif',bf:{drain:.03}},
+ first:{n:'선공의 깃털',r:1,w:5,d:'이번 등반 매 전투 첫 공격 피해 1.5배 (중복 안 됨)',fb:'i/act_play.png',bf:{first:1}},
+ elem:{n:'오행 공명',r:1,w:5,d:'이번 등반 상성 유리 시 피해 +15% (중복 안 됨)',fb:'i/act_evolve.png',bf:{elem:1}},
+ atk_m:{n:'맹수의 송곳니',r:1,w:6,d:'이번 등반 공격력 +10% (최대 +40%)',fb:'eq/1_w.gif',bf:{atk:.1}},
+ coin_m:{n:'큰 코인 주머니',r:1,w:2,d:'환수 코인 +3',fb:'i/bag2.png'},
+ sus_m:{n:'수상한 기운 (중)',r:1,w:3,d:'수상한 기운(중) 1개',fb:null},
+ revive:{n:'부활초',r:2,w:5,v:.3,d:'쓰러진 환수 1마리를 체력 30%로 부활 (없으면 전원 20% 회복)',fb:'i/act_return.png'},
+ fox:{n:'구미호의 구슬',r:2,w:5,d:'이번 등반 공격력 +15%, 받는 피해 +10%',fb:'h/08.gif',bf:{atk:.15,taken:.1}},
+ toad:{n:'황금 두꺼비',r:2,w:2,d:'환수 코인 +6',fb:'i/bag3.png'},
+ t60:{n:'시간단축비서 (1시간)',r:2,w:3,d:'시간단축비서(1시간) 1개',fb:null},
+ bet:{n:'도깨비 내기',r:3,w:1,d:'50%: 코인 +4 / 50%: 방금 싸운 환수 체력 -25%',fb:'i/yb_cup.png'}};
 const TWR=['일반','희귀','전설','특수'],TWRC=['n','r','l','s'];
 function twcImg(k){const e=TWC[k],fb=e.fb||({sus_s:ITEMS.sus_s.img,sus_m:ITEMS.sus_m.img,heal_l:ITEMS.elixir.img,heal_s:ITEMS.dew.img,t60:ITEMS.sec_t60.img})[k];return twImg('c_'+k,fb);}
-function twRoll(f){const out=[],pool=r=>Object.keys(TWC).filter(k=>TWC[k].r===r&&!out.includes(k));
- for(let i=0;i<3;i++){if(!out.includes('bet')&&rnd()<.05){out.push('bet');continue;}
-  const x=rnd(),r=f%10===0?(x<.25?2:1):(x<.6?0:x<.9?1:2);let p=pool(r);if(!p.length)p=pool(0).concat(pool(1),pool(2));out.push(p[Math.floor(rnd()*p.length)]);}
+function twRoll(f,run){const out=[],bf=run?twBuff(run):{atk:0,taken:0,drain:0,first:0,elem:0},picks=run&&run.picks||[];
+ const ok=k=>{const e=TWC[k];if(out.includes(k))return false;if(!e.bf)return true;if((k==='first'||k==='elem')&&picks.includes(k))return false;
+  if(e.bf.atk>0&&!e.bf.taken&&bf.atk>=TW_MAX.atk)return false;if(e.bf.taken<0&&bf.taken<=TW_MAX.taken)return false;if(e.bf.drain&&bf.drain>=TW_MAX.drain)return false;if(k==='fox'&&bf.atk>=TW_MAX.atk)return false;return true;};
+ const pick=r=>{const L=Object.keys(TWC).filter(k=>TWC[k].r===r&&ok(k));if(!L.length)return null;let t=L.reduce((a,k)=>a+TWC[k].w,0)*rnd();for(const k of L){t-=TWC[k].w;if(t<=0)return k;}return L[L.length-1];};
+ for(let i=0;i<3;i++){if(ok('bet')&&rnd()<.02){out.push('bet');continue;}
+  const x=rnd(),r=f%10===0?(x<.15?2:1):(x<.75?0:x<.97?1:2);const k=pick(r)||pick(0)||pick(1)||pick(2);if(k)out.push(k);}
  return out;}
 function petKey(q,i){if(!q.born)q.born=Date.now()+i;return String(q.born);}
 function twHp(run,q,i){const k=petKey(q,i),v=run.hp[k];return v==null?1:v;}
@@ -922,18 +928,18 @@ function twUsable(run){return acc.slots.map((q,i)=>q&&q.sick==null&&!run.down.in
 function twPick(k){const t=twState(),run=t.run;if(!run||!run.choice||!run.choice.includes(k))return;const e=TWC[k],last=run.last;let msg=e.n+' 획득!';
  const heal=(key,v)=>{if(key==null||run.down.includes(key))return;run.hp[key]=Math.min(1,(run.hp[key]==null?1:run.hp[key])+v);};
  const alive=()=>acc.slots.map((q,i)=>q?petKey(q,i):null).filter(x=>x&&!run.down.includes(x));
- if(k==='heal_s')heal(last,.3);if(k==='heal_l')heal(last,.6);if(k==='heal_all')alive().forEach(x=>heal(x,.15));
- if(k==='coin_s')acc.coins+=3;if(k==='coin_m')acc.coins+=8;if(k==='toad')acc.coins+=20;
+ if(k==='heal_s'||k==='heal_l')heal(last,e.v);if(k==='heal_all')alive().forEach(x=>heal(x,e.v));
+ if(k==='coin_s')acc.coins+=1;if(k==='coin_m')acc.coins+=3;if(k==='toad')acc.coins+=6;
  if(k==='sus_s'||k==='sus_m')acc.inv[k]=(acc.inv[k]||0)+1;if(k==='t60')acc.inv.sec_t60=(acc.inv.sec_t60||0)+1;
  if(k==='revive'){const dn=acc.slots.map((q,i)=>q&&run.down.includes(petKey(q,i))?{k:petKey(q,i),c:cp(q)}:null).filter(Boolean).sort((a,b)=>b.c-a.c);
-  if(dn.length){run.down=run.down.filter(x=>x!==dn[0].k);run.hp[dn[0].k]=.5;msg='부활초! '+NAMES[acc.slots.find((q,i)=>q&&petKey(q,i)===dn[0].k).no]+'이(가) 다시 일어났어요.';}else alive().forEach(x=>heal(x,.5));}
- if(k==='bet'){if(rnd()<.5){acc.coins+=12;msg='도깨비 내기 승리! 코인 +12';SFX.play('coins');}else{if(last!=null&&!run.down.includes(last))run.hp[last]=Math.max(.01,(run.hp[last]==null?1:run.hp[last])-.25);msg='도깨비 내기 패배… 체력 -25%';SFX.play('sad');}}
+  if(dn.length){run.down=run.down.filter(x=>x!==dn[0].k);run.hp[dn[0].k]=e.v;msg='부활초! '+NAMES[acc.slots.find((q,i)=>q&&petKey(q,i)===dn[0].k).no]+'이(가) 다시 일어났어요.';}else alive().forEach(x=>heal(x,.2));}
+ if(k==='bet'){if(rnd()<.5){acc.coins+=4;msg='도깨비 내기 승리! 코인 +4';SFX.play('coins');}else{if(last!=null&&!run.down.includes(last))run.hp[last]=Math.max(.01,(run.hp[last]==null?1:run.hp[last])-.25);msg='도깨비 내기 패배… 체력 -25%';SFX.play('sad');}}
  else SFX.play(e.r>=2?'fanfare':'magic');
  if(e.bf)run.picks.push(k);run.choice=null;toast(msg);commit();}
 function twReward(f){const r={c:0,it:{},g:null,title:null};
  if(f%10===0){const B={10:[15,{sec_t60:1}],20:[15,{},1],30:[20,{sec_t180:1}],40:[20,{sec_bless:1},2],50:[30,{sec_t300:1,sus_l:1}],60:[30,{},3],70:[40,{sec_t480:1,sec_protect:1}],80:[50,{},4],90:[60,{egg_n:1}],100:[100,{egg_yy:1}]}[f];
   r.c=B[0];r.it=Object.assign({},B[1]);if(B[2]!=null)r.g=B[2];if(f===100)r.title='천마를 벤 자';}
- else if(f%5===0){const el=TW_ZONES[twZone(f)].el,ki=EL.includes(el)?'ki_'+el:'ki_yy';const L=[{tal_time:1},{sus_s:2},{[ki]:5},{sec_aff:1},{sus_m:1},{sec_bless:1}];r.it=L[Math.floor(f/5)%L.length];}
+ else if(f%5===0){const el=TW_ZONES[twZone(f)].el,ki=EL.includes(el)?'ki_'+el:'ki_yy';const L=[{tal_time:1},{sus_s:2},{[ki]:5},{sec_aff:1},{sus_m:1},{sec_bless:1}];r.it=L[((f/5-1)/2)%L.length];}
  else r.c=f<=30?2:f<=60?3:f<=90?4:6;
  return r;}
 function twRewardTxt(r){const a=[];if(r.c)a.push('코인 '+r.c);Object.entries(r.it).forEach(([k,n])=>a.push(ITEMS[k].n+(n>1?' ×'+n:'')));if(r.g!=null)a.push(GN[r.g]+' 장비');if(r.title)a.push('칭호 「'+r.title+'」');return a.join(', ');}
@@ -953,7 +959,7 @@ async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.sl
  try{const A=petSnap(q),D=twMon(f),bf=twBuff(run),frac=twHp(run,q,i),ha0=Math.max(1,Math.round(bStat(A).hp*frac));
   const res=towerSim(A,ha0,D,bf,Math.floor(rnd()*4294967296));run.last=key;run.n++;
   let rw=null,ended=false;
-  if(res.win){run.hp[key]=res.ha/res.hpA;t.best=f;t.bestT=Date.now();t.bestNo=q.no;rw=twReward(f);twGive(rw);if(f<TW_TOP)run.choice=twRoll(f);else run.choice=null;}
+  if(res.win){run.hp[key]=res.ha/res.hpA;t.best=f;t.bestT=Date.now();t.bestNo=q.no;rw=twReward(f);twGive(rw);if(f<TW_TOP)run.choice=twRoll(f,run);else run.choice=null;}
   else{run.hp[key]=0;run.down.push(key);}
   if(!twUsable(run).length||t.best>=TW_TOP){if(!(res.win&&run.choice)){t.run=null;ended=true;}}
   await save();if(res.win)twSync();
@@ -991,7 +997,7 @@ function vTowerRank(){const L=TV.rank;if(!L)return '<div class="card"><p class="
 /* ================= 운영자 사이트 ================= */
 const AS={tab:'users',tgt:null,list:null,eggs:null,logs:null,newPw:'',codeGen:'',slot:0};
 function adminHeader(){const tabs=[['users','유저 관리'],['eggs','알 코드'],['mail','우편'],['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['tools','코드 테스트'],['logs','변경 기록']];if(isMain())tabs.splice(1,0,['make','계정 만들기']);
- return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main" aria-label="운영자 메뉴">'+tabs.map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div></header>';}
+ return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main" aria-label="운영자 메뉴">'+tabs.map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav><a class="btn sm" href="index.html?test" target="_blank" rel="noopener" style="background:#f0c75e;color:#3a2414" title="실제 서버와 상관없는 가짜 계정으로 유저 화면을 시험해요">🧪 테스트 모드</a><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div></header>';}
 function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,event:aEvent,tools:aTools,logs:aLogs}[AS.tab]();}
 const roleN={main:'메인',sub:'보조',player:'플레이어'};
 function aUsers(){
@@ -1233,8 +1239,9 @@ async function makeFirebase(){
   onAuth:cb=>A.onAuthStateChanged(auth,u=>cb(u?u.uid:null))};
 }
 // 로컬 확인용 가짜 저장소 (주소 끝에 ?mock 을 붙였을 때만)
+const TEST=MODE==='player'&&/[?&]test\b/.test(location.search);
 function makeMock(){
- const K='hs_mock_v1';let st={docs:{},users:{}};try{st=JSON.parse(localStorage.getItem(K))||st;}catch(e){}
+ const K=TEST?'hs_test_v1':'hs_mock_v1';let st={docs:{},users:{}};try{st=JSON.parse(localStorage.getItem(K))||st;}catch(e){}
  const persist=()=>{try{localStorage.setItem(K,JSON.stringify(st));}catch(e){}};
  const sync=()=>{try{st=JSON.parse(localStorage.getItem(K))||st;}catch(e){}};
  let cur=null,listeners=[];const subs={};
@@ -1250,9 +1257,41 @@ function makeMock(){
   createUser:async(id,pw)=>{sync();const e=emailOf(id);if(st.users[e])throw err('auth/email-already-in-use');const uid='u'+Math.random().toString(36).slice(2,10);st.users[e]={uid,pw};persist();return uid;},
   onAuth:cb=>{setTimeout(()=>cb(cur),0);}};
 }
+/* ================= 테스트 모드 (index.html?test) ================= */
+async function testSeed(){
+ try{await HS.signIn('tester','test1234');}catch(e){
+  const uid=await HS.register('tester','test1234');const a=blankAcc('tester',uid,'player','테스터');a.coins=99999;
+  Object.keys(ITEMS).forEach(k=>a.inv[k]=20);
+  const mk=(no,lv)=>{const q=newPet(no);q.st=FORMS[no].st;q.lv=Math.min(maxLv(q.st),lv);q.born=Date.now()+no;q.aff=80;return q;};
+  a.slots=[mk(40,60),mk(72,60),mk(24,50),mk(94,40),mk(20,20)];a.notice=[null,null,null,null,null];
+  a.slots.forEach(q=>{a.dex[q.no]=1;});
+  ['w','a','s'].forEach(t=>[0,1,2,3,4].forEach(g=>a.gear.push({u:'g'+t+g+Math.random().toString(36).slice(2,7),t,g,p:0,aff:'fire'})));
+  await db.doc('accounts/'+uid).set(a);
+  const bots=[['bot1','연습상대 해치',[4,30]],['bot2','연습상대 백호',[72,60]],['bot3','연습상대 봉황',[23,45]],['bot4','연습상대 현무',[56,55]]];
+  for(const [u,n,[no,lv]] of bots){await db.doc('arena/'+u).set({uid:u,id:u,nick:n,week:sunKey(now()),medals:100,w:0,l:0,dw:0,dl:0,pet:petSnap(mk(no,lv)),t:Date.now()});}
+  const s0=twSeason();
+  for(const [u,n,b,no] of [['tb1','청룡왕',35,40],['tb2','백호짱',28,72],['tb3','주작님',21,24]]){await db.doc('tower/'+u).set({uid:u,id:u,nick:n,season:s0,best:b,t:Date.now()-b*6e5,no,title:null});await db.doc('tower/'+u+'_p').set({uid:u+'_p',id:u,nick:n,season:twPrevSeason(),best:b+40,t:1,no,title:null});}
+  await testBoss();
+ }}
+async function testBoss(){await db.doc('boss/current').set({iid:'t'+Date.now().toString(36),no:1,maxHp:200000,hp:200000,atk:800,start:Date.now(),killed:false,reward:{coins:30},mvpReward:{coins:50},by:'test'});}
+function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
+ const B=[['coins','코인 +1000'],['items','아이템 전부 +5'],['limits','하루·주간 제한 초기화'],['finish','수련·심부름 바로 끝'],['fill','생활 수치 채우기'],['tower','탑 기회 3회 충전'],['towerreset','탑 진행 초기화'],['boss','월드보스 새로 소환'],['wipe','테스트 데이터 처음부터']];
+ document.body.insertAdjacentHTML('beforeend','<div id="testbar" class="testbar"><button class="tbh" data-tt="toggle">🧪 테스트 모드 <small>실제 서버와 무관</small></button><div class="tbb">'+B.map(([k,n])=>'<button data-tt="'+k+'">'+n+'</button>').join('')+'</div></div>');
+ document.getElementById('testbar').addEventListener('click',async e=>{const b=e.target.closest('[data-tt]');if(!b)return;const k=b.dataset.tt;
+  if(k==='toggle')return document.getElementById('testbar').classList.toggle('open');
+  if(k==='wipe'){if(!confirm('테스트 데이터를 모두 지우고 처음 상태로 돌릴까요?'))return;localStorage.removeItem('hs_test_v1');return location.reload();}
+  if(k==='coins')acc.coins+=1000;
+  if(k==='items')Object.keys(ITEMS).forEach(x=>acc.inv[x]=(acc.inv[x]||0)+5);
+  if(k==='limits'){acc.daily=null;acc.weekly=null;acc.slots.forEach(q=>{if(q)q.daily={d:'',pat:0,play:0,sleep:0};});}
+  if(k==='finish'){acc.slots.forEach(q=>{if(!q)return;if(q.train)q.train.end=now();if(q.errand)q.errand.end=now();});tickAll();}
+  if(k==='fill')acc.slots.forEach(q=>{if(!q)return;q.hu=q.th=q.cl=100;q.aff=100;q.en=Math.max(q.en||0,100);q.sick=null;q.sleep=null;q.zf=false;});
+  if(k==='tower')acc.twTk={n:TW_CAP,d:dayKey(now())};
+  if(k==='towerreset'){acc.tower=null;try{await db.doc('tower/'+acc.uid).delete();}catch(err){}TV.rank=null;TV.loaded=false;}
+  if(k==='boss'){await testBoss();BV.loaded=false;toast('월드보스를 새로 소환했어요.');}
+  SFX.play('ok');if(k!=='boss')toast(b.textContent+' 완료');commit();});}
 (async function boot(){
  const app=document.getElementById('app');
- try{HS=/[?&]mock/.test(location.search)?makeMock():await makeFirebase();}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
+ try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
  db=HS.db;if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,condText};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
