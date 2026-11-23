@@ -396,7 +396,8 @@ function colPath(a,b){const r=[];let x=b;while(x!=null){r.unshift(x);if(x===a)br
 const COLS2=[
  {t:'칠요의 정령',m:[82,101,120,127,134,141,148],sub:'일요 · 월요 · 화요 · 수요 · 목요 · 금요 · 토요의정',own:true},
  {t:'흉풍의 궁기',a:83,b:91},{t:'탐식의 도철',a:83,b:100},{t:'심연의 혼돈',a:102,b:110},{t:'패악의 도올',a:102,b:119},
- {t:'십이지신',m:[144,147,94,140,113,130,151,133,137,123,126,154],sub:'자·축·인·묘·진·사·오·미·신·유·술·해'}];
+ {t:'십이지신',m:[144,147,94,140,113,130,151,133,137,123,126,154],sub:'자·축·인·묘·진·사·오·미·신·유·술·해'},
+ {t:'🎄 눈사람 산타의 길',a:155,b:169},{t:'🎄 서리 장난꾼 잭 프로스트',a:155,b:175},{t:'🎄 산타클로스의 길',a:155,b:188},{t:'🎄 심술쟁이 크람푸스',a:155,b:194}];
 function colCard(c){const m=c.m||colPath(c.a,c.b).filter(i=>FORMS[i].st>=4),on=i=>c.own?!!acc.dex[i]:!!(acc.dex[i]&&acc.dex[i].freed),fr=m.filter(on).length,full=fr===m.length;
  return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.t)+'</b><span class="colp">'+(full?'<b class="colok">完成</b>':(c.own?'획득 ':'해방 ')+fr+'/'+m.length)+'</span></div><div class="colm">'+
   m.map(i=>{const d=acc.dex[i],no=String(i).padStart(2,'0'),lit=on(i);if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
