@@ -51,6 +51,9 @@ const FAIL_ZERO=0.5; // 내 전투력이 권장의 50% 미만인 곳에서 실�
 const FEED_DAILY=20; // 환수 한 마리당 하루 먹이 횟수
 const LUCK=[[5,8],[5,10],[6,13],[7,17],[9,22],[11,28],[14,36],[18,46],[22,60],[28,78],[35,100],[35,100]];
 const REFUND={4:5,5:8,6:14,7:22,8:33,9:48,10:65,11:84,12:100};
+const LIB_RW={4:[10,1,0,null,0],5:[20,1,0,'sus_s',10],6:[30,2,0,'sus_l',10],7:[50,2,0,'tal_time',4],8:[100,3,0,'sec_t60',4],9:[120,0,1,'sec_t180',4],10:[150,0,1,'sec_t300',4],11:[250,0,2,'sec_t480',4],12:[400,0,3,'sec_instant',4]};
+const LIB_GAME={4:'동패 1개',5:'동패 2개',6:'동패 4개',7:'은패 1개',8:'은패 2개',9:'은패 4개',10:'금패 1개',11:'금패 3개',12:'금강패 1개'};
+function libMail(st){const r=LIB_RW[st];const m={title:st+'단계 해방 보상',from:'선계 관리소',coins:r[0]};if(r[1])m.eggs=r[1];if(r[2])m.yyEggs=r[2];if(r[3])m.items={[r[3]]:r[4]};return m;}
 const HEART_T=[10,25,45,70,100], HEART_CP=[0,2,4,7,10,15], HEART_EXP=[0,2,4,6,8,10];
 const SPOTS=[['운무 계곡',10,10,60,5,'45% 55%',0],['청류 연못',80,30,220,10,'30% 70%',160],['송운 숲',300,60,520,15,'95% 50%',40],['홍염 고개',600,120,1200,20,'20% 40%',320],['황토 평원',1050,240,2800,30,'55% 85%',20],['백금 협곡',1600,480,6500,40,'65% 35%',200],['현수 심연',2450,480,11000,40,'80% 30%',180],['오행 제단',3300,720,20000,50,'50% 75%',260],['천계 문턱',5900,720,32000,50,'70% 40%',0],['선계 정상',8400,720,50000,50,'40% 20%',300]].map(a=>({n:a[0],rec:a[1],min:a[2],exp:a[3],cost:a[4],pos:a[5],hue:a[6]}));
 const ITEMS={
@@ -290,7 +293,12 @@ const A={
   p.en-=sp.cost;p.train={s:i,start:now(),end:now()+sp.min*MIN};SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+sp.n+'(으)로 떠났어요.');commit();},
  evolve(){const p=P();const e=evoCheck(p);if(!e.ok)return toast(e.reason);evoAnim(p,e.target);},
  liberate(){const p=P();if(!p)return;if(p.st<4)return toast('4단계부터 해방할 수 있어요.');if(p.sick!=null)return toast('아플 때는 해방할 수 없어요.');if(acc.dex[p.no]&&acc.dex[p.no].freed)return toast('이미 해방한 환수예요. 선계 귀환만 가능해요.');
-  confirmBox('해방하기',NAMES[p.no]+'을(를) 해방할까요? 되돌릴 수 없어요. 도감에 解 도장이 찍혀요.',()=>{dexAdd(p.no);acc.dex[p.no].freed=true;acc.notice[sel]=NAMES[p.no]+'을(를) 해방했어요. 새 알 코드를 입력하세요.';acc.slots[sel]=null;commit();SFX.play('mystic');toast('해방했어요.');});},
+  const lm=libMail(p.st),gm=LIB_GAME[p.st];
+  confirmBox('해방하기',NAMES[p.no]+'('+p.st+'단계)을(를) 해방할까요? 되돌릴 수 없어요. 도감에 解 도장이 찍혀요.\n\n【해방 보상 · 우편으로 도착】\n'+mailParts(lm).join(', ')+'\n\n【인게임 보상】\n'+gm+' (운영자에게 신청)',()=>{const no=p.no,st=p.st;dexAdd(no);acc.dex[no].freed=true;
+   acc.mail=acc.mail||[];acc.mail.push(stampMail(Object.assign(lm,{msg:NAMES[no]+'('+st+'단계)을(를) 해방한 보상이에요. 선계에서 새로운 인연을 기다려요.'})));
+   acc.mail.push(stampMail({title:st+'단계 해방 · 인게임 보상 안내',from:'선계 관리소',msg:NAMES[no]+'('+st+'단계) 해방 인게임 보상: 「'+gm+'」\n마인크래프트 서버에서 운영자에게 신청하고 받아 가세요. (이 우편은 안내용이라 받을 아이템이 없어요)'}));
+   acc.libs=acc.libs||[];acc.libs.push({id:'l'+Date.now().toString(36),no,st,t:Date.now(),game:gm,done:false});
+   acc.notice[sel]=NAMES[no]+'을(를) 해방했어요. 보상이 우편함에 도착했어요!';acc.slots[sel]=null;commit();SFX.play('mystic');toast('해방했어요! 우편함을 확인하세요.');});},
  home(){const p=P();if(!p)return;if(p.st<4)return toast('4단계부터 선계 귀환할 수 있어요.');const c=REFUND[p.st];
   confirmBox('선계 귀환',NAMES[p.no]+'을(를) 선계로 돌려보내고 환수 코인 '+c+'개를 받을까요?',()=>{SFX.play('mystic');SFX.play('coins');acc.coins+=c;acc.notice[sel]=NAMES[p.no]+'이(가) 선계로 돌아갔어요. (코인 +'+c+')';acc.slots[sel]=null;commit();});},
  autoSleep(){const p=P();if(!p)return;p.autoSleep=!autoOn(p);toast(NAMES[p.no]+': 수련 후 자동 수면 '+(p.autoSleep?'켜짐':'꺼짐'));commit();},
@@ -318,7 +326,7 @@ function evoAnim(p,target){
    document.getElementById('evoOk').onclick=closeLayer;commit();},1100);}
 }
 function closeLayer(){document.getElementById('layer').innerHTML='';}
-function confirmBox(title,msg,yes){const L=document.getElementById('layer');L.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-label="'+esc(title)+'"><b class="serif" style="font-size:22px;color:#ffd36e">'+esc(title)+'</b><p style="margin:0">'+esc(msg)+'</p><div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="cfY">확인</button><button class="btn ghost" id="cfN">취소</button></div></div></div>';document.getElementById('cfY').onclick=()=>{closeLayer();yes();};document.getElementById('cfN').onclick=closeLayer;}
+function confirmBox(title,msg,yes){const L=document.getElementById('layer');L.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-label="'+esc(title)+'"><b class="serif" style="font-size:22px;color:#ffd36e">'+esc(title)+'</b><p style="margin:0;white-space:pre-line">'+esc(msg)+'</p><div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="cfY">확인</button><button class="btn ghost" id="cfN">취소</button></div></div></div>';document.getElementById('cfY').onclick=()=>{closeLayer();yes();};document.getElementById('cfN').onclick=closeLayer;}
 function feedMenu(){const L=document.getElementById('layer');const ks=['fire','water','wood','earth','metal','yy'];
  L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="기운 먹이기"><b class="serif" style="font-size:20px">어떤 기운을 먹일까요?</b>'+(()=>{const p=P(),d=p?daily(p):{};return '<small style="color:#c9d8d5">오늘 먹이 '+(d.feed||0)+' / '+FEED_DAILY+'</small>'+(p&&Math.round(p.hu)>=100?'<small style="color:#ff9a7a">배가 가득 찼어요. 더 먹이면 과식해서 청결도·목마름 -5, 호감도 -1</small>':'');})()+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+ks.map(k=>{const id=k==='yy'?'ki_yy':'ki_'+k;return '<button class="act" data-a="feed" data-v="'+k+'"><img class="px" src="'+ITEMS[id].img+'" alt=""><b>'+ITEMS[id].n+'</b><small>보유 '+(acc.inv[id]||0)+'</small></button>';}).join('')+'</div><button class="btn ghost" data-close="1">닫기</button></div></div>';}
 function susMenu(){const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="수상한 기운"><b class="serif" style="font-size:20px">수상한 기운</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+['sus_s','sus_m','sus_l'].map(k=>'<button class="act" data-a="sus" data-v="'+k+'"><img class="px" src="'+ITEMS[k].img+'" alt=""><b>'+['소','중','대'][['sus_s','sus_m','sus_l'].indexOf(k)]+'</b><small>보유 '+(acc.inv[k]||0)+'</small></button>').join('')+'</div><p class="muted" style="color:#c9d8d5">빨리 크는 대신 오행이 무작위로 올라 분기가 틀어질 수 있어요.</p><button class="btn ghost" data-close="1">닫기</button></div></div>';}
@@ -432,7 +440,7 @@ function vCode(){return '<h1 class="serif" style="margin:0;font-size:26px">코�
 
 function vMail(){const ms=(acc.mail||[]).slice().sort((a,b)=>b.t-a.t);
  return '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h1 class="serif" style="margin:0;font-size:26px">우편함</h1>'+(ms.length>1?'<button class="btn teal" data-mclaim="*">모두 받기 ('+ms.length+')</button>':'')+'</div>'+
- (ms.length?'<div class="mlist">'+ms.map(m=>'<div class="card mail"><div class="mhead"><b class="serif" style="font-size:18px">'+esc(m.title||'우편')+'</b><small class="muted">'+esc(m.from||'운영자')+' · '+new Date(m.t).toLocaleDateString('ko-KR')+'</small></div>'+(m.msg?'<p style="margin:6px 0;white-space:pre-wrap">'+esc(m.msg)+'</p>':'')+'<div class="mchips">'+mailIcons(m)+'</div><div style="text-align:right;margin-top:8px"><button class="btn" data-mclaim="'+esc(m.id)+'">'+(mailParts(m).length?'받기':'확인')+'</button></div></div>').join('')+'</div>'
+ (ms.length?'<div class="mlist">'+ms.map(m=>'<div class="card mail"><div class="mhead"><b class="serif" style="font-size:18px">'+esc(m.title||'우편')+'</b><small class="muted">'+esc(m.from||'운영자')+' · '+new Date(m.t).toLocaleDateString('ko-KR')+'</small></div>'+(m.msg?'<p style="margin:6px 0;white-space:pre-wrap;white-space:pre-line">'+esc(m.msg)+'</p>':'')+'<div class="mchips">'+mailIcons(m)+'</div><div style="text-align:right;margin-top:8px"><button class="btn" data-mclaim="'+esc(m.id)+'">'+(mailParts(m).length?'받기':'확인')+'</button></div></div>').join('')+'</div>'
  :'<div class="card" style="text-align:center;padding:40px 16px"><img class="px" src="i/q.png" alt="" style="width:48px;opacity:.5"><p class="muted">받은 우편이 없어요.</p></div>');}
 function claimMail(id){const list=acc.mail||[];const want=id==='*'?list.slice().sort((a,b)=>a.t-b.t):list.filter(m=>m.id===id);if(!want.length)return;const got=[],done=new Set();let free=acc.slots.filter(q=>!q).length,blocked=0;
  want.forEach(m=>{const e=(m.eggs||0)+(m.yyEggs||0);
@@ -1148,9 +1156,9 @@ function decoBtn(){return decoAny()?'<button class="chip decobtn" data-decoopen=
 
 /* ================= 운영자 사이트 ================= */
 const AS={tab:'users',tgt:null,list:null,eggs:null,logs:null,newPw:'',codeGen:'',slot:0};
-function adminHeader(){const tabs=[['users','유저 관리'],['eggs','알 코드'],['mail','우편'],['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['tools','코드 테스트'],['logs','변경 기록']];if(isMain())tabs.splice(1,0,['make','계정 만들기']);
+function adminHeader(){const tabs=[['users','유저 관리'],['eggs','알 코드'],['mail','우편'],['boss','월드보스'],['tower','구천탑'],['lib','해방 보상'],['event','이벤트·공지'],['tools','코드 테스트'],['logs','변경 기록']];if(isMain())tabs.splice(1,0,['make','계정 만들기']);
  return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main" aria-label="운영자 메뉴">'+tabs.map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav><a class="btn sm" href="index.html?test" target="_blank" rel="noopener" style="background:#f0c75e;color:#3a2414" title="실제 서버와 상관없는 가짜 계정으로 유저 화면을 시험해요">🧪 테스트 모드</a><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div></header>';}
-function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,event:aEvent,tools:aTools,logs:aLogs}[AS.tab]();}
+function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,lib:aLib,event:aEvent,tools:aTools,logs:aLogs}[AS.tab]();}
 const roleN={main:'메인',sub:'보조',player:'플레이어'};
 function aUsers(){
  const L=AS.list||[];const tot=L.reduce((s,a)=>s+(a.coins||0),0),pets=L.reduce((s,a)=>s+(a.slots||[]).filter(Boolean).length,0);
@@ -1216,10 +1224,19 @@ function mergeT(base,tgt,fresh,abs){const out=CL(fresh);base=base||{};
 async function saveTgt(msg){const t=AS.tgt,s0=await db.doc('accounts/'+t.uid).get();const fresh=s0.exists?s0.data():t;
  const out=mergeT(AS.base,t,fresh,AS.abs||{});AS.abs=null;await db.doc('accounts/'+t.uid).set(out);if(msg)log(t.id+': '+msg);
  AS.tgt=normT(Object.assign({uid:t.uid},out));AS.base=CL(AS.tgt);const i=(AS.list||[]).findIndex(a=>a.uid===t.uid);if(i>=0)AS.list[i]=CL(AS.tgt);toast('저장했어요.');render();}
+function aLib(){if(!AS.list){setTimeout(()=>AD.loadList(),0);return '<div class="card"><p class="muted">불러오는 중…</p></div>';}
+ const all=[];AS.list.forEach(a=>(a.libs||[]).forEach(l=>all.push(Object.assign({uid:a.uid,aid:a.id,nick:a.nick},l))));all.sort((x,y)=>y.t-x.t);
+ const show=AS.libAll?all:all.filter(l=>!l.done),pend=all.filter(l=>!l.done).length;
+ return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">해방 인게임 보상 신청</h2><div style="display:flex;gap:8px"><button class="btn soft sm" data-x="libToggle">'+(AS.libAll?'대기만 보기':'지급 완료도 보기')+'</button><button class="btn soft sm" data-x="loadList">새로고침</button></div></div><p class="muted">유저가 환수를 해방하면 웹 보상(코인·알·아이템)은 우편으로 자동 지급되고, 인게임 보상은 여기에 쌓여요. 마인크래프트에서 지급한 뒤 "지급 완료"를 눌러 주세요. 대기 <b>'+pend+'</b>건</p>'+
+ (show.length?'<div style="overflow-x:auto"><table class="t"><tr><th>시각</th><th>아이디</th><th>닉네임</th><th>해방 환수</th><th>인게임 보상</th><th>상태</th></tr>'+show.map(l=>'<tr'+(l.done?' style="opacity:.55"':'')+'><td>'+new Date(l.t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</td><td>'+esc(l.aid)+'</td><td>'+esc(l.nick||'')+'</td><td>'+NAMES[l.no]+' ('+l.st+'단계)</td><td><b>'+esc(l.game)+'</b></td><td>'+(l.done?'지급 완료'+(l.by?' · '+esc(l.by):''):'<button class="btn teal sm" data-x="libDone" data-uid="'+esc(l.uid)+'" data-lid="'+esc(l.id)+'">지급 완료</button>')+'</td></tr>').join('')+'</table></div>':'<p class="muted">'+(AS.libAll?'기록이 없어요.':'대기 중인 신청이 없어요.')+'</p>')+
+ '<details style="margin-top:12px"><summary class="muted">단계별 보상표</summary><table class="t"><tr><th>단계</th><th>웹 보상 (자동 우편)</th><th>인게임 보상</th></tr>'+[4,5,6,7,8,9,10,11,12].map(st=>'<tr><td>'+st+'</td><td>'+mailParts(libMail(st)).join(', ')+'</td><td>'+LIB_GAME[st]+'</td></tr>').join('')+'</table></details></div>';}
 function aTower(){if(!AS.tw)setTimeout(()=>AD.twLoad(),0);const ss=AS.twSeason||twSeason(),L=AS.tw||[];
  return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">구천탑 순위</h2><div style="display:flex;gap:8px;align-items:flex-end"><label class="f">시즌<input type="month" id="xTwS" value="'+ss+'"></label><button class="btn soft sm" data-x="twLoad">불러오기</button></div></div><p class="muted">매달 1일 오전 6시에 새 시즌이 시작돼요. 시즌 보상은 순위를 보고 우편 탭에서 보내 주세요. 추천: 1위 음양알, 2~3위 환수 알 + 시간단축비서(8시간) 2개, 4~10위 시간단축비서(5시간).</p>'+
  (AS.tw==null?'<p class="muted">불러오는 중…</p>':L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>아이디</th><th>닉네임</th><th>최고 층</th><th>환수</th><th>도달 시각</th><th></th></tr>'+L.map((r,i)=>'<tr><td><b>'+(i+1)+'</b></td><td>'+esc(r.id||'')+'</td><td>'+esc(r.nick||'')+'</td><td><b>'+r.best+'층</b></td><td>'+(r.no!=null?NAMES[r.no]:'')+'</td><td>'+new Date(r.t).toLocaleString('ko-KR')+'</td><td><button class="btn soft sm" data-x="twDel" data-uid="'+esc(r.uid)+'">기록 삭제</button></td></tr>').join('')+'</table></div>':'<p class="muted">이 시즌 기록이 없어요.</p>')+'</div>';}
 const AD={
+ libToggle(){AS.libAll=!AS.libAll;render();},
+ async libDone(){const uid=AS.twUid,lid=AS.libId;if(!uid||!lid)return;const ref=db.doc('accounts/'+uid),s0=await ref.get();if(!s0.exists)return toast('계정을 찾지 못했어요.');const a=s0.data(),libs=(a.libs||[]).map(l=>l.id===lid?Object.assign({},l,{done:true,by:acc.id,at:Date.now()}):l);
+  await ref.update({libs,rev:(a.rev||0)+1});const l=libs.find(x=>x.id===lid);log('해방 인게임 보상 지급: '+a.id+' · '+(l?NAMES[l.no]+' '+l.st+'단계 · '+l.game:''));toast('지급 완료로 표시했어요.');await AD.loadList();},
  async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());const q=await db.collection('tower').where('season','==',AS.twSeason).get();AS.tw=q.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);render();},
  async twDel(){const uid=AS.twUid;if(!uid)return;const r=(AS.tw||[]).find(x=>x.uid===uid);
   confirmBox('구천탑 기록 삭제',(r?r.nick+'의 ':'')+'이번 시즌 구천탑 기록을 지울까요? 진행도도 1층으로 돌아가요.',async()=>{await db.doc('tower/'+uid).delete();const ref=db.doc('accounts/'+uid),s0=await ref.get();if(s0.exists){const a=s0.data();if(a.tower&&a.tower.season===(AS.twSeason||twSeason()))await ref.update({tower:null,rev:(a.rev||0)+1});}log('구천탑 기록 삭제 '+(r?r.id:uid));toast('기록을 지웠어요.');AS.tw=null;await AD.twLoad();});},
@@ -1366,7 +1383,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(MODE!=='admin'||!isAdmin())return;
  if(ds.xtab){AS.tab=ds.xtab;if(ds.xtab==='eggs'&&!AS.eggs)AD.loadEggs();if(ds.xtab==='logs'&&!AS.logs)AD.loadLogs();return render();}
  if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.base=CL(AS.tgt);AS.slot=0;AS.tgtArena=undefined;render();return AD.loadArenaT();}
- if(ds.x&&ds.uid)AS.twUid=ds.uid;
+ if(ds.x&&ds.uid)AS.twUid=ds.uid;if(ds.x&&ds.lid)AS.libId=ds.lid;
  if(ds.x&&AD[ds.x]){if(MAIN_ONLY.has(ds.x)&&!isMain())return toast('메인 운영자만 할 수 있어요.');try{return await AD[ds.x]();}catch(e){toast('실패했어요: '+(e&&e.message||e));}}
  if(ds.xslot!=null){AS.slot=+ds.xslot;return render();}
  if(ds.xgdel&&isMain()){const u=ds.xgdel;AS.tgt.slots.forEach(p=>{if(p)['w','a','s'].forEach(k=>{if(p.eq[k]===u)p.eq[k]=null;});});AS.tgt.gear=AS.tgt.gear.filter(g=>g.u!==u);return saveTgt('장비 회수');}
