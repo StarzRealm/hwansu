@@ -1476,10 +1476,19 @@ function finishErrand(p){const m=ERR[p.errand.m],coins=rr(m.c),kn=rr(m.k),ki={};
 function sendErrand(m){const p=P();if(!guard(p))return;if(p.sick!=null)return toast('아파서 심부름을 갈 수 없어요.');if(p.st<2)return toast('알은 심부름을 갈 수 없어요. 부화한 뒤에 보내 주세요.');
  const ad=accDaily();if((ad.errand||0)>=ERRAND_DAILY)return toast('오늘 심부름 횟수를 다 썼어요 (하루 '+ERRAND_DAILY+'번).');
  ad.errand=(ad.errand||0)+1;const ms=ERR[m].min*MIN*(1-errCut(p));p.errand={m,start:now(),end:now()+ms};SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+ERR[m].n+'(으)로 심부름을 떠났어요.');commit();}
-function errandOverlay(){const i=acc.slots.findIndex(q=>q&&q.errandResult);if(i<0)return '';const p=acc.slots[i],r=p.errandResult,m=ERR[r.m];
- return '<div class="overlay"><div class="modal errres" role="dialog" aria-label="심부름 결과" style="background-image:linear-gradient(180deg,rgba(14,26,30,.82),rgba(14,26,30,.95)),url('+m.img+');background-size:cover"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(m.n)+' 심부름 완료</span><img class="px" src="'+img(p.no)+'" alt="" width="80" height="80" style="object-fit:contain"><b class="serif" style="font-size:20px;color:#fff8e6">'+esc(NAMES[p.no])+'이(가) 돌아왔어요!</b>'+
- '<div class="mchips" style="justify-content:center"><span class="mchip"><img class="px" src="i/coin_spin.gif" alt="">코인 +'+r.coins+'</span>'+Object.entries(r.ki||{}).map(([k,n])=>'<span class="mchip"><img class="px" src="'+ITEMS[KI[k]].img+'" alt="">'+ITEMS[KI[k]].n+' +'+n+'</span>').join('')+(r.gear||[]).map(u=>{const g=gearOf(u);return g?'<span class="mchip"><img class="px" src="'+gearImg(g)+'" alt=""><b class="c'+g.g+'">'+gearName(g)+'</b></span>':'';}).join('')+'</div>'+
- '<button class="btn" data-errack="'+i+'" style="background:#f0c75e">받기</button></div></div>';}
+// 결과는 보따리로: 10분~1시간 일반 · 2~4시간 상급 · 8~12시간 최상급 보따리. 보상 하나당 보따리 하나
+const BAGS=[{n:'일반 보따리',img:'i/bag1.png'},{n:'상급 보따리',img:'i/bag2.png'},{n:'최상급 보따리',img:'i/bag3.png'}];
+const errTier=m=>m>=5?2:m>=3?1:0;
+function errItems(r){const L=[{img:'i/coin_spin.gif',n:'코인',c:r.coins}];Object.entries(r.ki||{}).forEach(([k,n])=>L.push({img:ITEMS[KI[k]].img,n:ITEMS[KI[k]].n,c:n}));(r.gear||[]).forEach(u=>{const g=gearOf(u);if(g)L.push({img:gearImg(g),n:gearName(g),c:1,gear:g.g});});return L;}
+function errandOverlay(){const i=acc.slots.findIndex(q=>q&&q.errandResult);if(i<0)return '';const p=acc.slots[i],r=p.errandResult,m=ERR[r.m],t=errTier(r.m),L=errItems(r);
+ return '<div class="overlay"><div class="modal errres" role="dialog" aria-label="심부름 결과" style="background-image:linear-gradient(180deg,rgba(14,26,30,.82),rgba(14,26,30,.95)),url('+m.img+');background-size:cover"><span style="font-size:12px;color:#f0c75e;letter-spacing:2px">'+esc(m.n)+' 심부름 완료</span><img class="px" src="'+img(p.no)+'" alt="" width="80" height="80" style="object-fit:contain"><b class="serif" style="font-size:20px;color:#fff8e6">'+esc(NAMES[p.no])+'이(가) '+BAGS[t].n+'를 '+L.length+'개 들고 왔어요!</b>'+
+ '<div class="bagrow">'+L.map((x,k)=>{const tt=x.gear!=null?2:t;return '<button class="bagb t'+tt+'" data-bagopen="'+k+'" title="'+esc(BAGS[t].n)+'"><img class="px bimg" src="'+BAGS[t].img+'" alt=""><small>'+(x.gear!=null?'반짝이는 ':'')+BAGS[t].n+'</small><span class="bagc"><img class="px" src="'+x.img+'" alt=""><b>×'+x.c+'</b><i>'+esc(x.n)+'</i></span></button>';}).join('')+'</div>'+
+ '<span class="muted" id="bagHint" style="color:#c9d8d5">보따리를 눌러 열어 보세요</span>'+
+ '<div class="bagsum" id="bagTot" style="display:none">'+L.map(x=>'<span class="bsi"><img class="px" src="'+x.img+'" alt=""><span>'+esc(x.n)+'</span><b>×'+x.c+'</b></span>').join('')+'</div>'+
+ '<div style="display:flex;gap:8px"><button class="btn soft" data-bagall="1">모두 열기</button><button class="btn" data-errack="'+i+'" style="background:#f0c75e">받기</button></div></div></div>';}
+function bagOpen(btn){if(btn.classList.contains('open'))return;btn.classList.add('open');SFX.play(btn.classList.contains('t2')?'fanfare':btn.classList.contains('t1')?'coins':'buy');
+ if(document.querySelectorAll('.bagb:not(.open)').length===0){const e=document.getElementById('bagTot');if(e)e.style.display='';const h=document.getElementById('bagHint');if(h)h.style.display='none';}}
+function bagAll(){document.querySelectorAll('.bagb:not(.open)').forEach((b,k)=>setTimeout(()=>bagOpen(b),k*180));}
 function vErrand(){const p=P();if(!p)return '<div class="card"><p class="muted">환수를 먼저 골라 주세요.</p></div>';const ad=accDaily(),left=ERRAND_DAILY-(ad.errand||0),cut=errCut(p);
  let h='<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><b class="serif" style="font-size:20px">선계 심부름</b><div class="muted">심부름을 보내면 코인·기운(음양 포함)·가끔 장비를 가져와요. 심부름 중에는 수련·돌보기를 할 수 없어요.'+(cut?' · 방울 -'+Math.round(cut*100)+'%':'')+'</div></div><b style="color:#2b5a5e">오늘 남은 심부름 '+left+' / '+ERRAND_DAILY+'</b></div>';
  if(p.errand)h+='<div class="card errnow"><b>'+esc(NAMES[p.no])+' · '+esc(ERR[p.errand.m].n)+' 심부름 중</b><div class="stat" style="margin:4px 0"><div class="tr"><i style="width:'+Math.min(100,(now()-p.errand.start)/(p.errand.end-p.errand.start)*100)+'%;background:linear-gradient(90deg,#c9822b,#f0c98a)"></i></div></div><span class="muted">남은 시간 '+fmtDur(p.errand.end-now())+'</span></div>';
@@ -2152,6 +2161,8 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.bossretry)return bossRetry();
  if(ds.tmode){S.tmode=ds.tmode;return render();}
  if(ds.errand!=null)return sendErrand(+ds.errand);
+ if(ds.bagopen!=null)return bagOpen(t);
+ if(ds.bagall)return bagAll();
  if(ds.errack!=null){const q=acc.slots[+ds.errack];if(q){q.errandResult=null;SFX.play('coins');toast('심부름 보상을 받았어요!');return commit();}}
  if(ds.hatch)return hatch(ds.hatch);
  if(ds.atk!=null){PV.atk=+ds.atk;return render();}

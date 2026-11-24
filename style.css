@@ -708,3 +708,14 @@ img.sil{filter:brightness(0) opacity(.5)!important}
 .colpv img{width:34px;height:34px;object-fit:contain}
 .evbox{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 0;border-bottom:1px dashed var(--line)}
 .igpre{white-space:pre-wrap;word-break:break-all;background:#1d3b40;color:#e8fff8;padding:8px 10px;border-radius:8px;font-size:12px;margin:4px 0}
+/* 심부름 보따리 (아이템 · 개수 보이게) */
+.bagb{width:104px;height:122px}
+.bagb .bagc{flex-direction:column;gap:2px;background:rgba(255,248,230,.96);color:#6b4a12;text-shadow:none;font:inherit}
+.bagb .bagc img{width:40px;height:40px;object-fit:contain;animation:none}
+.bagb .bagc b{font-size:22px;color:#8a2a12;line-height:1}
+.bagb .bagc i{font-style:normal;font-size:11px;color:#6b4a12;line-height:1.2;padding:0 4px;text-align:center}
+.bagb.open .bimg{visibility:hidden}
+.bagsum{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.bsi{display:inline-flex;align-items:center;gap:5px;background:#fff6dc;color:#3a2a08;border:1px solid #ecd59a;border-radius:20px;padding:3px 12px 3px 5px;font-size:14px}
+.bsi img{width:26px;height:26px;object-fit:contain}
+.bsi b{color:#8a2a12}
