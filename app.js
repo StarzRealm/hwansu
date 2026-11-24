@@ -1150,8 +1150,9 @@ function colDefaults(){const L=[],path=(a,b)=>colPath(a,b).filter(i=>FORMS[i].st
  L.push({n:'우주비행사 크루',m:[3,5,7,9,11,13,15,17,19].map(n=>gno('s1-'+String(n).padStart(2,'0')))},{n:'우주 컴패니언',m:[4,6,8,10,12,14,16,18,20].map(n=>gno('s1-'+String(n).padStart(2,'0')))},{n:'말랑 친구들',m:[2,3,4,5,6,7,8,9,10,11].map(n=>gno('s2-'+String(n).padStart(2,'0')))});
  return L.map((c,i)=>Object.assign(c,{id:'c'+(i+1),m:c.m.slice(0,12),rw:{coins:30}}));}
 function colsNow(){return cfg.cols&&cfg.cols.length?cfg.cols:colDefaults();}
-// 불이 들어오는 조건: 해방한 환수 (스타즈렐름은 해방할 수 없어서 획득만 해도 켜져요)
-const colLit=i=>isGuest(i)?!!acc.dex[i]:!!(acc.dex[i]&&acc.dex[i].freed);
+// 불이 들어오는 조건: 해방한 환수 · 해방할 수 없는 환수(1~3단계, 스타즈렐름)는 획득만 해도 켜져요
+const canFree=i=>!isGuest(i)&&FORMS[i]&&FORMS[i].st>=4;
+const colLit=i=>canFree(i)?!!(acc.dex[i]&&acc.dex[i].freed):!!acc.dex[i];
 function colCard(c){const m=c.m||[],fr=m.filter(colLit).length,full=m.length>0&&fr===m.length,got=acc.colDone&&acc.colDone[c.id];const rw=mailParts(Object.assign({title:''},c.rw||{}));
  return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.n)+'</b><span class="colp">'+(full?'<b class="colok">完成</b>':'해방 '+fr+'/'+m.length)+'</span></div><div class="colm">'+
   m.map(i=>{if(!NAMES[i])return '';const d=acc.dex[i],no=dexNo(i),lit=colLit(i);if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
@@ -1161,8 +1162,8 @@ function colClaim(id){const c=colsNow().find(x=>x.id===id);if(!c)return;acc.colD
  acc.colDone[id]=1;acc.mail=acc.mail||[];acc.mail.push(stampMail(Object.assign({title:'컬렉션 「'+c.n+'」 완성 보상',from:'선계 도감관',msg:'컬렉션을 완성했어요! 축하해요.'},c.rw||{})));SFX.play('fanfare');toast('완성 보상이 우편함에 도착했어요!');commit();}
 function vDex(){const tab=S.dex||'all',own=Object.keys(acc.dex).length,freed=Object.values(acc.dex).filter(d=>d.freed).length;
  let h='<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><h1 class="serif" style="margin:0;font-size:26px">환수 도감</h1><div style="display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:420px"><div class="stat" style="flex:1;margin:0"><div class="tr"><i style="width:'+own/NAMES.length*100+'%;background:linear-gradient(90deg,#c9a24a,#f0d78a)"></i></div></div><b>'+own+' / '+NAMES.length+'</b><span class="muted">해방 '+freed+'</span></div></div><div class="tmode">'+[['all','전체 도감'],['col','컬렉션']].map(([k,n])=>'<button class="'+(tab===k?'on':'')+'" data-dextab="'+k+'">'+n+'</button>').join('')+'</div>';
- if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에 불이 들어와요 (스타즈렐름은 획득하면 켜져요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
- return h+'<p class="muted" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
+ if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에 불이 들어와요 (해방할 수 없는 1~3단계·스타즈렐름은 획득하면 켜져요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
+ return h+'<p class="muted" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요. 해방할 수 없는 1~3단계와 스타즈렐름 환수는 획득만 해도 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
   if(!d)return '<div class="dc no"><span class="dno">'+no+'</span><b class="q">?</b><span class="n">???</span></div>';
   const lit=colLit(i);return '<div class="dc'+(lit?' lit':' got')+'" title="'+esc(n)+'"><span class="dno">'+no+'</span><img class="px'+(lit?'':' sil')+'" src="'+img(i)+'" alt=""><span class="n">'+esc(n)+'</span>'+(lit?gradeTag(i,'sm'):'')+(d.freed?'<span class="seal" aria-label="해방함">解</span>':'')+'</div>';}).join('')+'</div>';}
 /* ----- 코드화 (인게임 아이템 → 코드) ----- */
