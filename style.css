@@ -581,13 +581,13 @@ main.v-village{max-width:none;padding:0}
 .placing .vview{touch-action:none}
 .vsize{position:relative}
 .vmap{position:absolute;left:0;top:0;width:2048px;height:1536px;transform-origin:0 0}
-.vbg{position:absolute;inset:0;width:2048px;height:1536px;user-select:none;pointer-events:none}
+.vbg{position:absolute;inset:0;width:2048px;height:1536px;user-select:none;pointer-events:none;image-rendering:pixelated}
 .vgrid{position:absolute;left:256px;top:362px;width:1536px;height:768px;pointer-events:none;z-index:2;
  background:
-  repeating-linear-gradient(26.565deg,rgba(255,255,255,.28) 0 1px,transparent 1px 28.62px),
-  repeating-linear-gradient(-26.565deg,rgba(255,255,255,.28) 0 1px,transparent 1px 28.62px);
+  repeating-linear-gradient(26.565deg,rgba(255,255,255,.35) 0 1px,transparent 1px 14.31px),
+  repeating-linear-gradient(-26.565deg,rgba(255,255,255,.35) 0 1px,transparent 1px 14.31px);
  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
-.vt{position:absolute;width:64px;height:auto;image-rendering:pixelated;user-select:none}
+.vt{position:absolute;height:auto;image-rendering:pixelated;user-select:none}
 .vo{position:absolute;display:flex;align-items:flex-end;justify-content:center;user-select:none;cursor:pointer}
 .vo>img{width:100%;height:100%;object-fit:contain;object-position:bottom;image-rendering:pixelated;pointer-events:none}
 .vo.ghost>img{opacity:.55;filter:grayscale(.6)}
@@ -605,8 +605,8 @@ main.v-village{max-width:none;padding:0}
 .vbub.full{animation:vshake .9s ease-in-out infinite}
 @keyframes vbob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-6px)}}
 @keyframes vshake{0%,100%{transform:translate(-50%,0) rotate(0)}15%{transform:translate(-52%,-3px) rotate(-5deg)}30%{transform:translate(-48%,-3px) rotate(5deg)}45%{transform:translate(-51%,0) rotate(-3deg)}60%{transform:translate(-50%,0) rotate(0)}}
-.vpet{position:absolute;width:56px;display:flex;flex-direction:column;align-items:center;cursor:pointer;animation:vhop 2.4s ease-in-out infinite;user-select:none}
-.vpet img{width:56px;height:56px;object-fit:contain;image-rendering:pixelated;pointer-events:none}
+.vpet{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;animation:vhop 2.4s ease-in-out infinite;user-select:none}
+.vpet img{object-fit:contain;object-position:bottom;image-rendering:pixelated;pointer-events:none}
 .vpet span{font-size:11px;font-weight:700;color:#fff8e6;background:rgba(29,59,64,.75);padding:0 6px;border-radius:7px;white-space:nowrap;margin-top:-4px;pointer-events:none}
 .vpet.work{animation:vwork 1.2s ease-in-out infinite}
 @keyframes vhop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
