@@ -721,3 +721,11 @@ img.sil{filter:brightness(0) opacity(.5)!important}
 .bsi b{color:#8a2a12}
 .rcphd{font-weight:700;color:#ffd36e;margin:8px 0 2px;font-size:14px;border-bottom:1px dashed rgba(240,199,94,.4)}.rcphd small{color:#c9d8d5;font-weight:400}
 .orb>img.elmed{display:block!important;width:42px;height:42px;image-rendering:pixelated}
+
+.pgb{position:relative;height:14px;border-radius:8px;background:rgba(40,26,18,.55);border:1.5px solid #c9a24a;overflow:hidden}
+.pgb>i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6fae3a,#bfe59a);transition:width .9s linear}
+.pgb>b{position:relative;display:block;text-align:center;font-size:11px;line-height:13px;color:#fff;text-shadow:0 1px 2px #000;font-variant-numeric:tabular-nums}
+.pgb.vpg{position:absolute;left:50%;transform:translateX(-50%);width:84px;height:16px;pointer-events:none;z-index:2}
+.pgb.big{height:20px;margin-top:4px}.pgb.big>b{font-size:12px;line-height:17px}
+.bmpg{margin:6px 0 8px}.bmpg .warn{color:#ffb09a}
+.harvsum{text-align:center;align-items:center}
