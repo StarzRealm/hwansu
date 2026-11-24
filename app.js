@@ -376,7 +376,7 @@ const ITEMS={
  sus_s:{n:'수상한 기운 (소)',p:3,img:'i/sus_s.png',cat:'성장',d:'경험치 +100, 무작위 오행 +1 · 부작용: 포만감 -10',daily:5},
  sus_m:{n:'수상한 기운 (중)',p:0,img:'i/sus_m.png',cat:'성장',d:'레벨 경험치 50%, 무작위 오행 +2 · 부작용: 포만감·청결·목마름 -20 (마을 생산)'},
  sus_l:{n:'수상한 기운 (대)',p:0,img:'i/sus_l.png',cat:'성장',d:'즉시 레벨 +1 · 무작위 오행 +3 (마을 생산)'},
- wish_note:{n:'소원 쪽지',p:0,img:'i/ui/icon_wish.png',cat:'보상',d:'열면 무작위 보상이 나와요 (소원을 비는 탑 생산)'},
+ wish_note:{n:'소원 쪽지',p:0,img:'i/ui/icon_wish.png',cat:'보상',d:'가방에서 [열기]를 누르면 소원을 비는 탑과 같은 무작위 보상이 나와요 (코인·기운·알·금패)'},
  sec_active:{n:'환수행동력 회복 비서',p:10,img:'i/sec_active.gif',cat:'성장',d:'행동력 +50',daily:1},
  reset_ki:{n:'오행초기화기운',p:50,img:'i/reset_ki.gif',cat:'기타',d:'오행 게이지를 모두 0으로'},
  tal_time:{n:'시간단축비서 (30분)',p:5,img:'i/sec_t30.gif',cat:'성장',d:'수련·심부름·건설의 남은 시간 30분 단축 (생산에는 쓸 수 없어요)'},
@@ -850,7 +850,7 @@ function vBag(){const tab=S.bag||'all',has=Object.entries(acc.inv).filter(([k,n]
  let h='<h1 class="serif" style="margin:0;font-size:26px">가방</h1><div class="tmode"><button class="'+(tab==='all'?'on':'')+'" data-bagtab="all">전체</button><button class="'+(tab==='ig'?'on':'')+'" data-bagtab="ig">코드화 (인게임 아이템)</button></div>';
  if(tab==='ig')return h+vCodify();
  const by=BAG_CATS.map(c=>[c,has.filter(([k])=>ITEMS[k].cat===c)]).filter(([c,l])=>l.length);
- h+=by.length?by.map(([c,l])=>'<div class="card"><h2>'+c+'</h2><div class="items">'+l.map(([k,n])=>'<div class="item"><img class="px" src="'+ITEMS[k].img+'" alt=""><div class="t"><b>'+ITEMS[k].n+' ×'+n+'</b><small>'+ITEMS[k].d+'</small></div>'+(ITEMS[k].cat==='알'?'<button class="btn teal sm" data-hatch="'+k+'" '+(acc.slots.some(q=>!q)?'':'disabled')+'>부화</button>':k==='sec_vil'?'<button class="btn teal sm" data-usevil="1">사용</button>':ITEMS[k].cat==='인게임'?'<button class="btn soft sm" data-bagtab="ig">코드화</button>':'')+'</div>').join('')+'</div></div>').join(''):'<div class="card"><p class="muted">가방이 비어 있어요.</p></div>';
+ h+=by.length?by.map(([c,l])=>'<div class="card"><h2>'+c+'</h2><div class="items">'+l.map(([k,n])=>'<div class="item"><img class="px" src="'+ITEMS[k].img+'" alt=""><div class="t"><b>'+ITEMS[k].n+' ×'+n+'</b><small>'+ITEMS[k].d+'</small></div>'+(ITEMS[k].cat==='알'?'<button class="btn teal sm" data-hatch="'+k+'" '+(acc.slots.some(q=>!q)?'':'disabled')+'>부화</button>':k==='wish_note'?'<button class="btn teal sm" data-wishnote="1">열기</button>':k==='sec_vil'?'<button class="btn teal sm" data-usevil="1">사용</button>':ITEMS[k].cat==='인게임'?'<button class="btn soft sm" data-bagtab="ig">코드화</button>':'')+'</div>').join('')+'</div></div>').join(''):'<div class="card"><p class="muted">가방이 비어 있어요.</p></div>';
  return h+'<p class="muted">먹이·기운·비서 같은 아이템은 성장 화면의 돌보기 버튼에서 사용해요.</p>';}
 /* ================= 장비 ================= */
 function gearCard(g,extra){const cand=S.synA&&S.synA!==g.u&&synOk(gearOf(S.synA),g),src=S.synA===g.u;return '<button class="gear g'+g.g+(src?' sel':'')+(cand?' cand':'')+(S.synA&&!cand&&!src?' dim':'')+'" data-gpick="'+g.u+'"><img class="px" src="'+gearImg(g)+'" alt=""><b class="c'+g.g+'" style="font-size:13px">'+gearName(g)+' +'+g.p+'</b><small class="ngl">'+esc(gearShort(g))+'</small><small class="muted">'+(extra||'')+'</small></button>';}
@@ -1133,7 +1133,7 @@ function evBanner(){const L=[];if((cfg.expMult||1)>1)L.push('경험치 '+cfg.exp
  if(evOn(ev.hot))L.push('핫타임 매일 '+ev.hot.from+'~'+ev.hot.to+' 접속 시 보상'+(hotNow()?' · 지금 진행 중!':''));return L;}
 /* ----- 소원을 비는 탑 (하루 1번) ----- */
 function wishReady(){const b=acc.vil&&acc.vil.b.find(x=>x.k==='wish');return !!(b&&b.lv>0&&!b.bt&&acc.wishDay!==dayKey(now()));}
-function doWish(){if(!wishReady())return toast('오늘은 이미 소원을 빌었어요. 내일 다시 빌 수 있어요.');acc.wishDay=dayKey(now());const r=rnd()*100;let got;
+function doWish(note){if(note){if(!take('wish_note'))return;}else{if(!wishReady())return toast('오늘은 이미 소원을 빌었어요. 내일 다시 빌 수 있어요.');acc.wishDay=dayKey(now());}const r=rnd()*100;let got;
  if(r<50){const c=5+Math.floor(rnd()*6);acc.coins+=c;got='코인 '+c;}
  else if(r<80){const k=GAUGES[Math.floor(rnd()*6)],n=1+Math.floor(rnd()*10);acc.inv[KI[k]]=(acc.inv[KI[k]]||0)+n;got=ITEMS[KI[k]].n+' ×'+n;}
  else if(r<90){acc.inv.egg_n=(acc.inv.egg_n||0)+1;got='환수 알';}
@@ -1141,7 +1141,7 @@ function doWish(){if(!wishReady())return toast('오늘은 이미 소원을 빌�
  else if(r<96){acc.inv.egg_g1=(acc.inv.egg_g1||0)+1;got='우주비행사알';}
  else if(r<97){acc.inv.egg_g2=(acc.inv.egg_g2||0)+1;got='치이카와알';}
  else{acc.inv.ig_gp=(acc.inv.ig_gp||0)+1;got='금패 (코드화 가능)';}
- SFX.play('fanfare');const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="소원"><b class="serif" style="font-size:22px;color:#ffd36e">소원이 이루어졌어요!</b><img class="px" src="'+bSrc(acc.vil.b.find(x=>x.k==='wish'))+'" alt="" style="width:120px;height:120px;object-fit:contain"><b style="font-size:20px">'+esc(got)+'</b><button class="btn" data-close="1">확인</button></div></div>';commit();}
+ SFX.play('fanfare');const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="소원"><b class="serif" style="font-size:22px;color:#ffd36e">소원이 이루어졌어요!</b><img class="px" src="'+(note||!acc.vil.b.find(x=>x.k==='wish')?ITEMS.wish_note.img:bSrc(acc.vil.b.find(x=>x.k==='wish')))+'" alt="" style="width:120px;height:120px;object-fit:contain"><b style="font-size:20px">'+esc(got)+'</b><button class="btn" data-close="1">확인</button></div></div>';commit();}
 /* ----- 컬렉션 ----- */
 function colDefaults(){const L=[],path=(a,b)=>colPath(a,b).filter(i=>FORMS[i].st>=4);
  [[3,5,'해태의 수호'],[6,8,'여우불의 길'],[9,18,'태양의 삼족오'],[9,24,'남방 주작'],[25,34,'중앙 황룡'],[25,40,'동방 청룡'],[41,50,'뇌명의 신귀'],[41,56,'북방 현무'],[57,66,'상서로운 기린'],[57,72,'서방 백호'],[73,76,'달빛 곰의 숲']].forEach(([a,b,n])=>L.push({n,m:path(a,b)}));
@@ -2232,6 +2232,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.dextab){S.dex=ds.dextab;return render();}
  if(ds.colclaim)return colClaim(ds.colclaim);
  if(ds.wishgo)return doWish();
+ if(ds.wishnote)return doWish(true);
  if(['vzoom','vharvall','vharv','vo','vpet','vbuildmenu','vplace','vcancel','vdone','vstore','vskin','vskinset','vtake','vput','vdel','vnew','vbuildgo','vup','bcut','craft','vassign','vas','vunassign','vtoslot','vtogsp','rcptab'].some(k=>ds[k]!=null)){vilInit();return vClick(ds);}
  if(ds.gpick){const u=ds.gpick;if(S.synA){if(u===S.synA){S.synA=null;return render();}const a=gearOf(S.synA),b=gearOf(u);if(!synOk(a,b))return toast(b&&equippedBy(b.u)!=null?'장착 중인 장비는 합성할 수 없어요.':'같은 종류·같은 등급이고 최대 강화된 장비만 합성할 수 있어요.');S.forgeSel=[a.u,b.u];return synthModal();}return gearModal(u);}
  if(ds.synpick){const a=gearOf(ds.synpick);closeLayer();S.gm=null;if(!acc.gear.some(x=>synOk(a,x)))return toast('같이 합성할 수 있는 장비가 없어요. 같은 종류·같은 등급의 최대 강화 장비가 하나 더 필요해요.');S.synA=a.u;S.forgeSel=[];return render();}
