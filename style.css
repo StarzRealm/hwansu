@@ -693,3 +693,17 @@ main.v-village{max-width:none;padding:0}
 .igh code,.igbig{font-family:ui-monospace,Menlo,monospace;font-weight:700;letter-spacing:.5px}
 .igbig{font-size:22px;color:#ffd36e;background:rgba(0,0,0,.25);padding:8px 14px;border-radius:10px;word-break:break-all}
 @media(max-width:720px){.vview{height:calc(100vh - 210px)}.eqrow{grid-template-columns:repeat(3,1fr)}.sgrid{grid-template-columns:auto 1fr}}
+/* 도감 · 컬렉션 · 운영자 설정 */
+img.sil{filter:brightness(0) opacity(.5)!important}
+.dexnum .dc{position:relative}
+.dexnum .dc .dno{align-self:flex-start;font-weight:700;color:var(--sub);font-size:13px}
+.dexnum .dc.no .q{font-size:42px;color:#c9bfa8;line-height:72px;height:72px}
+.dexnum .dc.no .n{color:#9a8b6c}
+.dexnum .dc.got{background:#f1ebdd}
+.dexnum .dc.lit{box-shadow:0 0 0 2px #f0c75e inset}
+.colgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.colrw{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.rcpe{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin:8px 0;background:var(--paper2)}
+.colpv{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.colpv img{width:34px;height:34px;object-fit:contain}
+.evbox{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 0;border-bottom:1px dashed var(--line)}
