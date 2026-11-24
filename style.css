@@ -719,3 +719,5 @@ img.sil{filter:brightness(0) opacity(.5)!important}
 .bsi{display:inline-flex;align-items:center;gap:5px;background:#fff6dc;color:#3a2a08;border:1px solid #ecd59a;border-radius:20px;padding:3px 12px 3px 5px;font-size:14px}
 .bsi img{width:26px;height:26px;object-fit:contain}
 .bsi b{color:#8a2a12}
+.rcphd{font-weight:700;color:#ffd36e;margin:8px 0 2px;font-size:14px;border-bottom:1px dashed rgba(240,199,94,.4)}.rcphd small{color:#c9d8d5;font-weight:400}
+.orb>img.elmed{display:block!important;width:42px;height:42px;image-rendering:pixelated}
