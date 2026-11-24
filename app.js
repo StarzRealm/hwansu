@@ -1149,10 +1149,11 @@ function colDefaults(){const L=[],path=(a,b)=>colPath(a,b).filter(i=>FORMS[i].st
  L.push({n:'눈사람 산타의 길',m:path(221,235)},{n:'서리 장난꾼 잭 프로스트',m:path(221,241)},{n:'산타클로스의 길',m:path(221,254)},{n:'심술쟁이 크람푸스',m:path(221,260)});
  L.push({n:'우주비행사 크루',m:[3,5,7,9,11,13,15,17,19].map(n=>gno('s1-'+String(n).padStart(2,'0')))},{n:'우주 컴패니언',m:[4,6,8,10,12,14,16,18,20].map(n=>gno('s1-'+String(n).padStart(2,'0')))},{n:'말랑 친구들',m:[2,3,4,5,6,7,8,9,10,11].map(n=>gno('s2-'+String(n).padStart(2,'0')))});
  return L.map((c,i)=>Object.assign(c,{id:'c'+(i+1),m:c.m.slice(0,12),rw:{coins:30}}));}
-function colsNow(){return cfg.cols&&cfg.cols.length?cfg.cols:colDefaults();}
+function colsNow(){const L=cfg.cols&&cfg.cols.length?cfg.cols:colDefaults();return L.map(c=>Object.assign({},c,{m:(c.m||[]).filter(canFree)})).filter(c=>c.m.length);}
 // 불이 들어오는 조건: 해방한 환수 · 해방할 수 없는 환수(1~3단계, 스타즈렐름)는 획득만 해도 켜져요
 const canFree=i=>!isGuest(i)&&FORMS[i]&&FORMS[i].st>=4;
-const colLit=i=>canFree(i)?!!(acc.dex[i]&&acc.dex[i].freed):!!acc.dex[i];
+const dexLit=i=>canFree(i)?!!(acc.dex[i]&&acc.dex[i].freed):!!acc.dex[i];
+const colLit=i=>canFree(i)&&!!(acc.dex[i]&&acc.dex[i].freed);
 function colCard(c){const m=c.m||[],fr=m.filter(colLit).length,full=m.length>0&&fr===m.length,got=acc.colDone&&acc.colDone[c.id];const rw=mailParts(Object.assign({title:''},c.rw||{}));
  return {full,h:'<div class="col'+(full?' full':'')+'"><div class="colh"><b class="serif">'+esc(c.n)+'</b><span class="colp">'+(full?'<b class="colok">完成</b>':'해방 '+fr+'/'+m.length)+'</span></div><div class="colm">'+
   m.map(i=>{if(!NAMES[i])return '';const d=acc.dex[i],no=dexNo(i),lit=colLit(i);if(!d)return '<div class="cm no" title="no.'+no+'"><span>'+no+'</span><b>?</b></div>';
@@ -1162,10 +1163,10 @@ function colClaim(id){const c=colsNow().find(x=>x.id===id);if(!c)return;acc.colD
  acc.colDone[id]=1;acc.mail=acc.mail||[];acc.mail.push(stampMail(Object.assign({title:'컬렉션 「'+c.n+'」 완성 보상',from:'선계 도감관',msg:'컬렉션을 완성했어요! 축하해요.'},c.rw||{})));SFX.play('fanfare');toast('완성 보상이 우편함에 도착했어요!');commit();}
 function vDex(){const tab=S.dex||'all',own=Object.keys(acc.dex).length,freed=Object.values(acc.dex).filter(d=>d.freed).length;
  let h='<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><h1 class="serif" style="margin:0;font-size:26px">환수 도감</h1><div style="display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:420px"><div class="stat" style="flex:1;margin:0"><div class="tr"><i style="width:'+own/NAMES.length*100+'%;background:linear-gradient(90deg,#c9a24a,#f0d78a)"></i></div></div><b>'+own+' / '+NAMES.length+'</b><span class="muted">해방 '+freed+'</span></div></div><div class="tmode">'+[['all','전체 도감'],['col','컬렉션']].map(([k,n])=>'<button class="'+(tab===k?'on':'')+'" data-dextab="'+k+'">'+n+'</button>').join('')+'</div>';
- if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에 불이 들어와요 (해방할 수 없는 1~3단계·스타즈렐름은 획득하면 켜져요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
+ if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에만 불이 들어와요 (해방할 수 없는 1~3단계·스타즈렐름은 컬렉션에 넣지 않아요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
  return h+'<p class="muted" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요. 해방할 수 없는 1~3단계와 스타즈렐름 환수는 획득만 해도 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
   if(!d)return '<div class="dc no"><span class="dno">'+no+'</span><b class="q">?</b><span class="n">???</span></div>';
-  const lit=colLit(i);return '<div class="dc'+(lit?' lit':' got')+'" title="'+esc(n)+'"><span class="dno">'+no+'</span><img class="px'+(lit?'':' sil')+'" src="'+img(i)+'" alt=""><span class="n">'+esc(n)+'</span>'+(lit?gradeTag(i,'sm'):'')+(d.freed?'<span class="seal" aria-label="해방함">解</span>':'')+'</div>';}).join('')+'</div>';}
+  const lit=dexLit(i);return '<div class="dc'+(lit?' lit':' got')+'" title="'+esc(n)+'"><span class="dno">'+no+'</span><img class="px'+(lit?'':' sil')+'" src="'+img(i)+'" alt=""><span class="n">'+esc(n)+'</span>'+(lit?gradeTag(i,'sm'):'')+(d.freed?'<span class="seal" aria-label="해방함">解</span>':'')+'</div>';}).join('')+'</div>';}
 /* ----- 코드화 (인게임 아이템 → 코드) ----- */
 // 코드: 플레이어-회차-(번호-개수)×최대6-확인숫자 · 확인숫자=(P×41+N×43+Σ(번호×97+개수×61)×순서+2468) mod 9973
 function igChk(P0,N,pairs){let s=P0*41+N*43+2468;pairs.forEach(([a,b],j)=>{s+=(a*97+b*61)*(j+1);});return s%9973;}
@@ -1953,7 +1954,7 @@ function aLib(){if(!AS.list){setTimeout(()=>AD.loadList(),0);return '<div class=
 function giveMacro(g){let s=String(g||'').trim().replace(/^\//,'');s=s.replace(/^give\s+\S+\s+/,'');s=s.replace(/\s+\d+\s*$/,'');return '$give @s '+s+' $(n)';}
 function igDpFiles(){return [['ig/registry.mcfunction','# ── 인게임 아이템 목록 (웹 [인게임 코드] 탭과 번호가 같아야 해요) ──\ndata modify storage hwansu:ig known set value {}\n'+IG.map(x=>'data modify storage hwansu:ig known.i'+x.no+' set value 1b').join('\n')]].concat(IG.map(x=>['ig/i'+x.no+'.mcfunction','# '+x.no+'번 '+x.n+'\n'+giveMacro(x.give)]));}
 /* ----- 컬렉션 ----- */
-function colRows(){if(!AS.cols)AS.cols=colsNow().map(c=>({id:c.id,n:c.n,m:(c.m||[]).map(dexNo).join(', '),rw:JSON.parse(JSON.stringify(c.rw||{}))}));return AS.cols;}
+function colRows(){if(!AS.cols)AS.cols=(cfg.cols&&cfg.cols.length?cfg.cols:colDefaults().map(c=>Object.assign(c,{m:c.m.filter(canFree)})).filter(c=>c.m.length)).map(c=>({id:c.id,n:c.n,m:(c.m||[]).map(dexNo).join(', '),rw:JSON.parse(JSON.stringify(c.rw||{}))}));return AS.cols;}
 function colRead(){const R=colRows(),v=id=>document.getElementById(id);R.forEach((c,i)=>{const p='co'+i+'_';if(!v(p+'n'))return;c.n=v(p+'n').value.trim();c.m=v(p+'m').value;const it=v(p+'it').value,q=Math.max(1,+v(p+'q').value||1);c.rw={coins:Math.max(0,+v(p+'c').value||0),eggs:Math.max(0,+v(p+'e').value||0),items:it?{[it]:q}:{},gear:[]};});}
 function aCols(){const R=colRows(),opts=Object.keys(ITEMS);
  return '<div class="card adm"><h2>컬렉션</h2><p class="muted">환수는 도감 번호를 쉼표로 적어요 (최대 12마리, 스타즈렐름은 s1-03처럼). 해방한 환수에 불이 들어오고(스타즈렐름은 획득만 해도), 다 켜지면 유저가 보상을 우편으로 받아요.</p>'+
@@ -1990,7 +1991,7 @@ const ADMCFG={
  colAdd(){colRead();AS.cols.push({id:'c'+Date.now().toString(36),n:'새 컬렉션',m:'',rw:{coins:30}});render();},
  colDel(t){colRead();AS.cols.splice(+t.dataset.i,1);render();},
  colPreview(){colRead();render();},
- async colSave(){colRead();const out=[];for(const c of AS.cols){const m=String(c.m).split(',').map(s=>s.trim()).filter(Boolean).map(parseDexNo);if(m.some(n=>n<0))return toast('「'+c.n+'」에 없는 도감 번호가 있어요.');if(!c.n||!m.length)return toast('컬렉션 이름과 환수를 적어 주세요.');if(m.length>12)return toast('「'+c.n+'」 환수가 12마리를 넘어요.');out.push({id:c.id,n:c.n,m,rw:c.rw});}
+ async colSave(){colRead();const out=[];for(const c of AS.cols){const m=String(c.m).split(',').map(s=>s.trim()).filter(Boolean).map(parseDexNo);if(m.some(n=>n<0))return toast('「'+c.n+'」에 없는 도감 번호가 있어요.');const bad=m.filter(n=>!canFree(n));if(bad.length)return toast('「'+c.n+'」에 해방할 수 없는 환수가 있어요 (1~3단계·스타즈렐름): '+bad.map(dexNo).join(', '));if(!c.n||!m.length)return toast('컬렉션 이름과 환수를 적어 주세요.');if(m.length>12)return toast('「'+c.n+'」 환수가 12마리를 넘어요.');out.push({id:c.id,n:c.n,m,rw:c.rw});}
   cfg.cols=out;AS.cols=null;await saveGlobal('컬렉션 변경 ('+out.length+'개)');},
  async colReset(){confirmBox('컬렉션 기본값','컬렉션을 기본값으로 되돌릴까요?',async()=>{delete cfg.cols;AS.cols=null;await saveGlobal('컬렉션 기본값 복원');});},
  async saveCfg(){const v=id=>document.getElementById(id);cfg.expMult=+v('cfgExp').value;const n=v('cfgNotice');if(n)cfg.notice=n.value;{const xs=v('cfgXs'),xe=v('cfgXe');cfg.xm=xs.value&&xe.value?{s:xs.value,e:xe.value}:null;}
