@@ -1370,6 +1370,7 @@ const PV={list:null,logs:null,busy:false,atk:null,loaded:false};
 let arenaKey=null;
 function sunKey(t){const d=new Date(dayKey(t)+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-d.getUTCDay());return d.toISOString().slice(0,10);}
 function aEff(a){return a&&a.week===sunKey(now())?{m:a.medals,w:a.w||0,l:a.l||0,dw:a.dw||0,dl:a.dl||0}:{m:100,w:0,l:0,dw:0,dl:0};}
+function atkPetGet(){const i=atkIdx();if(i==='rep'){const r=repPet();return r?r.p:null;}return i>=0?acc.slots[i]:null;}
 function repPet(){const id=acc.arenaRep;if(id==null)return null;const i=acc.slots.findIndex(q=>q&&q.born===id);if(i>=0)return{i,p:acc.slots[i]};const p=(acc.vil&&acc.vil.pets||[]).find(q=>q.born===id);return p?{i:-1,p}:null;}
 function repModal(){const L=document.getElementById('layer'),all=acc.slots.map((p,i)=>p?{p,w:'성장 슬롯 '+(i+1)}:null).filter(Boolean).concat(vilPets().map(p=>({p,w:p.vb?(BLD[(bOf(p.vb)||{}).k]||{n:'건물'}).n+'에서 일하는 중':'마을'})));
  const cur=acc.arenaRep;L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="대표 환수 고르기"><b class="serif" style="font-size:20px">대표 환수 고르기</b><p class="muted" style="margin:0">대표 환수는 다른 유저의 도전을 막아요. 어디에 있든(성장 중·마을) 그대로 키우면서 대표로 둘 수 있어요. 스타즈렐름·게스트 등급은 고를 수 없어요.</p><div class="bmlist">'+
@@ -1377,7 +1378,7 @@ function repModal(){const L=document.getElementById('layer'),all=acc.slots.map((
 async function setRep(born){const all=acc.slots.filter(Boolean).concat(vilPets()),q=all.find(p=>String(p.born)===String(born));if(!q||noArena(q.no))return;acc.arenaRep=q.born;closeLayer();SFX.play('equip');toast(NAMES[q.no]+'을(를) 대표 환수로 정했어요.');await commit();await syncArena(true);loadArena();}
 // 스타즈렐름·게스트 등급은 대전에 나갈 수 없어요 (방어·공격 모두)
 const noArena=no=>isGuest(no)||GRADE_N[no]===-2;
-function atkIdx(){if(PV.atk!=null&&acc.slots[PV.atk]&&!noArena(acc.slots[PV.atk].no))return PV.atk;return acc.slots.findIndex(q=>q&&q.sick==null&&!noArena(q.no));}
+function atkIdx(){if(PV.atk==='rep'){const r=repPet();if(r&&!noArena(r.p.no)&&r.p.sick==null)return r.i>=0?r.i:'rep';}if(PV.atk!=null&&PV.atk!=='rep'&&acc.slots[PV.atk]&&!noArena(acc.slots[PV.atk].no))return PV.atk;return acc.slots.findIndex(q=>q&&q.sick==null&&!noArena(q.no));}
 function petSnap(p){const s=statsOf(p);return{no:p.no,st:p.st,lv:p.lv,star:p.star||0,cp:powerOf(s),el:ELOF[p.no]||'fire',bs:{hp:s.hp,atk:s.atk,def:s.def,eva:s.eva,pen:s.pen,crit:s.crit}};}
 async function syncArena(force){if(MODE!=='player'||!acc||!db)return;if(acc.arenaRep==null&&!force)return;const r0=repPet(),r=r0&&!noArena(r0.p.no)?r0:null,pet=r?petSnap(r.p):null;
  const key=pet?[pet.no,pet.st,pet.lv,pet.cp,JSON.stringify(pet.bs||{})].join('|'):'none';if(!force&&key===arenaKey)return;arenaKey=key;
@@ -1400,7 +1401,7 @@ async function fight(uid,re){if(PV.busy)return;const ad=accDaily();
  else{if((ad.pvp||0)>=PVP_DAILY)return toast('오늘 공격 횟수를 다 썼어요. 내일 오전 6시에 다시 할 수 있어요.');
  if((ad.pvpTo||[]).includes(uid))return toast('같은 상대는 하루에 한 번만 도전할 수 있어요. (대전재도전비서로 한 번 더 할 수 있어요)');}
  const me=repPet();if(!me)return toast('먼저 마을 중심부에 대표 환수를 배치해 주세요.');
- const ai=atkIdx(),ap=acc.slots[ai];if(!ap)return toast('성장 슬롯에서 출전할 환수를 골라 주세요.');if(noArena(ap.no))return toast('스타즈렐름·게스트 등급은 대전에 나갈 수 없어요.');if(ap.sick!=null)return toast('아픈 환수는 대전에 나갈 수 없어요.');
+ const ai=atkIdx(),ap=atkPetGet();if(!ap)return toast('출전할 환수를 골라 주세요.');if(noArena(ap.no))return toast('스타즈렐름·게스트 등급은 대전에 나갈 수 없어요.');if(ap.sick!=null)return toast('아픈 환수는 대전에 나갈 수 없어요.');
  PV.busy=true;try{
   const dRef=db.doc('arena/'+uid),ds=await dRef.get();if(!ds.exists||!ds.data().pet){toast('상대 정보를 찾지 못했어요.');return;}const dd=ds.data();
   const myRef=db.doc('arena/'+acc.uid);let ms=await myRef.get();if(!ms.exists){await syncArena(true);ms=await myRef.get();}const mine=ms.exists?ms.data():null;
@@ -1422,11 +1423,11 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);if(SO.users==null)setTim
  if(r){const s=petSnap(r.p);h+='<div class="dc-name serif">'+esc(NAMES[s.no])+'</div><div class="dc-info"><span class="dc-tags">'+elTag(s.el)+'</span><small>'+stN(s)+' · Lv '+s.lv+'</small><small>전투력 <b>'+fmt(s.cp)+'</b></small>'+tPlate(acc.title,1)+'<small class="dc-rec">공격 '+e.w+'승 '+e.l+'패 · 방어 '+e.dw+'승 '+e.dl+'패</small></div><img class="px dc-pet" src="'+img(s.no)+'" alt="">';}
  else h+='<div class="dc-name serif">비어 있음</div><div class="dc-info"><small>[대표 고르기]에서 대표 환수를 정해 주세요.</small></div>';
  h+='</div><button class="btn soft dgo" data-repmodal="1"><img src="i/ui2/icon_go_village.png" alt=""> 대표 고르기</button>';
- if(r&&atkIdx()>=0){const ai=atkIdx();h+='<div class="card dpick"><b>출전 환수</b><div class="slots" style="margin:6px 0 0">'+acc.slots.map((q,i)=>q?'<button class="slot'+(ai===i?' on':'')+'" data-atk="'+i+'" '+(noArena(q.no)?'disabled title="스타즈렐름·게스트 등급은 대전에 나갈 수 없어요"':'')+'><img class="px" src="'+img(q.no)+'" alt=""><span><b>'+esc(NAMES[q.no])+'</b><small>'+elName(ELOF[q.no])+' · 전투력 '+fmt(cp(q))+(q.sick!=null?' · 아픔':'')+'</small></span></button>':'').join('')+'</div></div>';}
- else if(r)h+='<div class="card dpick"><p class="muted" style="margin:0">성장 슬롯에 대전에 나갈 수 있는 환수가 없어요. (스타즈렐름·게스트 등급은 나갈 수 없어요)</p></div>';
+ if(atkIdx()!==-1){const ai=atkIdx(),rr=repPet();h+='<div class="card dpick"><b>출전 환수</b><div class="slots" style="margin:6px 0 0">'+(rr&&rr.i<0&&!noArena(rr.p.no)?'<button class="slot'+(ai==='rep'?' on':'')+'" data-atk="rep"><img class="px" src="'+img(rr.p.no)+'" alt=""><span><b>'+esc(NAMES[rr.p.no])+' ★대표</b><small>'+elName(ELOF[rr.p.no])+' · 전투력 '+fmt(cp(rr.p))+(rr.p.sick!=null?' · 아픔':'')+'</small></span></button>':'')+acc.slots.map((q,i)=>q?'<button class="slot'+(ai===i?' on':'')+'" data-atk="'+i+'" '+(noArena(q.no)?'disabled title="스타즈렐름·게스트 등급은 대전에 나갈 수 없어요"':'')+'><img class="px" src="'+img(q.no)+'" alt=""><span><b>'+esc(NAMES[q.no])+'</b><small>'+elName(ELOF[q.no])+' · 전투력 '+fmt(cp(q))+(q.sick!=null?' · 아픔':'')+'</small></span></button>':'').join('')+'</div></div>';}
+ else h+='<div class="card dpick"><p class="muted" style="margin:0">대전에 나갈 수 있는 환수가 없어요. (스타즈렐름·게스트 등급은 나갈 수 없어요)</p></div>';
  h+='</div><div class="drightcol"><div class="dtabs">'+[['rec','추천 상대','icon_recommend'],['all','전체 유저','icon_users'],['rank','순위','icon_rank'],['log','대전 기록','icon_history']].map(([k,n,ic])=>'<button class="'+(tab===k?'on':'')+'" data-dtab="'+k+'"><img src="i/ui2/'+ic+'.png" alt="">'+n+'</button>').join('')+'<button class="btn soft sm" data-pvprefresh="1" style="margin-left:auto">새로고침</button></div>';
  const users={};(SO.users||[]).forEach(u=>{users[u.uid]=u;});
- const atkEl=atkIdx()>=0?ELOF[acc.slots[atkIdx()].no]:null;
+ const atkEl=atkIdx()!==-1?ELOF[atkPetGet().no]:null;
  const fightBtn=a=>{if(!r||atkIdx()<0||!a.pet)return '';if((ad.pvpTo||[]).includes(a.uid))return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 재도전</button>':'<button class="btn soft sm dbtn" disabled>오늘 도전함</button>';
   if(used)return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 추가 도전</button>':'';return '<button class="btn sm dbtn" data-fight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="i/ui2/icon_duel.png" alt=""> 도전</button>';};
  const rowH=(uid,a,extra)=>{const u=users[uid]||{},pet=a&&a.pet,me2=uid===acc.uid,adv=pet&&atkEl?(isAdv(atkEl,pet.el)?'<span class="advg">상성 유리</span>':isAdv(pet.el,atkEl)?'<span class="advb">상성 불리</span>':''):'';
@@ -2459,7 +2460,7 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(ds.bagall)return bagAll();
  if(ds.errack!=null){const q=acc.slots[+ds.errack];if(q){q.errandResult=null;SFX.play('coins');toast('심부름 보상을 받았어요!');return commit();}}
  if(ds.hatch)return hatch(ds.hatch);
- if(ds.atk!=null){PV.atk=+ds.atk;return render();}
+ if(ds.atk!=null){PV.atk=ds.atk==='rep'?'rep':+ds.atk;return render();}
  if(ds.refight)return fight(ds.refight,true);if(ds.fight)return fight(ds.fight);
  if(ds.replay)return replay(ds.replay);
  if(ds.pvprefresh){PV.list=null;SO.users=null;render();loadUsers();return loadArena();}
