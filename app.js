@@ -454,7 +454,7 @@ const rnd=()=>Math.random();
 let saveChain=Promise.resolve();
 // 한 계정은 한 기기에서만 저장: 다른 기기가 접속하면 이 기기는 저장을 멈추고 [이 기기에서 계속하기]를 보여줘요
 const SESS=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-function save(){if(MODE==='player'&&S.kicked)return saveChain;if(MODE==='player'&&acc)acc.sess=SESS;acc.rev=(acc.rev||0)+1;const snap=JSON.parse(JSON.stringify(acc));saveChain=saveChain.then(()=>db.doc('accounts/'+snap.uid).set(snap)).catch(e=>{toast('저장 실패: '+(e&&e.message||e));});return saveChain;}
+function save(){if(MODE==='player'&&S.kicked)return saveChain.then(()=>false);if(MODE==='player'&&acc)acc.sess=SESS;acc.rev=(acc.rev||0)+1;const snap=JSON.parse(JSON.stringify(acc));saveChain=saveChain.then(()=>db.doc('accounts/'+snap.uid).set(snap)).then(()=>true).catch(e=>{toast('저장 실패: '+(e&&e.message||e));return false;});return saveChain;}
 async function log(msg){try{await db.collection('adminlogs').add({t:Date.now(),by:acc.id,msg});}catch(e){}}
 
 /* ================= 환수 계산 ================= */
@@ -1358,9 +1358,12 @@ function vCodify(){S.igSel=S.igSel||{};const P0=acc.playerNo,keys=IG_KEYS_NOW(),
  return h;}
 function igMake(){if(!acc.playerNo)return toast('플레이어 번호가 연결되지 않았어요.');const sel_=IG_KEYS_NOW().map(k=>[k,Math.min(acc.inv[k]||0,S.igSel[k]||0)]).filter(x=>x[1]>0).slice(0,6);if(!sel_.length)return toast('코드로 바꿀 아이템을 골라 주세요.');
  const txt=sel_.map(([k,n])=>ITEMS[k].n+' ×'+n).join(', ');
- confirmBox('코드 만들기',txt+'\n\n코드로 바꾸면 가방에서 빠져요. 코드를 잃어버리지 않게 꼭 복사해 두세요.',()=>{if(sel_.some(([k,n])=>(acc.inv[k]||0)<n))return toast('아이템이 부족해요.');sel_.forEach(([k,n])=>{acc.inv[k]-=n;});acc.igN=(acc.igN||0)+1;const N=acc.igN,pairs=sel_.map(([k,n])=>[ITEMS[k].ig,n]);
+ if(S.kicked)return toast('다른 기기에서 접속 중이라 저장이 멈춰 있어요. 이 기기에서 이어서 하기를 누른 뒤 다시 시도해 주세요.');
+ confirmBox('코드 만들기',txt+'\n\n코드로 바꾸면 가방에서 빠져요. 코드를 잃어버리지 않게 꼭 복사해 두세요.',async()=>{if(S.igBusy)return;if(sel_.some(([k,n])=>(acc.inv[k]||0)<n))return toast('아이템이 부족해요.');const bk={inv:JSON.parse(JSON.stringify(acc.inv)),igN:acc.igN,igc:acc.igc};sel_.forEach(([k,n])=>{acc.inv[k]-=n;if(acc.inv[k]<=0)delete acc.inv[k];});acc.igN=(acc.igN||0)+1;const N=acc.igN,pairs=sel_.map(([k,n])=>[ITEMS[k].ig,n]);
   const code=[acc.playerNo,N].concat(...pairs,[igChk(acc.playerNo,N,pairs)]).join('-');
-  acc.igc=[{code,txt,t:Date.now(),p:pairs}].concat(acc.igc||[]).slice(0,100);S.igSel={};SFX.play('fanfare');commit();
+  acc.igc=[{code,txt,t:Date.now(),p:pairs}].concat(acc.igc||[]).slice(0,100);S.igSel={};S.igBusy=true;render();toast('저장 중…');const ok=await save();S.igBusy=false;
+  if(!ok){acc.inv=bk.inv;acc.igN=bk.igN;acc.igc=bk.igc;render();return toast('저장이 안 돼서 코드를 만들지 않았어요. 아이템은 그대로예요. 새로고침 후 다시 해 주세요.');}
+  syncArena();syncVillage();SFX.play('fanfare');
   const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="인게임 코드"><b class="serif" style="font-size:22px;color:#ffd36e">인게임 코드</b><code class="igbig">'+esc(code)+'</code><p class="muted" style="color:#c9d8d5;margin:0">'+esc(txt)+'<br>게임에서 책과 깃펜 첫 장에 이 코드를 적고 손에 든 채로 /trigger hwansu_get 을 입력하면 받아요. 가방 → 코드화에서 다시 볼 수 있어요.</p><button class="btn" data-copy="'+esc(code)+'">복사</button><button class="btn ghost" data-close="1">닫기</button></div></div>';});}
 applyCfg();
 /* ================= 환수 대전 (비동기) ================= */
@@ -2552,7 +2555,7 @@ if(ds.usevil){vilInit();if(vilCap()>=VIL_CAPMAX)return toast('마을 한도가 �
  // 운영자
  if(MODE!=='admin'||!isAdmin())return;
  if(ds.xtab){AS.tab=ds.xtab;if(ds.xtab==='eggs'&&!AS.eggs)AD.loadEggs();if(ds.xtab==='logs'&&!AS.logs)AD.loadLogs();return render();}
- if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.base=CL(AS.tgt);AS.slot=0;AS.tgtArena=undefined;render();return AD.loadArenaT();}
+ if(ds.xpick){const a=(AS.list||[]).find(x=>x.uid===ds.xpick);AS.tgt=a?normT(a):null;AS.base=CL(AS.tgt);AS.slot=0;AS.tgtArena=undefined;render();if(a)db.doc('accounts/'+a.uid).get().then(s0=>{if(!s0.exists||!AS.tgt||AS.tgt.uid!==a.uid)return;const f=Object.assign({uid:a.uid},s0.data());const i=(AS.list||[]).findIndex(x=>x.uid===a.uid);if(i>=0)AS.list[i]=f;AS.tgt=normT(f);AS.base=CL(AS.tgt);render();}).catch(()=>{});return AD.loadArenaT();}
  if(ds.x&&ds.uid)AS.twUid=ds.uid;if(ds.x&&ds.lid)AS.libId=ds.lid;
  if(ds.x&&AD[ds.x]){if(MAIN_ONLY.has(ds.x)&&!isMain())return toast('메인 운영자만 할 수 있어요.');try{return await AD[ds.x](t);}catch(e){toast('실패했어요: '+(e&&e.message||e));}}
  if(ds.xslot!=null){AS.slot=+ds.xslot;return render();}
