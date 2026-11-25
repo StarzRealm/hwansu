@@ -2004,8 +2004,12 @@ function xmState(){if(!acc.xm||acc.xm.id!==XM_ID)acc.xm={id:XM_ID,free:'',run:nu
 function xmFree(){return xmState().free!==dayKey(now());}
 // 설화 던전 몬스터: 등급별 구천탑 층 기준 능력치 (첫눈 8층 · 함박눈 25층 · 눈보라 45층 · 극야 65층 · 끝없는 겨울밤 15층부터 관문마다 +1.5층)
 const XM_FLOOR=[8,25,45,65,15];
+// 끝없는 겨울밤 코인: 1~10관문 3개, 11~20관문 2개, 21관문~ 1개 · 한 번 입장 최대 40개 · 하루 최대 60개 (넘으면 순위 기록만)
+const XM_END_RUN=40,XM_END_DAY=60;
+function xmEndCoin(g){return g<10?3:g<20?2:1;}
+function xmEndLeft(run){const ad=accDaily();return Math.max(0,Math.min(XM_END_RUN-(run?run.earned:0),XM_END_DAY-(ad.xme||0)));}
 function xmFloor(ti,g){const T=XM_TIERS[ti];return T.endless?Math.min(100,Math.round(XM_FLOOR[ti]+g*1.5)):XM_FLOOR[ti];}
-function xmMonStat(ti,g){const T=XM_TIERS[ti],s=twMonStat(xmFloor(ti,g),false),m=T.endless?1:XM_GATE[g];['hp','atk','def'].forEach(k=>{s[k]=Math.round(s[k]*m);});if(!T.endless&&g===4){s.hp=Math.round(s.hp*1.6);s.atk=Math.round(s.atk*1.2);}return s;}
+function xmMonStat(ti,g){const T=XM_TIERS[ti],s=twMonStat(xmFloor(ti,g),false),m=T.endless?(g>57?1+(g-57)*.05:1):XM_GATE[g];['hp','atk','def'].forEach(k=>{s[k]=Math.round(s[k]*m);});if(!T.endless&&g===4){s.hp=Math.round(s.hp*1.6);s.atk=Math.round(s.atk*1.2);}return s;}
 function xmRec(ti,g){return powerOf(xmMonStat(ti,g));}
 function xmMon(ti,g){const T=XM_TIERS[ti],boss=!T.endless&&g===4;let d;
  if(boss)d=T.boss;else{const i=T.endless?twHash(g*31+7)%XM_MON.length:twHash(ti*97+g*13+Number(dayKey(now()).replace(/-/g,'')))%XM_MON.length;d=XM_MON[i];}
@@ -2028,14 +2032,14 @@ async function xmFight(i){if(TV.busy)return;const x=xmState(),run=x.run,q=acc.sl
  try{const A=petSnap(q),D=xmMon(run.tier,g),bf=twBuff(run),ha0=Math.max(1,Math.round(bStat(A).hp*twHp(run,q,i)));
   const mk=run.tier+'_'+g,mh=run.mhp&&run.mhp.k===mk?run.mhp.hp:null,res=towerSim(A,ha0,D,bf,Math.floor(rnd()*4294967296),mh);run.last=key;run.n++;run.mhp=res.win?null:{k:mk,hp:res.hd};
   let got=0,first=null,ended=false,cleared=false;
-  if(res.win){run.hp[key]=res.ha/res.hpA;got=T.endless?T.coin:Math.max(1,Math.round(T.coin*XM_SHARE[g]));acc.evc=(acc.evc||0)+got;run.earned+=got;run.g++;
+  if(res.win){run.hp[key]=res.ha/res.hpA;if(T.endless){got=Math.min(xmEndCoin(g),xmEndLeft(run));const ad=accDaily();ad.xme=(ad.xme||0)+got;}else got=Math.max(1,Math.round(T.coin*XM_SHARE[g]));acc.evc=(acc.evc||0)+got;run.earned+=got;run.g++;
    if(T.endless){if(run.g>x.eb){x.eb=run.g;x.ebT=Date.now();xmSync();}run.choice=twRoll(1,run,'noloot');}
    else if(run.g>=5){cleared=true;if(!x.clr[run.tier]){x.clr[run.tier]=1;first=T.first;acc.coins+=T.first;if(T.title){acc.titles=acc.titles||[];if(!acc.titles.includes(T.title))acc.titles.push(T.title);}}x.run=null;ended=true;}
    else run.choice=twRoll(g===3?10:1,run,'noloot');}
   else{run.hp[key]=0;run.down.push(key);if(!xmUsable(run).length){x.run=null;ended=true;}}
   await save();
   const bgk=T.bg;battleAnim({kind:'xmas',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:'',pet:D},hpA:res.hpA,hpA0:res.hpA0,hpD:res.hpD,hpD0:res.hpD0,logS:JSON.stringify(res.log),win:res.win,
-   lbl:'설화 던전 · '+T.n+' '+(g+1)+'관문',wtxt:cleared?T.n+' 클리어!':(g+1)+'관문 돌파!',rlbl:'획득',reward:res.win?'이벤트 코인 +'+got+(first?' · 첫 클리어 코인 +'+first+(T.title?' · 칭호 「'+T.title+'」':''):''):'',cut:T.endless?(g+1)+'관문 강적':T.n+' 보스',bgUrl:XM_ART[bgk]?'x/'+bgk+'.png?'+IMG_V:'',
+   lbl:'설화 던전 · '+T.n+' '+(g+1)+'관문',wtxt:cleared?T.n+' 클리어!':(g+1)+'관문 돌파!',rlbl:'획득',reward:res.win?(T.endless&&!got?'코인 한도 도달 · 순위 기록만 올라가요':'이벤트 코인 +'+got)+(first?' · 첫 클리어 코인 +'+first+(T.title?' · 칭호 「'+T.title+'」':''):''):'',cut:T.endless?(g+1)+'관문 강적':T.n+' 보스',bgUrl:XM_ART[bgk]?'x/'+bgk+'.png?'+IMG_V:'',
    ended,endTxt:cleared?'이번 입장에서 이벤트 코인 '+run.earned+'개를 모았어요.':ended?'출전할 환수가 없어 이번 입장이 끝났어요. 모은 이벤트 코인 '+run.earned+'개':'',left:xmUsable(run).length},'atk');
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
 async function xmSync(){if(!db||!acc||MODE!=='player')return false;const x=xmState();if(!x.eb)return false;try{await db.doc('xmrank/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',ev:XM_ID,best:x.eb,t:x.ebT||Date.now(),title:(acc.titles||[]).slice(-1)[0]||null});XV.err=null;return true;}catch(e){XV.err=(e&&(e.code||e.message))||'error';console.warn('xmSync',e);return false;}}
@@ -2071,10 +2075,10 @@ function vXmas(){if(!xmOn())return '<div class="card"><h2>동지 설화 던전</
  if(XV.tab==='rank'){if(!XV.rank)setTimeout(xmLoadRank,0);return h+vXmRank();}
  if(!run){h+='<div class="xmtiers">'+XM_TIERS.map((T,ti)=>{const lock=T.endless?!x.clr[1]:(ti>0&&!x.clr[ti-1]);const clr=!!x.clr[ti];
    return '<div class="card xmtier'+(lock?' lock':'')+'"><div class="xmti">'+(XM_ART['x_tier'+(ti+1)]?'<img class="px" src="x/x_tier'+(ti+1)+'.png?'+IMG_V+'" alt="">':'<span>'+T.ic+'</span>')+'</div><b class="serif">'+T.n+'</b>'+(clr?'<span class="chip glow">클리어</span>':'')+
-   '<small>추천 전투력 '+(T.endless?fmt(T.rec)+'부터 계속 강해져요':fmt(T.rec))+'</small><small>'+(T.endless?'관문마다 이벤트 코인 +'+T.coin+' · 기간 순위':'5관문 클리어 시 이벤트 코인 '+T.coin+(clr?'':' · 첫 클리어 코인 +'+T.first)+(T.title&&!clr?' · 칭호':''))+'</small>'+
+   '<small>추천 전투력 '+(T.endless?fmt(T.rec)+'부터 계속 강해져요':fmt(T.rec))+'</small><small>'+(T.endless?'관문마다 이벤트 코인 3→2→1개 · 입장당 최대 '+XM_END_RUN+' · 하루 최대 '+XM_END_DAY+' (오늘 '+(accDaily().xme||0)+'/'+XM_END_DAY+') · 기간 순위':'5관문 클리어 시 이벤트 코인 '+T.coin+(clr?'':' · 첫 클리어 코인 +'+T.first)+(T.title&&!clr?' · 칭호':''))+'</small>'+
    (T.endless&&x.eb?'<small>내 최고 '+x.eb+'관문</small>':'')+'<button class="btn teal sm" data-xmin="'+ti+'" '+(lock?'disabled':'')+'>'+(lock?(T.endless?'함박눈 클리어 후':'이전 등급 클리어 후'):'입장')+'</button></div>';}).join('')+'</div><p class="muted" style="text-align:center">하루 1번 무료로 들어갈 수 있고, 더 하고 싶으면 입장권(코인 '+XM_TK_PRICE+', 하루 '+XM_TK_DAILY+'장)을 써요. 관문을 깰 때마다 이벤트 코인을 바로 받아요.</p>';return h;}
  const T=XM_TIERS[run.tier],D=xmMon(run.tier,run.g);
- h+='<div class="row"><section class="grow"><div class="card twfloor xmfloor"><div class="twplate serif">'+T.ic+' '+T.n+' · '+(T.endless?(run.g+1)+'관문':(run.g+1)+' / 5관문')+'</div><div class="twzone">이번 입장에서 모은 이벤트 코인 '+run.earned+'</div><div class="twmon'+(D.big?' big':'')+'"><img class="px'+(D.xfb?' xmfb':'')+'" src="'+D.img+'" alt=""></div><div class="twmn"><b class="serif">'+esc(D.name)+'</b> '+elTag(D.el)+'</div>'+twMonHp(run,run.tier+'_'+run.g,D)+'<div class="kv" style="font-size:14px;justify-content:center"><span>추천 전투력 <b>'+fmt(D.cp)+'</b></span><span>보상 <b>이벤트 코인 +'+(T.endless?T.coin:Math.max(1,Math.round(T.coin*XM_SHARE[run.g])))+'</b></span></div></div>';
+ h+='<div class="row"><section class="grow"><div class="card twfloor xmfloor"><div class="twplate serif">'+T.ic+' '+T.n+' · '+(T.endless?(run.g+1)+'관문':(run.g+1)+' / 5관문')+'</div>'+(T.endless?'<p class="muted" style="margin:4px 0 0">이번 입장 코인 '+run.earned+' · 더 받을 수 있는 코인 '+xmEndLeft(run)+'개'+(xmEndLeft(run)?'':' (지금부터는 순위 기록만)')+'</p>':'')+'<div class="twzone">이번 입장에서 모은 이벤트 코인 '+run.earned+'</div><div class="twmon'+(D.big?' big':'')+'"><img class="px'+(D.xfb?' xmfb':'')+'" src="'+D.img+'" alt=""></div><div class="twmn"><b class="serif">'+esc(D.name)+'</b> '+elTag(D.el)+'</div>'+twMonHp(run,run.tier+'_'+run.g,D)+'<div class="kv" style="font-size:14px;justify-content:center"><span>추천 전투력 <b>'+fmt(D.cp)+'</b></span><span>보상 <b>이벤트 코인 +'+(T.endless?Math.min(xmEndCoin(run.g),xmEndLeft(run)):Math.max(1,Math.round(T.coin*XM_SHARE[run.g])))+'</b></span></div></div>';
  if(run.choice){h+='<div class="card"><h2 style="text-align:center">'+run.g+'관문 돌파! 보상을 하나 고르세요</h2><div class="twch">'+run.choice.map(c=>{const e=TWC[c];return '<button class="twcard r'+TWRC[e.r]+'" data-xmpick="'+c+'"><small>'+TWR[e.r]+'</small><img class="px" src="'+twcImg(c)+'" alt=""><b>'+esc(e.n)+'</b><span>'+esc(e.d)+'</span></button>';}).join('')+'</div></div>';}
  else{const bf=twBuff(run),chips=[];if(bf.atk)chips.push('공격력 '+(bf.atk>0?'+':'')+Math.round(bf.atk*100)+'%');if(bf.taken)chips.push('받는 피해 '+(bf.taken>0?'+':'')+Math.round(bf.taken*100)+'%');if(bf.drain)chips.push('흡혈 '+Math.round(bf.drain*100)+'%');if(bf.first)chips.push('첫 공격 1.5배');if(bf.elem)chips.push('상성 피해 +15%');
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">출전할 환수</h2><button class="btn soft sm" data-xmret="1">던전 나가기</button></div>'+(chips.length?'<div class="twbuf">'+chips.map(c=>'<span class="chip">'+c+'</span>').join('')+'</div>':'')+'<div class="twpets">'+acc.slots.map((q,i)=>{if(!q)return '';const key=petKey(q,i),dn=run.down.includes(key),hp=dn?0:twHp(run,q,i),c=cp(q),ratio=c/D.cp;
