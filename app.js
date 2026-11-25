@@ -1643,7 +1643,7 @@ function errandOverlay(){const i=acc.slots.findIndex(q=>q&&q.errandResult);if(i<
  '<div class="bagrow">'+L.map((x,k)=>{const tt=x.gear!=null?2:t;return '<button class="bagb t'+tt+'" data-bagopen="'+k+'" title="'+esc(BAGS[t].n)+'"><img class="px bimg" src="'+BAGS[t].img+'" alt=""><small>'+(x.gear!=null?'반짝이는 ':'')+BAGS[t].n+'</small><span class="bagc"><img class="px" src="'+x.img+'" alt=""><b>×'+x.c+'</b><i>'+esc(x.n)+'</i></span></button>';}).join('')+'</div>'+
  '<span class="muted" id="bagHint" style="color:#c9d8d5">보따리를 눌러 열어 보세요</span>'+
  '<div class="bagsum" id="bagTot" style="display:none">'+L.map(x=>'<span class="bsi"><img class="px" src="'+x.img+'" alt=""><span>'+esc(x.n)+'</span><b>×'+x.c+'</b></span>').join('')+'</div>'+
- '<div style="display:flex;gap:8px"><button class="btn soft" data-bagall="1">모두 열기</button><button class="btn" data-errack="'+i+'" style="background:#f0c75e">받기</button></div></div></div>';}
+ '<div class="errfoot"><button class="btn soft" data-bagall="1">모두 열기</button><button class="btn" data-errack="'+i+'" style="background:#f0c75e">받기</button></div></div></div>';}
 function bagOpen(btn){if(btn.classList.contains('open'))return;btn.classList.add('open');SFX.play(btn.classList.contains('t2')?'fanfare':btn.classList.contains('t1')?'coins':'buy');
  if(document.querySelectorAll('.bagb:not(.open)').length===0){const e=document.getElementById('bagTot');if(e)e.style.display='';const h=document.getElementById('bagHint');if(h)h.style.display='none';}}
 function bagAll(){document.querySelectorAll('.bagb:not(.open)').forEach((b,k)=>setTimeout(()=>bagOpen(b),k*180));}

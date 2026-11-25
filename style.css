@@ -827,3 +827,73 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
 .dcardin:not(:has(.dpet)){justify-content:center;padding-bottom:35%}
 .admvil .admvv{height:380px;border-radius:12px;border:2px solid #c9a24a}
 .admvil .vpet span{font-size:20px}
+/* ===== 모바일 정리 ===== */
+.overlay{align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.overlay>.modal{margin:auto 0;flex:none}
+.modal.errres{padding-bottom:0}
+.errfoot{position:sticky;bottom:0;display:flex;gap:8px;justify-content:center;width:calc(100% + 44px);margin:4px -22px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(14,26,30,0),rgba(14,26,30,.97) 30%);border-radius:0 0 14px 14px}
+.errfoot .btn{min-width:110px;min-height:44px}
+@media(max-width:560px){
+ .overlay{padding:8px}
+ .modal{padding:14px}
+ .modal.errres{width:100%}
+ .errfoot{width:calc(100% + 28px);margin:4px -14px 0}
+ .errres>img.px{width:56px;height:56px}
+ .errres b.serif{font-size:16px!important}
+ .bagrow{gap:6px}
+ .bagb{width:72px!important;height:88px!important}
+ .bagb img.bimg{width:44px;height:44px}
+ .bagb small{font-size:10px}
+ .bagb .bagc img{width:30px;height:30px}
+ .bagb .bagc b{font-size:17px}
+ .bagb .bagc i{font-size:10px}
+ .bsi{font-size:12px;padding:2px 9px 2px 4px}.bsi img{width:22px;height:22px}
+}
+@media(max-width:720px){
+ header .bar{padding:6px 8px;gap:6px;row-gap:6px}
+ header .logo{font-size:20px!important;order:0;flex:none}
+ header .bar>.coinbox{order:1;margin-left:auto}
+ header .bar>.coinbox img{width:30px;height:30px}
+ header .bar>.coinbox b{font-size:15px}
+ header .bar>.btn{order:2;padding:4px 8px;min-height:30px;font-size:12px}
+ header .bar>span{order:2;font-size:12px!important}
+ nav.main{order:3;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:2px;margin:0 -8px;padding:0 8px 2px}
+ nav.main::-webkit-scrollbar{display:none}
+ nav.main button{flex:none;padding:6px 9px;font-size:13px}
+ .navic{width:18px;height:18px}
+ main{padding:10px!important}
+ .vview{height:calc(100vh - 170px);height:calc(100dvh - 170px)}
+ /* 도감 */
+ .dex,.dexwrap .dex{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+ .dexwrap{grid-template-columns:1fr}
+ .dc{padding:5px 3px 6px}
+ .dc img{max-width:100%;height:auto}
+ .dexnum .dc.no .q{font-size:30px;line-height:52px;height:52px}
+ /* 대전 */
+ header .logo{display:none}
+ header .bar>span{display:none}
+ .dleftcol{display:flex;flex-direction:column;gap:8px}
+ .dcard{aspect-ratio:auto;background:rgba(255,248,230,.94);border:2px solid #c9a24a;border-radius:12px}
+ .dcardin{position:static;padding:10px;color:#3a2a08;text-shadow:none;display:grid;grid-template-columns:72px 1fr;column-gap:10px;justify-items:start;align-items:center;text-align:left}
+ .dcardin .dcap{position:static;grid-column:1/-1;color:#7a1515}
+ .dcardin .dpet{width:72px;grid-row:span 6}
+ .dcardin:not(:has(.dpet)){display:block;padding-bottom:10px}
+ .dban{height:56px}.dban b{font-size:21px}
+ .dtop{gap:6px;padding:6px 8px}.dtop .muted{display:none}
+ .dmp b{font-size:20px}
+ .drow{flex-wrap:wrap;min-height:auto;padding:8px 10px;background:#fffaf0;border:2px solid #1f5a52;border-radius:12px}
+ .drow.me{background:#fff3c4}
+ .dport{width:52px;min-width:52px;height:52px;margin-left:0;background:radial-gradient(#cfe9da,#5a9a7a);border-radius:50%}
+ .dport img{width:48px;height:48px}
+ .dbtns{width:100%;justify-content:flex-end}
+ .tplate{min-width:120px}
+}
+@media(max-width:720px){
+ .vtool{padding:6px 8px;gap:4px}
+ .vtool .btn.sm{padding:4px 8px;font-size:12px;min-height:30px}
+ .vtool .vic{width:16px;height:16px}
+ .vtool .vstat{font-size:11px;flex:1 1 100%;order:-1;margin:0}
+ .isltabs{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;order:-2;scrollbar-width:none}
+ .isltabs button{flex:none;font-size:12px;padding:3px 9px}
+ .vtool.place .muted{display:none}
+}
