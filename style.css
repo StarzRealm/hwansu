@@ -943,3 +943,4 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
 .vo .vact,.vo .vfloat{pointer-events:auto}
 .vring2{position:absolute;pointer-events:none;image-rendering:pixelated;animation:vringp 1.6s ease-in-out infinite}
 .vo>img{object-position:bottom center}
+.vfp{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
