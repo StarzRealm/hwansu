@@ -947,7 +947,7 @@ function gridSvg(){const g=geo(),[lo,hi]=islBounds();let s='';for(let i=lo;i<=hi
  return '<svg class="vgrid2" viewBox="0 0 2048 1536" width="2048" height="1536"><path d="'+s+'" stroke="rgba(255,255,255,.45)" stroke-width="1" fill="none"/></svg>';}
 /* 하늘·운해 */
 function skyHtml(){const k=curIsl(),T=THEMES[k],f=T?T.cloud:'none';
- return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+'" style="filter:'+f+'"></div>').join('');}
+ const D={ca:200,cb:150,cc:260},t=Date.now()/1000;return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+'" style="filter:'+f+';animation-delay:-'+(t%D[c]).toFixed(2)+'s"></div>').join('');}
 function skyFront(){const k=curIsl(),T=THEMES[k],f=T?T.cloud:'none';return '';}
 const skyBg=()=>{const T=THEMES[curIsl()];return T?T.sky:'linear-gradient(180deg,#f3b9d6 0%,#e9cdf3 45%,#d9d4f5 75%,#cfd8f5 100%)';};
 /* 날씨 */
@@ -991,6 +991,24 @@ function vBoundsFix(){if(curIsl()!=='main')return;const v=acc.vil,[lo,hi]=islBou
 
 function islImgTag(G){const xm=curIsl()==='main'&&(acc.vil.skin||'base')==='xm';if(!xm)return '<img class="vbg" src="'+G.img+'" alt="" draggable="false">';
  return '<img class="vbg" src="'+G.img.replace('/main_','/xm_main_')+'" alt="" draggable="false" onerror="this.onerror=null;this.src=\''+G.img+'\';this.classList.add(\'xmtint\')">';}
+
+/* ===== 마을 지도: 잡고 끌기·휠 확대·두 손가락 확대 ===== */
+const VP={ptr:new Map(),pan:null,pinch:null,moved:false};
+function vZoomTo(z,cx,cy){const e=document.getElementById('vview'),m=document.getElementById('vmap');if(!e||!m)return;const oz=VS.z||1;z=Math.max(vZmin(),Math.min(2,z));if(Math.abs(z-oz)<.001)return;
+ const r=e.getBoundingClientRect(),px=cx-r.left,py=cy-r.top,mx=(e.scrollLeft+px)/oz,my=(e.scrollTop+py)/oz;VS.z=z;m.style.transform='scale('+z+')';const sz=e.querySelector('.vsize');if(sz){sz.style.width=VMW*z+'px';sz.style.height=VMH*z+'px';}
+ e.scrollLeft=mx*z-px;e.scrollTop=my*z-py;}
+document.addEventListener('wheel',ev=>{const e=ev.target.closest&&ev.target.closest('#vview');if(!e)return;ev.preventDefault();const k=Math.exp(-ev.deltaY*(ev.ctrlKey?.01:.0015));vZoomTo((VS.z||1)*k,ev.clientX,ev.clientY);},{passive:false});
+document.addEventListener('pointerdown',ev=>{const e=ev.target.closest&&ev.target.closest('#vview');if(!e)return;if(VS.place&&ev.target.closest('[data-vo],[data-vpet]'))return;
+ VP.ptr.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});VP.moved=false;
+ if(VP.ptr.size===1)VP.pan={x:ev.clientX,y:ev.clientY,sl:e.scrollLeft,st:e.scrollTop};
+ if(VP.ptr.size===2){const [a,b]=[...VP.ptr.values()];VP.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:VS.z||1};VP.pan=null;}},true);
+document.addEventListener('pointermove',ev=>{if(!VP.ptr.has(ev.pointerId))return;const e=document.getElementById('vview');if(!e)return;VP.ptr.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+ if(VP.pinch&&VP.ptr.size>=2){const [a,b]=[...VP.ptr.values()],d=Math.hypot(a.x-b.x,a.y-b.y);vZoomTo(VP.pinch.z*d/VP.pinch.d,(a.x+b.x)/2,(a.y+b.y)/2);VP.moved=true;return;}
+ if(VP.pan){const dx=ev.clientX-VP.pan.x,dy=ev.clientY-VP.pan.y;if(!VP.moved&&Math.hypot(dx,dy)<6)return;VP.moved=true;e.classList.add('grabbing');e.scrollLeft=VP.pan.sl-dx;e.scrollTop=VP.pan.st-dy;}});
+function vpEnd(ev){if(!VP.ptr.has(ev.pointerId))return;VP.ptr.delete(ev.pointerId);if(VP.ptr.size<2)VP.pinch=null;if(VP.ptr.size===0){VP.pan=null;const e=document.getElementById('vview');if(e)e.classList.remove('grabbing');}
+ else if(VP.ptr.size===1){const e=document.getElementById('vview'),[a]=[...VP.ptr.values()];if(e)VP.pan={x:a.x,y:a.y,sl:e.scrollLeft,st:e.scrollTop};}}
+document.addEventListener('pointerup',vpEnd,true);document.addEventListener('pointercancel',vpEnd,true);
+document.addEventListener('click',ev=>{if(VP.moved&&ev.target.closest&&ev.target.closest('#vview')){ev.stopPropagation();ev.preventDefault();VP.moved=false;}},true);
 /* ================= 선계 마을 (아이소메트릭 24×24) ================= */
 // 48×48칸 · 한 칸 32×16 (아이소메트릭)
 const VG=48,VX0=1024,VY0=362,VMW=2048,VMH=1536,CW=32,CH=16;
@@ -1198,7 +1216,7 @@ document.addEventListener('pointerdown',ev=>{if(VS.place&&ev.target.closest&&ev.
 document.addEventListener('pointermove',ev=>{if(VDRAG)vPointerMove(ev);});
 document.addEventListener('pointerup',vPointerUp);
 function vClick(ds){const v=acc.vil;
- if(ds.vzoom){const e=document.getElementById('vview'),oz=VS.z||1,cx=e?(e.scrollLeft+e.clientWidth/2)/oz:1024,cy=e?(e.scrollTop+e.clientHeight/2)/oz:768;VS.z=Math.max(vZmin(),Math.min(2,oz*(+ds.vzoom>0?1.2:1/1.2)));render();const e2=document.getElementById('vview');if(e2){e2.scrollLeft=cx*VS.z-e2.clientWidth/2;e2.scrollTop=cy*VS.z-e2.clientHeight/2;}return;}
+ if(ds.vzoom){const e=document.getElementById('vview');if(!e)return;const r=e.getBoundingClientRect();vZoomTo((VS.z||1)*(+ds.vzoom>0?1.25:1/1.25),r.left+r.width/2,r.top+r.height/2);return;}
  if(ds.visl){if(VS.place)return toast('배치 모드를 먼저 끝내 주세요.');VS.isl=ds.visl;GEO=null;render();setTimeout(vCenter,0);return;}
  if(ds.vbgm){acc.bgmOff=!acc.bgmOff;islBgm();save();return render();}
  if(ds.vroam)return roamModal();

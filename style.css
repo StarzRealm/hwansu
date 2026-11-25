@@ -924,3 +924,9 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
  .dpick .slot img{width:34px;height:34px}
  .dpick .slot small{font-size:10px}
 }
+/* 지도 조작 */
+.vview{overflow:hidden!important;touch-action:none!important;cursor:grab;overscroll-behavior:contain}
+.vview.grabbing{cursor:grabbing}
+.vview .vbg{image-rendering:pixelated}
+.vwrap .vview{height:calc(100vh - 160px);height:calc(100dvh - 160px)}
+@media(max-width:720px){.vwrap .vview{height:calc(100dvh - 190px)}}
