@@ -942,8 +942,9 @@ function tileFlat(o,sel,bad){const n=+o.k.slice(5),t=tileSz(o),cls='vt'+(sel?' s
 const isTP=o=>String(o.k).startsWith('tp:');
 function tpInfo(k){const [,t,n]=String(k).split(':'),T=THEMES[t];return T?{n:T.props[+n-1],p:T.pp[+n-1],img:'v/tp/'+t+'_'+n+'.webp',t,key:'tp_'+t+'_'+n}:null;}
 /* 배치 칸 격자 (배치 모드) */
-function gridSvg(){const g=geo(),[lo,hi]=islBounds();let s='';for(let i=lo;i<=hi;i+=2){const a=cellXY(i,lo),b=cellXY(i,hi),c=cellXY(lo,i),d=cellXY(hi,i);s+='M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+'L'+b[0].toFixed(1)+' '+b[1].toFixed(1)+'M'+c[0].toFixed(1)+' '+c[1].toFixed(1)+'L'+d[0].toFixed(1)+' '+d[1].toFixed(1);}
- return '<svg class="vgrid2" viewBox="0 0 2048 1536" width="2048" height="1536"><path d="'+s+'" stroke="rgba(255,255,255,.45)" stroke-width="1" fill="none"/></svg>';}
+function gridSvg(){const [lo,hi]=islBounds();let M='',m='';const P=v=>v[0].toFixed(1)+' '+v[1].toFixed(1);
+ for(let i=lo;i<=hi;i++){const seg='M'+P(cellXY(i,lo))+'L'+P(cellXY(i,hi))+'M'+P(cellXY(lo,i))+'L'+P(cellXY(hi,i));if((i-lo)%2===0)M+=seg;else m+=seg;}
+ return '<svg class="vgrid2" viewBox="0 0 2048 1536" width="2048" height="1536"><path d="'+m+'" stroke="rgba(255,255,255,.28)" stroke-width=".8" fill="none"/><path d="'+M+'" stroke="rgba(255,255,255,.55)" stroke-width="1.2" fill="none"/></svg>';}
 /* 하늘·운해 */
 const xmSky=()=>curIsl()==='main'&&acc.vil&&(acc.vil.skin||'base')==='xm';
 function skyHtml(){const k=curIsl(),T=THEMES[k]||(xmSky()?THEMES.snow:null),f=T?T.cloud:'none';
