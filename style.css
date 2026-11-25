@@ -735,14 +735,11 @@ img.sil{filter:brightness(0) opacity(.5)!important}
 .vbg{image-rendering:auto;z-index:1}
 .vt{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:auto;pointer-events:auto}
 .vgrid2{position:absolute;left:0;top:0;pointer-events:none;z-index:3}
-.vclouds{position:absolute;left:0;width:2048px;pointer-events:none;background-repeat:repeat-x;background-size:2048px 512px;z-index:0;animation:vclx 160s linear infinite}
-.vclouds.ctop{top:-90px;height:560px;background-image:url(v/isl/cloud_back.webp);background-position:0 0;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 92%);mask-image:linear-gradient(180deg,#000 55%,transparent 92%);animation-duration:220s}
-.vclouds.ctop2{top:60px;height:520px;background-image:url(v/isl/cloud_mid.webp);background-position:700px 0;opacity:.85;-webkit-mask-image:linear-gradient(180deg,#000 45%,transparent 88%);mask-image:linear-gradient(180deg,#000 45%,transparent 88%);animation-duration:150s}
-.vclouds.cbot{top:960px;height:576px;background-image:url(v/isl/cloud_back.webp);background-position:300px 64px;-webkit-mask-image:linear-gradient(0deg,#000 60%,transparent 95%);mask-image:linear-gradient(0deg,#000 60%,transparent 95%);animation-duration:240s}
-.vclouds.cbot2{top:1060px;height:476px;background-image:url(v/isl/cloud_mid.webp);background-position:1200px 0;opacity:.9;-webkit-mask-image:linear-gradient(0deg,#000 55%,transparent 95%);mask-image:linear-gradient(0deg,#000 55%,transparent 95%);animation-duration:170s}
-.vclouds.cfront{top:1200px;height:336px;z-index:9000;opacity:.8;background-image:url(v/isl/cloud_front.webp);background-position:0 -60px;-webkit-mask-image:linear-gradient(0deg,#000 50%,transparent 100%);mask-image:linear-gradient(0deg,#000 50%,transparent 100%);animation-duration:95s}
+.vclouds{position:absolute;left:0;top:-256px;width:4096px;height:2048px;pointer-events:none;background-repeat:repeat;background-size:2048px 512px;z-index:0;animation:vclx 200s linear infinite;will-change:transform;-webkit-mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);-webkit-mask-size:2048px 512px;mask-size:2048px 512px;-webkit-mask-repeat:repeat;mask-repeat:repeat;}
+.vclouds.ca{background-image:url(v/isl/cloud_back.webp);background-position:0 0}
+.vclouds.cb{background-image:url(v/isl/cloud_mid.webp);background-position:700px 170px;-webkit-mask-position:0 170px;mask-position:0 170px;animation-duration:150s}
+.vclouds.cc{background-image:url(v/isl/cloud_back.webp);background-position:1400px 341px;-webkit-mask-position:0 341px;mask-position:0 341px;opacity:.9;animation-duration:260s}
 @keyframes vclx{from{transform:translateX(-2048px)}to{transform:translateX(0)}}
-.vclouds{width:4096px}
 .vwx{position:absolute;left:0;right:0;bottom:0;top:auto;width:100%;height:calc(100% - 52px);pointer-events:none;z-index:15}
 .isltabs{display:flex;gap:4px;flex-wrap:wrap;margin-right:6px}
 .isltabs button{border:1px solid rgba(255,230,170,.5);background:rgba(255,255,255,.1);color:#fff8e6;border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer}
@@ -869,23 +866,11 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
  .dc{padding:5px 3px 6px}
  .dc img{max-width:100%;height:auto}
  .dexnum .dc.no .q{font-size:30px;line-height:52px;height:52px}
- /* 대전 */
  header .logo{display:none}
  header .bar>span{display:none}
- .dleftcol{display:flex;flex-direction:column;gap:8px}
- .dcard{aspect-ratio:auto;background:rgba(255,248,230,.94);border:2px solid #c9a24a;border-radius:12px}
- .dcardin{position:static;padding:10px;color:#3a2a08;text-shadow:none;display:grid;grid-template-columns:72px 1fr;column-gap:10px;justify-items:start;align-items:center;text-align:left}
- .dcardin .dcap{position:static;grid-column:1/-1;color:#7a1515}
- .dcardin .dpet{width:72px;grid-row:span 6}
- .dcardin:not(:has(.dpet)){display:block;padding-bottom:10px}
  .dban{height:56px}.dban b{font-size:21px}
  .dtop{gap:6px;padding:6px 8px}.dtop .muted{display:none}
  .dmp b{font-size:20px}
- .drow{flex-wrap:wrap;min-height:auto;padding:8px 10px;background:#fffaf0;border:2px solid #1f5a52;border-radius:12px}
- .drow.me{background:#fff3c4}
- .dport{width:52px;min-width:52px;height:52px;margin-left:0;background:radial-gradient(#cfe9da,#5a9a7a);border-radius:50%}
- .dport img{width:48px;height:48px}
- .dbtns{width:100%;justify-content:flex-end}
  .tplate{min-width:120px}
 }
 @media(max-width:720px){
@@ -896,4 +881,46 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
  .isltabs{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;order:-2;scrollbar-width:none}
  .isltabs button{flex:none;font-size:12px;padding:3px 9px}
  .vtool.place .muted{display:none}
+}
+
+/* ===== 대전 레이아웃 v2 (이미지 비율 고정) ===== */
+.dcaph{font-weight:700;color:#ffe9b0;text-shadow:0 1px 3px #000;text-align:center}.dcaph small{font-weight:400}
+.dcard{position:relative;width:100%;max-width:320px;margin:0 auto;aspect-ratio:600/800;background:url(i/ui2/duel_card.png) center/100% 100% no-repeat;border:none;border-radius:0}
+.dc-name{position:absolute;left:24%;right:24%;top:5.2%;height:7.4%;display:flex;align-items:center;justify-content:center;color:#ffe9b0;font-size:clamp(13px,4.6vw,19px);font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden}
+.dc-info{position:absolute;left:13%;right:13%;top:16%;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;background:rgba(20,40,46,.72);border-radius:10px;padding:8px 6px;color:#fff8e6}
+.dc-info small{font-size:12px;line-height:1.35}.dc-info b{color:#ffd36e}
+.dc-pet{position:absolute;left:24%;width:52%;bottom:13.5%;aspect-ratio:1;object-fit:contain;object-position:bottom;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
+.drow{display:flex;align-items:center;gap:8px;padding:0;background:none;border:none;min-height:0;position:relative}
+.dframe{position:relative;flex:1;aspect-ratio:1000/140;background:url(i/ui2/duel_row.png) center/100% 100% no-repeat;min-width:0}
+.drow.me .dframe{background-image:url(i/ui2/duel_row_highlight.png)}
+.dmirror{position:absolute;left:4.4%;top:15%;width:10.6%;height:70%;display:flex;align-items:center;justify-content:center}
+.dmirror img{max-width:100%;max-height:100%;object-fit:contain}
+.dinfo{position:absolute;left:18.5%;right:2.5%;top:12%;bottom:12%;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0}
+.dname{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.dname b{font-size:clamp(13px,1.6vw,17px)}
+.dsub{font-size:clamp(10px,1.2vw,13px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drk{position:absolute;left:-2px;top:-6px;width:34px;z-index:2}.drk img{width:30px;height:30px}
+.dbtns{flex:none;display:flex;flex-direction:column;gap:4px;align-items:stretch;width:auto}
+.dbtns .hbtn{align-self:center}
+@media(max-width:720px){
+ .dcard{max-width:250px}
+ .dleftcol{display:flex;flex-direction:column;gap:8px}
+ .drow{flex-direction:column;align-items:stretch;gap:4px;background:rgba(255,250,236,.7);border-radius:12px;padding:4px}
+ .dbtns{flex-direction:row;justify-content:flex-end;flex-wrap:wrap}
+ .dinfo{gap:0}
+ .dname .tplate{display:none}
+ .dsub:last-child{display:none}
+}
+.drow.me{background-image:none}
+.vbg.xmtint{filter:saturate(.45) hue-rotate(185deg) brightness(1.12) contrast(.95)}
+.dc-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.dc-info{gap:2px;padding:6px}
+.dc-pet{width:46%;left:27%}
+@media(max-width:720px){
+ .dc-info small{font-size:11px}.dc-rec{display:none}
+ .dc-info .tplate{display:none}
+ .dpick .slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+ .dpick .slot{min-width:0;padding:6px}
+ .dpick .slot img{width:34px;height:34px}
+ .dpick .slot small{font-size:10px}
 }
