@@ -930,3 +930,16 @@ main.v-pvp{background:url(i/ui2/duel_arena.webp) center top/cover fixed}
 .vview .vbg{image-rendering:pixelated}
 .vwrap .vview{height:calc(100vh - 160px);height:calc(100dvh - 160px)}
 @media(max-width:720px){.vwrap .vview{height:calc(100dvh - 190px)}}
+/* 건물 선택·조작 */
+.vo.flip>img{transform:scaleX(-1)}
+.vring{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;filter:drop-shadow(0 0 6px rgba(255,211,110,.9));animation:vringp 1.6s ease-in-out infinite}
+@keyframes vringp{50%{opacity:.6}}
+.vact,.vfloat{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5;white-space:nowrap}
+.vact button{display:flex;flex-direction:column;align-items:center;gap:1px;width:56px;padding:5px 2px 4px;border-radius:14px;border:2px solid #c9a24a;background:rgba(255,248,230,.97);color:#3a2a08;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.3);font-size:18px;line-height:1}
+.vact button span{font-size:11px}
+.vact button img{width:30px;height:30px}
+.vact button:hover{background:#fff3c4;transform:translateY(-2px)}
+.vfloat .btn{box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.vo .vact,.vo .vfloat{pointer-events:auto}
+.vring2{position:absolute;pointer-events:none;image-rendering:pixelated;animation:vringp 1.6s ease-in-out infinite}
+.vo>img{object-position:bottom center}
