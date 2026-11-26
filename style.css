@@ -1545,3 +1545,131 @@ main.v-gear .gear .gpl{right:4px;top:3px;width:20px;height:18px}
 .bkrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
 .bkrow small{display:block;color:var(--sub);font-size:12px}
 @media (min-width:761px){header .bar{gap:10px;padding:10px 16px}nav.main button{padding:8px 10px}header .bar>.btn.sm{padding:0 2px}}
+/* 무혼 대전 줄: 글자 크기를 틀 크기에 맞춰 같이 줄이고 늘림 (창 크기·모바일 공통) */
+.dframe{container-type:inline-size}
+.dinfo{top:13%;bottom:13%;left:18%;right:3%;gap:.3cqw;justify-content:center}
+.dinfo>*{line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dname{gap:.8cqw}
+.dname b,.dname .nk{font-size:clamp(10px,2.5cqw,18px)}
+.dname .tplate{height:clamp(14px,2.6cqw,22px)!important;min-width:clamp(56px,13cqw,120px)!important;font-size:clamp(8px,1.5cqw,11px)!important;padding:0 1.2cqw!important;display:inline-flex!important}
+.dinfo>div:not(.dname),.dinfo>small,.dinfo>span{font-size:clamp(9px,1.85cqw,13px)!important}
+.dinfo .chip{font-size:clamp(8px,1.5cqw,11px)!important;padding:0 .8cqw!important}
+.dinfo img{max-height:clamp(10px,2cqw,16px)}
+@container (min-width:361px) and (max-width:520px){.dinfo>*:nth-child(n+3){display:none}}
+/* 목록 폭이 좁으면 버튼을 줄 아래로 → 틀이 넓게 / 아주 좁으면(폰) 틀을 세로로 조금 늘려 글자 공간 확보 */
+.drows{container-type:inline-size;container-name:drows}
+@container drows (max-width:700px){
+ .drow{flex-direction:column;align-items:stretch;gap:3px}
+ .dframe{flex:none;width:100%}
+ .dbtns{flex-direction:row;justify-content:flex-end;align-items:center}
+}
+@container drows (max-width:460px){
+ .dframe{aspect-ratio:1000/250}
+ .dmirror{top:12%;height:76%;left:3.5%;width:13%}
+ .dinfo{left:19%;top:12%;bottom:12%;gap:2px}
+ .dname{flex-wrap:wrap;row-gap:2px;white-space:normal}
+ .dname b,.dname .nk{font-size:13px}
+ .dname .tplate{height:17px!important;min-width:74px!important;font-size:9px!important}
+ .dinfo>small{font-size:10.5px!important}
+}
+/* ===== 시상대 v2: 단상 그림 상자(비율 고정) 안에 환수·명패를 % 위치로 → 어느 창 크기에서도 명패 위에 글자 ===== */
+.podwrap{padding:clamp(56px,7vw,96px) 3% clamp(14px,2vw,24px)!important;margin:10px 0 18px}
+.podrow{display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,3vw,48px)}
+.pdm{flex:0 1 30%;max-width:340px;position:relative}
+.pdm.pd1{flex-basis:36%;max-width:420px}
+.pdimg{display:none}
+.pdbox{position:relative;width:100%;background:center bottom/100% 100% no-repeat;image-rendering:auto;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+.pd1 .pdbox{aspect-ratio:520/300;background-image:url(i/hd/podium_1.png)}
+.pd2 .pdbox{aspect-ratio:440/240;background-image:url(i/hd/podium_2.png)}
+.pd3 .pdbox{aspect-ratio:440/200;background-image:url(i/hd/podium_3.png)}
+.pdm.empty .pdbox{opacity:.35;filter:grayscale(.6)}
+.pdtop{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:46%;z-index:2}
+.pd1 .pdtop{bottom:60%}.pd2 .pdtop{bottom:79%}.pd3 .pdtop{bottom:80%}
+.pdtop .pdpet{position:static!important;transform:none!important;width:100%!important;height:auto;bottom:auto!important;filter:drop-shadow(0 6px 5px rgba(0,0,0,.55))}
+.pd1 .pdtop{width:40%}.pd1 .pdtop .pdpet{animation:pdfloat2 3s ease-in-out infinite}
+@keyframes pdfloat2{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.pdtop .pdmvp{position:static!important;transform:none!important;white-space:nowrap}
+.pdplate{position:absolute!important;display:flex;align-items:center;justify-content:center;gap:6%;padding:0 4%;box-sizing:border-box;outline-offset:0}
+.pd1 .pdplate{left:30.8%;top:51.3%;width:38.5%;height:21.3%}
+.pd2 .pdplate{left:29.5%;top:50.4%;width:40.9%;height:23.3%}
+.pd3 .pdplate{left:29.5%;top:48%;width:40.9%;height:28%}
+.pdrk{width:clamp(20px,2.6vw,34px)!important}
+.pdtx{align-items:flex-start}
+@media (max-width:640px){.podwrap{padding:44px 1% 8px!important}.podrow{gap:2px}.pdm{flex-basis:31%}.pdm.pd1{flex-basis:38%}.pdplate{gap:0;padding:0 2%}.pdtx{align-items:center}}
+.podwrap{overflow:visible!important;padding-top:clamp(70px,10vw,130px)!important}
+.podwrap{background-clip:padding-box}
+.pdbox{container-type:inline-size}
+.pd1 .pdtop{width:34%}.pd2 .pdtop,.pd3 .pdtop{width:40%}
+.pdplate{gap:4cqw!important;padding:0 3cqw!important;justify-content:center}
+.pdrk{width:10cqw!important;min-width:16px}.pdrk b{font-size:clamp(8px,4.4cqw,15px)!important}
+.pdtx{align-items:flex-start!important;line-height:1.1}
+.pdnick{font-size:clamp(8px,4.4cqw,15px)!important;max-width:24cqw}
+.pdval{font-size:clamp(9px,5.6cqw,20px)!important}
+.pdtx small{display:none!important}
+.pd2 .pdnick,.pd3 .pdnick{max-width:26cqw}
+@media (max-width:640px){.pdplate .pdrk{display:none}.pdtx{align-items:center!important}}
+/* 시상대 v3: 단상 아래 세로 글상자 (메달 → 닉네임 → 데미지) */
+.podrow{align-items:flex-start}
+.pdm{display:flex;flex-direction:column;align-items:center;align-self:flex-end}
+.pdcap{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:10px;min-width:78%;max-width:100%;box-sizing:border-box;padding:10px 12px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(26,14,16,.92),rgba(14,8,10,.92));border:2px solid #b8873a;box-shadow:inset 0 0 0 1px rgba(255,220,150,.25),0 6px 14px rgba(0,0,0,.45);color:#fff4dc;text-align:center}
+.pd1 .pdcap{border-color:#f0c35a;box-shadow:inset 0 0 0 1px rgba(255,230,160,.4),0 0 18px rgba(255,200,90,.35),0 6px 14px rgba(0,0,0,.45)}
+.pd2 .pdcap{border-color:#b8c8d8}.pd3 .pdcap{border-color:#c98a5a}
+.pdcap.empty{visibility:hidden;min-height:110px}
+.pdcap .pdrk{position:relative;width:clamp(40px,4.4vw,60px)!important;aspect-ratio:1;display:grid;place-items:center}
+.pd1 .pdcap .pdrk{width:clamp(48px,5.4vw,72px)!important}
+.pdcap .pdrk img{position:absolute;inset:0;width:100%;height:100%}
+.pdcap .pdrk b{position:relative;font-family:'Gowun Batang',serif;color:#4a2a08;font-size:clamp(14px,1.8vw,22px)!important;margin-top:4%}
+.pdcap .pdnick{font-size:clamp(13px,1.5vw,18px)!important;font-weight:700;max-width:100%!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdcap .pdval{font-size:clamp(16px,2vw,26px)!important;color:#ffe08a;line-height:1.1}
+.pd1 .pdcap .pdval{font-size:clamp(18px,2.4vw,30px)!important}
+.pdcap small{display:block!important;font-size:12px;color:#d8c8b0}
+.pdm.me .pdcap{outline:2px solid #5fe0d0;outline-offset:2px}
+@media (max-width:640px){
+ .podwrap{padding:56px 2% 12px!important}
+ .podrow{gap:6px}
+ .pdm{flex:1 1 0!important;max-width:none!important}.pdm.pd1{flex:1.25 1 0!important}
+ .pdcap{min-width:0;width:100%;padding:6px 4px 8px;gap:2px;border-radius:9px}
+ .pdcap .pdrk{width:34px!important}.pd1 .pdcap .pdrk{width:40px!important}
+ .pdcap .pdrk b{font-size:14px!important}
+ .pdcap .pdnick{font-size:11.5px!important}
+ .pdcap .pdval{font-size:14px!important}.pd1 .pdcap .pdval{font-size:16px!important}
+ .pdcap small{font-size:9.5px}
+}
+.pdplq{position:absolute;display:grid;place-items:center;font-family:'Gowun Batang',serif;font-weight:700;color:#ffe3a0;text-shadow:0 1px 0 #000,0 0 6px rgba(0,0,0,.6);font-size:clamp(12px,2.2vw,30px);letter-spacing:2px;z-index:2}
+.pd1 .pdplq{left:30.8%;top:51.3%;width:38.5%;height:21.3%}
+.pd2 .pdplq{left:29.5%;top:50.4%;width:40.9%;height:23.3%;color:#e8f2ff}
+.pd3 .pdplq{left:29.5%;top:48%;width:40.9%;height:28%;color:#ffe0c8}
+/* ===== 고화질 현판·띠 (960×144 그림을 480×72 / 폰 240×36으로) ===== */
+.pgtitle,.dextitle,.extitle,.rkt{image-rendering:auto!important;background-size:100% 100%!important}
+.pgtitle{background-image:url(i/hd/title_shop.png)}
+.pgtitle.t-shop{background-image:url(i/hd/title_shop.png)}.pgtitle.t-bag{background-image:url(i/hd/title_bag.png)}
+.pgtitle.t-gear,main.v-gear>.pgtitle{background-image:url(i/hd/title_gear.png)}
+.pgtitle.t-train{background-image:url(i/hd/title_train.png)}.pgtitle.t-errand{background-image:url(i/hd/title_errand.png)}
+.pgtitle.t-mail{background-image:url(i/hd/title_mail.png)}.pgtitle.t-code{background-image:url(i/hd/title_code.png)}
+.pgtitle.t-boss{background-image:url(i/hd/title_boss.png)}
+.dextitle{background-image:url(i/hd/title_dex.png)!important}
+.extitle{background-image:url(i/hd/title_exchange.png)!important}
+.rkt{background-image:url(i/hd/title_tower_rank.png)!important}.rkt-snow{background-image:url(i/hd/title_snow_rank.png)!important}.rkt-boss{background-image:url(i/hd/title_boss_rank.png)!important}
+.pgtitle,.dextitle,.extitle,.rkt{padding:0 13%;box-sizing:border-box;white-space:nowrap}
+main.v-boss>div:first-child .pgtitle{width:240px}
+@media (min-width:700px){main.v-boss>div:first-child .pgtitle{width:480px}}
+.htitle{width:clamp(240px,34vw,480px);height:auto;aspect-ratio:960/144;padding:0 13%!important;box-sizing:border-box;display:grid;place-items:center;background:url(i/hd/title_hall.png) 0 0/100% 100% no-repeat!important;border:0!important;border-radius:0!important;color:#fff4dc!important;text-shadow:0 1px 2px #000}
+/* MVP 띠 */
+.pdmvp,.bmvp,.bossrk .bmvp{width:clamp(84px,9vw,120px);height:auto;aspect-ratio:240/72;padding:0!important;border-radius:0!important;box-shadow:none!important;background:url(i/hd/mvp_badge.png) 0 0/100% 100% no-repeat!important;display:grid!important;place-items:center;color:#5a2a08!important;font-size:clamp(11px,1.2vw,15px)!important;font-weight:900;letter-spacing:2px}
+/* 소제목 띠 */
+.shsec{display:flex;align-items:center;justify-content:center;width:min(320px,90%);margin:16px auto 6px!important;aspect-ratio:640/72;background:url(i/hd/sub_default.png) 0 0/100% 100% no-repeat;font-size:17px!important;color:#ffe3a0!important}
+/* 팝업 제목 띠 */
+.overlay .modal[class="modal"]>b.serif:first-child{display:flex;align-items:center;justify-content:center;width:min(300px,86%);aspect-ratio:560/80;margin:0 auto;padding:0 10%;box-sizing:border-box;background:url(i/hd/pop_title.png) 0 0/100% 100% no-repeat;font-size:18px!important;color:#ffe9b0!important;white-space:nowrap}
+.overlay .modal[aria-label="다른 기기 접속"]>b.serif:first-child{background-image:url(i/hd/pop_title_warn.png)}
+/* 장착 칸 이름표 */
+.geslot small{bottom:-24px!important;left:2px!important;right:2px!important;height:20px;line-height:20px;background:url(i/hd/slot_tag.png) 0 0/100% 100% no-repeat;color:#ffe9b0!important;font-size:10.5px!important}
+.geqpan{margin-bottom:22px}
+main.v-boss>div:first-child{flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center;gap:6px!important}
+.dexhead{justify-content:center}
+.pdmvp.r2,.pdmvp.r3{width:clamp(70px,7.5vw,100px);filter:saturate(.25) brightness(1.15)}
+.pdmvp.r3{filter:sepia(.6) hue-rotate(-15deg) saturate(1.1) brightness(.95)}
+.pdmvp.r2{color:#2a3440!important}.pdmvp.r3{color:#4a2410!important}
+/* 환수 머리 위 표시: 이전 둥근 알약 모양으로 (1 금 / 2 은 / 3 동) */
+.pdmvp{width:auto!important;aspect-ratio:auto!important;background:linear-gradient(180deg,#ffe08a,#d89a20)!important;border-radius:999px!important;padding:2px 12px!important;box-shadow:0 2px 6px rgba(0,0,0,.45)!important;color:#5a2a08!important;font-size:clamp(10px,1.1vw,13px)!important;letter-spacing:1px;filter:none!important}
+.pdmvp.r2{background:linear-gradient(180deg,#f2f6fa,#9aaabb)!important;color:#2a3440!important}
+.pdmvp.r3{background:linear-gradient(180deg,#f3c09a,#b06a3a)!important;color:#3a1a08!important}
