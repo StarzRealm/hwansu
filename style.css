@@ -1714,3 +1714,4 @@ main.v-code .row>.card::after{width:56px!important;height:56px!important;left:15
 }
 .expbar>b{color:#ffe08a!important;text-shadow:0 1px 2px #000!important}
 @media (max-width:640px){.stagebox .plate.gname{flex-wrap:nowrap!important;white-space:nowrap;max-width:calc(100vw - 60px);overflow:hidden}.stagebox .plate.gname .muted{display:none}.stagebox .plate.gname .serif{font-size:18px!important}}
+.xp-fd{background:#fff0e0;color:#8a4a12;border-color:#e0a060}

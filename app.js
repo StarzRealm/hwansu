@@ -366,10 +366,10 @@ const ITEMS={
  ki_metal:{n:'쇠의 기운',p:0,img:'i/ui/icon_ki_metal.png',cat:'기운',d:'쇠 게이지 +1 (마을 생산)'},
  ki_yy:{n:'음양의 기운',p:0,img:'i/ui/icon_ki_yinyang.png',cat:'기운',d:'음양 게이지 +1 (마을 생산)'},
  food_1:{n:'주먹밥',p:1,img:'i/food_1.png',cat:'먹이',d:'포만감 +15'},
- food_2:{n:'꿀떡',p:2,img:'i/food_2.png',cat:'먹이',d:'포만감 +25'},
- food_3:{n:'영초죽',p:4,img:'i/food_3.png',cat:'먹이',d:'포만감 +40'},
- food_4:{n:'선과 정식',p:7,img:'i/food_4.png',cat:'먹이',d:'포만감 +60'},
- food_5:{n:'어선만찬',p:12,img:'i/food_5.png',cat:'먹이',d:'포만감 +100'},
+ food_2:{n:'꿀떡',p:2,img:'i/food_2.png',cat:'먹이',d:'포만감 +25 · 다음 수련 경험치 +500 (1회)'},
+ food_3:{n:'영초죽',p:4,img:'i/food_3.png',cat:'먹이',d:'포만감 +40 · 무작위 오행 +1 · 호감도 +2'},
+ food_4:{n:'선과 정식',p:7,img:'i/food_4.png',cat:'먹이',d:'포만감 +60 · 다음 수련 경험치 +1,500 (1회)'},
+ food_5:{n:'어선만찬',p:12,img:'i/food_5.png',cat:'먹이',d:'포만감 +100 · 호감도 +5 · 다음 수련 경험치 +10% (1회)'},
  dew:{n:'설화의 이슬',p:1,img:'i/dew.png',cat:'생활',d:'목마름 +40'},
  soap:{n:'비누',p:1,img:'i/soap.png',cat:'생활',d:'청결도 +50'},
  elixir:{n:'영약환단',p:30,img:'i/elixir.png',cat:'약',d:'50% 확률로 병 치료 (제작소에서도 만들 수 있어요)'},
@@ -567,7 +567,7 @@ function finishTraining(p,t){
  const pool=Object.keys(ENC_W).filter(k=>(k!=='dosa'||p.st>=5));let encs=[];
  for(let j=0;j<en&&pool.length;j++){const tot=pool.reduce((s2,k)=>s2+ENC_W[k],0);let x=rnd()*tot,pick=pool.length-1;for(let z=0;z<pool.length;z++){x-=ENC_W[pool[z]];if(x<0){pick=z;break;}}encs.push(pool.splice(pick,1)[0]);}
  const has=k=>encs.includes(k);
- if(has('bless'))exp*=1.5;if(tr.seal)exp*=1.5;if(tr.xb)exp*=1+tr.xb;
+ if(has('bless'))exp*=1.5;if(tr.seal)exp*=1.5;if(tr.xb)exp*=1+tr.xb;if(tr.fm)exp*=1+tr.fm;if(tr.fx)exp+=tr.fx;
  addExp(p,Math.round(exp));
  if(has('luck')){const [lo,hi]=LUCK[Math.min(11,tr.m)];coins=lo+Math.floor(rnd()*(hi-lo+1));acc.coins+=coins;}
  let eggTo=null;if(has('egg'))eggTo=giveEgg(0);
@@ -668,7 +668,12 @@ function guard(p,opt={}){if(!p)return false;if(p.errand&&!opt.errand){toast('심
 const TCUT={tal_time:30,sec_t60:60,sec_t180:180,sec_t300:300,sec_t480:480};
 const A={
  food(k){const p=P();if(!guard(p))return;if(!ITEMS[k]||!take(k))return;const full=Math.round(p.hu)>=100,v=FOOD[+k.slice(5)].hu;
-  p.hu=Math.min(100,p.hu+v);if(full)addAff(p,-3);SFX.play('munch');toast(full?'배가 불렀는데 또 먹었어요… 호감도 -3':ITEMS[k].n+'을(를) 먹었어요! 포만감 +'+v);closeLayer();commit();},
+  p.hu=Math.min(100,p.hu+v);if(full)addAff(p,-3);const fx=[];const fi=+k.slice(5);
+  const busy=p.fxp||p.fxm,bt='(먹이 경험치 효과는 한 번에 하나만 · 이미 '+(p.fxp?'+'+fmt(p.fxp):'+10%')+' 대기 중)';
+  if(fi===2||fi===4){const n=fi===2?500:1500;if(!busy){p.fxp=n;fx.push('다음 수련 경험치 +'+fmt(n)+' (1회)');}else fx.push(bt);}
+  if(fi===3){const g=randG();addG(p,g,1);addAff(p,2);fx.push(ELK[g]+' 기운 +1','호감도 +2');}
+  if(fi===5){addAff(p,5);fx.push('호감도 +5');if(!busy){p.fxm=.1;fx.push('다음 수련 경험치 +10% (1회)');}else fx.push(bt);}
+  SFX.play('munch');toast((full?'배가 불렀는데 또 먹었어요… 호감도 -3':ITEMS[k].n+'을(를) 먹었어요! 포만감 +'+v)+(fx.length?' · '+fx.join(' · '):''));closeLayer();commit();},
  ki(v){const p=P();if(!guard(p))return;const [k,n0]=String(v).split(':'),n=+n0||1,id=KI[k];if(!id)return;const cap=gCap(p.st);
   if(!cap)return toast('알은 아직 기운을 받을 수 없어요. 유체가 되면 쓸 수 있어요.');
   const room=cap-(p.g[k]||0);if(room<=0)return toast(ELK[k]+' 게이지가 이미 가득해요 ('+cap+').');
@@ -706,7 +711,7 @@ const A={
    const nm=TMAP[p.train.m].n;p.train=null;SFX.play('thud');toast(nm+' 수련을 취소했어요.');commit();});},
  train(v){const p=P();if(!guard(p))return;const [m,d]=String(v).split(':').map(Number);if(p.sick!=null)return toast('아파서 수련할 수 없어요.');const mp=TMAP[m];if(!mp||TDUR[d]==null)return;
   if(p.lv>=maxLvP(p))return toast('최대 레벨이라 경험치를 더 받을 수 없어요. 먼저 진화하세요.');if(p.en<TCOST[d])return toast('행동력이 부족해요 ('+TCOST[d]+' 필요).');
-  const ms=TDUR[d]*MIN*(1-trainCut(p));p.en-=TCOST[d];p.train={m,d,start:now(),end:now()+ms,cp:cp(p)};if(p.xpb){p.train.xb=p.xpb;p.xpb=0;}SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+mp.n+'(으)로 '+durTxt(TDUR[d])+' 수련을 떠났어요.');commit();},
+  const ms=TDUR[d]*MIN*(1-trainCut(p));p.en-=TCOST[d];p.train={m,d,start:now(),end:now()+ms,cp:cp(p)};if(p.xpb){p.train.xb=p.xpb;p.xpb=0;}if(p.fxp){p.train.fx=p.fxp;p.fxp=0;}if(p.fxm){p.train.fm=p.fxm;p.fxm=0;}SFX.play('whoosh');toast(NAMES[p.no]+'이(가) '+mp.n+'(으)로 '+durTxt(TDUR[d])+' 수련을 떠났어요.');commit();},
  evolve(){const p=P();const e=evoCheck(p);if(!e.ok)return toast(e.reason);evoAnim(p,evoPick(e));},
  liberate(){const p=P();if(!p)return;if(isGuest(p.no))return toast('스타즈렐름 등급 환수는 해방할 수 없어요.');if(p.st<4)return toast('4단계부터 해방할 수 있어요.');if(p.sick!=null)return toast('아플 때는 해방할 수 없어요.');if(acc.dex[p.no]&&acc.dex[p.no].freed)return toast('이미 해방한 환수예요. 선계 귀환만 가능해요.');
   const lm=libMail(p.st);
@@ -887,7 +892,7 @@ function vShop(){const ad=accDaily(),tab=S.shop||'item';
 function bagBtn(k){return ITEMS[k].cat==='알'?'<button class="btn teal sm" data-hatch="'+k+'" '+(acc.slots.some(q=>!q)?'':'disabled')+'>부화</button>':k==='wish_note'?'<button class="btn teal sm" data-wishnote="1">열기</button>':k==='sec_vil'?'<button class="btn teal sm" data-usevil="1">사용</button>':k.startsWith('isl_')?'<button class="btn teal sm" data-useisl="'+k.slice(4)+'">사용</button>':ITEMS[k].cat==='인게임'?'<button class="btn soft sm" data-bagtab="ig">코드화</button>':'';}
 function decoCard(im,n,sub,price,have,attr){return '<div class="dcard2"><div class="dimg"><img src="'+im+'" alt=""></div><b class="dname2">'+esc(n)+'</b><div class="dbot"><small>'+esc(sub)+' · 보관 '+have+'</small><button class="btn sm" '+attr+'>'+fmt(price)+'코인</button></div></div>';}
 function expBreak(p,G){const e=cfg.ev&&cfg.ev.exp,evm=Math.round((cfg.expMult||1)*(evOn(e)?(+e.m||1):1)*100)/100,tx=titleEff('xp'),gx=G?Math.round(G.exp||0):0,hx=p?HEART_BON[hearts(p)]:0,L=[];
- if(evm!==1)L.push(['ev','이벤트 경험치 ×'+evm]);if(tx)L.push(['ti','칭호 「'+esc(acc.title||'')+'」 +'+tx+'%']);if(gx)L.push(['gr','장비 +'+gx+'%']);if(hx)L.push(['hr','호감도 +'+hx+'%']);if(p&&p.xpb)L.push(['xs','경험의 비서 +'+Math.round(p.xpb*100)+'% (다음 수련)']);
+ if(evm!==1)L.push(['ev','이벤트 경험치 ×'+evm]);if(tx)L.push(['ti','칭호 「'+esc(acc.title||'')+'」 +'+tx+'%']);if(gx)L.push(['gr','장비 +'+gx+'%']);if(hx)L.push(['hr','호감도 +'+hx+'%']);if(p&&p.xpb)L.push(['xs','경험의 비서 +'+Math.round(p.xpb*100)+'% (다음 수련)']);if(p&&(p.fxp||p.fxm))L.push(['fd','먹이 효과 '+[p.fxp?'+'+fmt(p.fxp)+' 경험치':'',p.fxm?'+10%':''].filter(Boolean).join(' · ')+' (다음 수련)']);
  return L.length?'<div class="xpb">'+L.map(([k,t])=>'<span class="xpc xp-'+k+'">'+t+'</span>').join('')+'</div>':'';}
 /* ================= 가방 · 코드화 ================= */
 const BAG_CATS=['알','기운','먹이','생활','약','성장','강화','보상','인게임','기타','운영자'];
@@ -924,7 +929,7 @@ function vGear(){const sa=S.synA&&gearOf(S.synA);if(S.synA&&!sa)S.synA=null;cons
  const banner=sa?'<div class="card synbar"><b>합성할 장비를 고르세요</b><span>'+gearName(sa)+' +'+sa.p+' 와(과) 합성할 같은 종류·같은 등급의 최대 강화 장비를 눌러 주세요.</span><button class="btn soft sm" data-syncancel="all">합성 취소</button></div>':'';
  const list=acc.gear.filter(g=>ft==='all'||g.t===ft).slice().sort((x,y)=>y.g-x.g||y.p-x.p);
  const pp=P(),eqp=pp?'<div class="geqwrap"><div class="geqhead"><img class="px" src="'+img(pp.no)+'" alt=""><div><b class="serif">'+esc(NAMES[pp.no])+'</b><small>장착 중인 장비 · 칸을 누르면 자세히 볼 수 있어요</small></div></div><div class="geqpan">'+GT.map(t=>{const u=pp.eq&&pp.eq[t],g=u&&gearOf(u);return '<button class="geslot'+(g?' on g'+g.g:'')+'" '+(g?'data-gpick="'+g.u+'" title="'+esc(gearName(g)+' +'+g.p+'\n'+gearShort(g))+'"':'disabled title="'+TN[t]+' 비어 있음"')+'>'+(g?'<img class="px" src="'+gearImg(g)+'" alt=""><b>+'+g.p+'</b>':'<img class="px" src="i/ui3/gear_slot_'+t+'.png" alt="'+TN[t]+'">')+'<small>'+TN[t]+'</small></button>';}).join('')+'</div></div>':'';
- return '<div class="pgtitle t-gear serif">장비</div>'+slotsBar()+banner+eqp+'<div class="row"><section class="grow"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px"><h2 style="margin:0">보유 장비 ('+acc.gear.length+')</h2><div class="tmode" style="margin:0">'+[['all','전체']].concat(GT.map(t=>[t,TN[t]])).map(([k,n])=>'<button class="'+(ft===k?'on':'')+'" data-gft="'+k+'">'+n+'</button>').join('')+'</div></div><div class="gearlist">'+(list.length?list.map(g=>{const e=equippedBy(g.u),on=e!=null&&petAt(e);return '<div class="gwrap">'+gearCard(g,on?NAMES[petAt(e).no]+(e>=1000?' (전용 공간)':e>=500?' (마을)':'')+' 장착 중':'')+(on&&!S.synA?'<button class="btn soft sm gun" data-unequip="'+g.u+'">해제</button>':'')+'</div>';}).join(''):'<p class="muted">장비가 없어요. 심부름·수련 인카운트·월드보스에서 얻을 수 있어요.</p>')+'</div></div></section><aside class="side"><div class="card"><h2>장비 안내</h2><p class="muted" style="margin:0">· <b>무기</b>: 공격력·직격 · <b>방어구</b>: 방어력·체력·생활 수치 감소 완화<br>· <b>보조무기</b>: 치명·회피·행동력 회복·경험치<br>· <b>노리개</b>: 방어/치명/회피/직격 중 주 옵션 + 희귀부터 추가 옵션<br>· <b>방울</b>: 생산·심부름·수련 중 하나의 시간 감소<br>· 강화 1단계마다 무기·방어구 +10%, 나머지 +5%<br>· 지금 선택한 환수: <b>'+(P()?NAMES[P().no]:'없음')+'</b>'+(P()&&P().train?'<br><b style="color:#c8281e">이 환수는 수련 중이라 장비를 바꿀 수 없어요.</b>':'')+'</p></div></aside></div>';}
+ return '<div class="pgtitle t-gear serif">장비</div>'+slotsBar()+banner+eqp+'<div class="row"><section class="grow"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px"><h2 style="margin:0">보유 장비 ('+acc.gear.length+')</h2><div class="tmode" style="margin:0">'+[['all','전체']].concat(GT.map(t=>[t,TN[t]])).map(([k,n])=>'<button class="'+(ft===k?'on':'')+'" data-gft="'+k+'">'+n+'</button>').join('')+'</div></div><div class="gearlist">'+(list.length?list.map(g=>{const e=equippedBy(g.u),on=e!=null&&petAt(e);return '<div class="gwrap">'+gearCard(g,on?NAMES[petAt(e).no]+(e>=1000?' (전용 공간)':e>=500?' (마을)':'')+' 장착 중':'')+(on&&!S.synA?'<button class="btn soft sm gun" data-unequip="'+g.u+'">해제</button>':'')+'</div>';}).join(''):'<p class="muted">장비가 없어요. 심부름·수련 인카운트·월드보스에서 얻을 수 있어요.</p>')+'</div></div></section><aside class="side"><div class="card"><h2>장비 안내</h2><p class="muted" style="margin:0">· <b>무기</b>: 공격력·직격 · <b>방어구</b>: 방어력·체력·생활 수치 감소 완화<br>· <b>보조무기</b>: 치명·회피·행동력 회복·경험치<br>· <b>노리개</b>: 방어/치명/회피/직격 중 주 옵션 + 희귀부터 추가 옵션<br>· <b>방울</b>: 생산·심부름·수련 중 하나의 시간 감소<br>· 강화 1단계마다 무기·방어구 +10%, 나머지 +5%<br>· 지금 선택한 환수: <b>'+(P()?NAMES[P().no]:'없음')+'</b>'+(P()&&(P().train||P().errand)?'<br><b style="color:#c8281e">이 환수는 '+(P().train?'수련':'심부름')+' 중이라 장비를 바꿀 수 없어요.</b>':'')+'</p></div></aside></div>';}
 function vCode(){return '<div class="pgtitle t-code serif">코드</div><div class="row"><div class="card" style="flex:1 1 360px"><h2>환수 코드 (게임 → 웹)</h2><p class="muted">게임에서 <b>/trigger hwansu</b>로 받은 [환수 코드]를 입력하세요. 금화 3개 = 코인 1개예요.</p><form data-form="coin" style="display:flex;gap:8px;flex-wrap:wrap"><label class="f" style="flex:1">환수 코드<input type="text" name="code" placeholder="3-7-10-4821" required></label><button class="btn teal" style="align-self:flex-end">입력</button></form><p class="muted">연결된 플레이어 번호: '+(acc.playerNo||'아직 없음 (첫 코드로 연결돼요)')+'</p></div><div class="card" style="flex:1 1 360px"><h2>알 코드</h2><form data-form="egg" style="display:flex;gap:8px;flex-wrap:wrap"><label class="f" style="flex:1">알 코드<input type="text" name="code" placeholder="EGG-XXXX-XXXX" required></label><button class="btn teal" style="align-self:flex-end">알 받기</button></form><p class="muted">가방에 알이 들어와요.</p></div><div class="card" style="flex:1 1 360px"><h2>인게임 코드 (웹 → 게임)</h2><p class="muted">동패·은패 같은 인게임 아이템은 가방의 [코드화]에서 코드로 바꿔요.</p><button class="btn teal" data-view="bag" data-bagtab2="ig">코드화 열기</button></div></div>';}
 function gradeTag(no,cls){const g=gradeOf(no);return '<img class="gtag'+(cls?' '+cls:'')+'" src="i/tag_'+GRADE_KEY[g]+'.png?'+IMG_V+'" alt="'+g+'" title="'+g+' 등급">';}
 function elName(el){return String(el).split('|').map(x=>ELK[x]).join('·');}
@@ -2729,8 +2734,8 @@ if(ds.usevil){vilInit();if(vilCap()>=VIL_CAPMAX)return toast('마을 한도가 �
  if(t.matches('[data-bless]')){S.bless=t.checked;if(S.gm)return gearModal(S.gm);return render();}
  if(t.matches('[data-protect]')){S.protect=t.checked;if(S.forgeSel.length===2)return synthModal();return render();}
  if(ds.aff){const g=gearOf(S.gm);if(!g)return;g.aff=ds.aff;commit();return gearModal(g.u);}
- if(ds.equip){const p=P(),g=gearOf(ds.equip);if(!p)return;const o=equippedBy(g.u);if(p.train)return toast('수련 중인 환수는 장비를 바꿀 수 없어요. 수련이 끝난 뒤 바꿔 주세요.');if(o!=null&&petAt(o)&&petAt(o).train)return toast('이 장비를 낀 환수가 수련 중이라 뺄 수 없어요.');if(o!=null)petAt(o).eq[g.t]=null;p.eq=Object.assign({w:null,a:null,s:null,n:null,b:null},p.eq);p.eq[g.t]=g.u;SFX.play('equip');toast('장착했어요.');closeLayer();S.gm=null;return commit();}
- if(ds.unequip){const g=gearOf(ds.unequip),o=equippedBy(g&&g.u);if(!g||o==null)return;const p=petAt(o);if(p.train)return toast('수련 중인 환수는 장비를 뺄 수 없어요. 수련이 끝난 뒤 바꿔 주세요.');p.eq[g.t]=null;SFX.play('clank');toast(NAMES[p.no]+'에게서 해제했어요.');closeLayer();S.gm=null;return commit();}
+ if(ds.equip){const p=P(),g=gearOf(ds.equip);if(!p)return;const o=equippedBy(g.u);if(p.train||p.errand)return toast((p.train?'수련':'심부름')+' 중인 환수는 장비를 바꿀 수 없어요. 끝난 뒤 바꿔 주세요.');if(o!=null&&petAt(o)&&(petAt(o).train||petAt(o).errand))return toast('이 장비를 낀 환수가 '+(petAt(o).train?'수련':'심부름')+' 중이라 뺄 수 없어요.');if(o!=null)petAt(o).eq[g.t]=null;p.eq=Object.assign({w:null,a:null,s:null,n:null,b:null},p.eq);p.eq[g.t]=g.u;SFX.play('equip');toast('장착했어요.');closeLayer();S.gm=null;return commit();}
+ if(ds.unequip){const g=gearOf(ds.unequip),o=equippedBy(g&&g.u);if(!g||o==null)return;const p=petAt(o);if(p.train||p.errand)return toast((p.train?'수련':'심부름')+' 중인 환수는 장비를 뺄 수 없어요. 끝난 뒤 바꿔 주세요.');p.eq[g.t]=null;SFX.play('clank');toast(NAMES[p.no]+'에게서 해제했어요.');closeLayer();S.gm=null;return commit();}
  if(ds.enh){const g=gearOf(ds.enh);if(g.p>=MAXP[g.g])return;if(acc.coins<ECOST[g.g])return toast('코인이 부족해요.');let r=RATE[g.p+1];if(S.bless){if(!take('sec_bless'))return;r+=.1;}acc.coins-=ECOST[g.g];
   const ok=rnd()<r,from=g.p;if(ok)g.p++;S.gm=null;S.forgeSel=[];save();const im=gearImg(g),nm=gearName(g);
   forgeAnim({kind:'enh',title:nm+' +'+from+' → +'+(from+1)+' 강화',imgs:[im],rate:Math.min(1,r),extra:S.bless?'강화축복비서 사용':'',out:ok?'success':'fail',head:ok?'+'+g.p+' 강화 성공!':'강화 실패…',sub:ok?nm+' +'+g.p:'단계는 +'+g.p+' 그대로예요.'});return;}
