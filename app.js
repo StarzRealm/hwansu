@@ -766,7 +766,7 @@ function susMenu(){const L=document.getElementById('layer');L.innerHTML='<div cl
 
 /* ================= 우편함 ================= */
 function mailParts(m){const a=[];if(m.coins)a.push('코인 '+fmt(m.coins));if(m.evc)a.push('이벤트 코인 '+fmt(m.evc));if(m.eggs)a.push('환수 알 ×'+m.eggs);if(m.yyEggs)a.push('음양알 ×'+m.yyEggs);Object.entries(m.items||{}).forEach(([k,n])=>{if(ITEMS[k]&&n>0)a.push(ITEMS[k].n+' ×'+n);});(m.gear||[]).forEach(g=>a.push(GN[g.g]+' '+(g.t==='n'?(g.o&&NG_OPT[g.o]?NG_OPT[g.o].n+'의 ':'')+'노리개':TN[g.t])+' +'+g.p));(m.pets||[]).forEach(pt=>{if(NAMES[pt.no])a.push('환수 '+NAMES[pt.no]+' Lv.'+pt.lv);});return a;}
-function mailIcons(m){let h='';if(m.coins)h+='<span class="mchip"><img class="px" src="i/coin_spin.gif" alt="">'+fmt(m.coins)+'</span>';if(m.eggs)h+='<span class="mchip"><img class="px" src="h/00.gif" alt="">환수 알 ×'+m.eggs+'</span>';if(m.yyEggs)h+='<span class="mchip"><img class="px" src="h/146.gif" alt="">음양알 ×'+m.yyEggs+'</span>';Object.entries(m.items||{}).forEach(([k,n])=>{if(ITEMS[k]&&n>0)h+='<span class="mchip"><img class="px" src="'+ITEMS[k].img+'" alt="">'+esc(ITEMS[k].n)+' ×'+n+'</span>';});(m.gear||[]).forEach(g=>{h+='<span class="mchip"><img class="px" src="'+(g.t==='n'?(g.o&&NG_OPT[g.o]?gearImg(g):'eq/n.gif'):gearImg(g))+'" alt=""><b class="c'+g.g+'">'+GN[g.g]+' '+(g.t==='n'?(g.o&&NG_OPT[g.o]?NG_OPT[g.o].n+'의 ':'')+'노리개':TN[g.t])+' +'+g.p+'</b></span>';});(m.pets||[]).forEach(pt=>{if(NAMES[pt.no])h+='<span class="mchip mpet"><img class="px" src="'+img(pt.no)+'" alt=""><b>'+esc(NAMES[pt.no])+'</b> Lv.'+pt.lv+'</span>';});return h;}
+function mailIcons(m){let h='';if(m.coins)h+='<span class="mchip"><img class="px" src="i/coin_spin.gif" alt="">'+fmt(m.coins)+'</span>';if(m.evc)h+='<span class="mchip"><img class="px" src="i/ev_coin.png" alt="">이벤트 코인 '+fmt(m.evc)+'</span>';if(m.eggs)h+='<span class="mchip"><img class="px" src="h/00.gif" alt="">환수 알 ×'+m.eggs+'</span>';if(m.yyEggs)h+='<span class="mchip"><img class="px" src="h/146.gif" alt="">음양알 ×'+m.yyEggs+'</span>';Object.entries(m.items||{}).forEach(([k,n])=>{if(ITEMS[k]&&n>0)h+='<span class="mchip"><img class="px" src="'+ITEMS[k].img+'" alt="">'+esc(ITEMS[k].n)+' ×'+n+'</span>';});(m.gear||[]).forEach(g=>{h+='<span class="mchip"><img class="px" src="'+(g.t==='n'?(g.o&&NG_OPT[g.o]?gearImg(g):'eq/n.gif'):gearImg(g))+'" alt=""><b class="c'+g.g+'">'+GN[g.g]+' '+(g.t==='n'?(g.o&&NG_OPT[g.o]?NG_OPT[g.o].n+'의 ':'')+'노리개':TN[g.t])+' +'+g.p+'</b></span>';});(m.pets||[]).forEach(pt=>{if(NAMES[pt.no])h+='<span class="mchip mpet"><img class="px" src="'+img(pt.no)+'" alt=""><b>'+esc(NAMES[pt.no])+'</b> Lv.'+pt.lv+'</span>';});return h;}
 function newMailId(){return 'm'+Date.now().toString(36)+Math.floor(rnd()*1e6).toString(36);}
 
 /* ================= 출석부 ================= */
@@ -911,7 +911,7 @@ function vBag(){const tab=S.bag||'all',has=Object.entries(acc.inv).filter(([k,n]
  if(by0.length)h+='<div class="catwrap">'+catBar(by0.map(([c,l])=>[c,c,l.reduce((a,x)=>a+x[1],0),ITEMS[l[0][0]].img]).concat([['전체','전체 보기',has.reduce((a,x)=>a+x[1],0),'i/ui/nav_bag.png']]),S.bagCat,'bagcat')+'<div class="catbody">';
  h+=by.length?by.map(([c,l])=>'<div class="card"><h2>'+c+'</h2><div class="items">'+l.map(([k,n])=>{const bb=bagBtn(k);return '<div class="item'+(bb?'':' nobtn')+'"><img class="px" src="'+ITEMS[k].img+'" alt=""><div class="t"><b class="inq"><span class="inm" title="'+esc(ITEMS[k].n)+'">'+ITEMS[k].n+'</span><span class="iq">×'+fmt(n)+'</span></b><small>'+ITEMS[k].d+'</small></div>'+bb+'</div>';}).join('')+'</div></div>').join(''):'<div class="card"><p class="muted">가방이 비어 있어요.</p></div>';
 
- if(by0.length)h+='</div></div>';return h+'<p class="muted">먹이·기운·비서 같은 아이템은 성장 화면의 돌보기 버튼에서 사용해요.</p>';}
+ if(by0.length)h+='</div></div>';return h+'<p class="muted pgdesc">먹이·기운·비서 같은 아이템은 성장 화면의 돌보기 버튼에서 사용해요.</p>';}
 const CAT_IC={'먹이':'food','생활':'life','약':'med','성장':'grow','강화':'enh','기운':'ki','알':'egg','보상':'special','인게임':'ig','기타':'etc','운영자':'admin','전체':'all'};
 function catBar(L,cur,attr){return '<nav class="catbar" aria-label="카테고리">'+L.map(([k,n,c,im])=>'<button class="catb'+(k===cur?' on':'')+'" data-'+attr+'="'+esc(k)+'"><span class="catic"><img class="px" src="i/cat/cat_'+(CAT_IC[k]||'etc')+'.png?'+IMG_V+'" alt="" onerror="this.onerror=null;this.src=\''+im+'\'"></span><b>'+esc(n)+'</b>'+(c!=null?'<small>'+c+'</small>':'')+'</button>').join('')+'</nav>';}
 /* ================= 장비 ================= */
@@ -994,8 +994,10 @@ function gridSvg(){const [lo,hi]=islBounds();let M='',m='';const P=v=>v[0].toFix
 /* 하늘·운해 */
 const xmSky=()=>curIsl()==='main'&&acc.vil&&(acc.vil.skin||'base')==='xm';
 /* 구름 색은 미리 칠한 이미지로 (CSS filter는 모바일에서 큰 레이어 깜빡임 원인) */
+/* 렌더할 때마다 animation-delay가 바뀌면 거대한 구름 레이어가 다시 그려져 깜빡임 → 시작 시각 고정 */
+const CLOUD_T0=Date.now()/1000;
 function skyHtml(){const k=curIsl(),tk=THEMES[k]?k:(xmSky()?'snow':''),ck=tk&&tk!=='main'&&['snow','blossom','moon','maple'].includes(tk)?' cl-'+tk:'';
- const D={ca:200,cb:150,cc:260},t=Date.now()/1000;return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+ck+'" style="animation-delay:-'+(t%D[c]).toFixed(2)+'s"></div>').join('');}
+ const D={ca:200,cb:150,cc:260},t=CLOUD_T0;return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+ck+'" style="animation-delay:-'+(t%D[c]).toFixed(2)+'s"></div>').join('');}
 function skyFront(){const k=curIsl(),T=THEMES[k],f=T?T.cloud:'none';return '';}
 const skyBg=()=>{const T=THEMES[curIsl()]||(xmSky()?THEMES.snow:null);return T?T.sky:'linear-gradient(180deg,#f3b9d6 0%,#e9cdf3 45%,#d9d4f5 75%,#cfd8f5 100%)';};
 /* 날씨 */
@@ -1390,7 +1392,7 @@ function colClaim(id){const c=colsNow().find(x=>x.id===id);if(!c)return;acc.colD
 function vDex(){const tab=S.dex||'all',own=Object.keys(acc.dex).length,freed=Object.values(acc.dex).filter(d=>d.freed).length;
  let h='<div class="dexhead"><div class="dextitle serif">환수 도감</div><div style="display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:420px"><div class="stat" style="flex:1;margin:0"><div class="tr"><i style="width:'+own/NAMES.length*100+'%;background:linear-gradient(90deg,#c9a24a,#f0d78a)"></i></div></div><b>'+own+' / '+NAMES.length+'</b><span class="muted">해방 '+freed+'</span></div></div><div class="tmode">'+[['all','전체 도감'],['col','컬렉션']].map(([k,n])=>'<button class="'+(tab===k?'on':'')+'" data-dextab="'+k+'">'+n+'</button>').join('')+'</div>';
  if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에만 불이 들어와요 (해방할 수 없는 1~3단계·스타즈렐름은 컬렉션에 넣지 않아요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
- return h+'<p class="muted" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요. 해방할 수 없는 1~3단계와 스타즈렐름 환수는 획득만 해도 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
+ return h+'<p class="muted pgdesc" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요. 해방할 수 없는 1~3단계와 스타즈렐름 환수는 획득만 해도 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
   if(!d)return '<div class="dc no" data-tip="?'+i+'"><span class="dno">'+no+'</span><b class="q">?</b><span class="n">???</span></div>';
   const lit=dexLit(i);return '<div class="dc g-'+tipKey(i)+(lit?' lit':' got')+'" data-tip="'+i+'"><span class="dno">'+no+'</span><img class="px'+(lit?'':' sil')+'" src="'+img(i)+'" alt=""><span class="n">'+esc(n)+'</span>'+(lit?gradeTag(i,'sm'):'')+(d.freed?'<span class="seal" aria-label="해방함">解</span>':'')+'</div>';}).join('')+'</div>';}
 /* ----- 코드화 (인게임 아이템 → 코드) ----- */
@@ -1486,7 +1488,7 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);if(SO.users==null)setTim
  const arena={};(PV.list||[]).forEach(a=>{arena[a.uid]=a;});
  if(tab==='rec'){const opp=(PV.list||[]).filter(a=>a.uid!==acc.uid).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>Math.abs(x.em-e.m)-Math.abs(y.em-e.m)||y.em-x.em).slice(0,10);
   h+=PV.list==null?'<p class="muted">불러오는 중…</p>':opp.length?'<div class="drows">'+opp.map(a=>rowH(a.uid,a)).join('')+'</div>':'<p class="muted">아직 도전할 상대가 없어요.</p>';
-  h+='<p class="muted dnote">상성: 나무 → 땅 → 물 → 불 → 쇠 → 나무 (화살표 쪽을 이겨요) · 양과 음은 서로를 이겨요. 상성 유리 피해 ×1.2 · 치명 ×1.6 · 직격은 방어 일부 무시.</p>';}
+  h+='<p class="muted dnote pgdesc">상성: 나무 → 땅 → 물 → 불 → 쇠 → 나무 (화살표 쪽을 이겨요) · 양과 음은 서로를 이겨요. 상성 유리 피해 ×1.2 · 치명 ×1.6 · 직격은 방어 일부 무시.</p>';}
  if(tab==='all'){const ids=[...new Set((SO.users||[]).map(u=>u.uid).concat((PV.list||[]).map(a=>a.uid)))];ids.sort((x,y)=>((users[y]||{}).hearts||0)-((users[x]||{}).hearts||0));
   h+=SO.users==null?'<p class="muted">불러오는 중…</p>':ids.length?'<div class="drows">'+ids.map(id=>rowH(id,arena[id])).join('')+'</div>':'<p class="muted">아직 유저가 없어요.</p>';}
  if(tab==='rank'){const rank=(PV.list||[]).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>y.em-x.em).slice(0,20);

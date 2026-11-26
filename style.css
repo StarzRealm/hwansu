@@ -1721,3 +1721,4 @@ main.v-code .row>.card::after{width:56px!important;height:56px!important;left:15
 .vclouds.ca.cl-blossom,.vclouds.cc.cl-blossom{background-image:url(v/isl/cloud_back_blossom.webp)}.vclouds.cb.cl-blossom{background-image:url(v/isl/cloud_mid_blossom.webp)}
 .vclouds.ca.cl-moon,.vclouds.cc.cl-moon{background-image:url(v/isl/cloud_back_moon.webp)}.vclouds.cb.cl-moon{background-image:url(v/isl/cloud_mid_moon.webp)}
 .vclouds.ca.cl-maple,.vclouds.cc.cl-maple{background-image:url(v/isl/cloud_back_maple.webp)}.vclouds.cb.cl-maple{background-image:url(v/isl/cloud_mid_maple.webp)}
+.pgdesc{text-align:center;word-break:keep-all;max-width:860px;margin-left:auto!important;margin-right:auto!important;text-wrap:balance}
