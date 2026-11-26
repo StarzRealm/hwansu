@@ -1034,27 +1034,40 @@ function gridSvg(){const [lo,hi]=islBounds();let M='',m='';const P=v=>v[0].toFix
 /* 하늘·운해 */
 const xmSky=()=>curIsl()==='main'&&acc.vil&&(acc.vil.skin||'base')==='xm';
 /* 구름 색은 미리 칠한 이미지로 (CSS filter는 모바일에서 큰 레이어 깜빡임 원인) */
-/* 렌더할 때마다 animation-delay가 바뀌면 거대한 구름 레이어가 다시 그려져 깜빡임 → 시작 시각 고정 */
-const CLOUD_T0=Date.now()/1000;
+/* 구름은 움직이지 않음 (큰 레이어 애니메이션이 모바일에서 깜빡임·튕김 원인) */
 function skyHtml(){const k=curIsl(),tk=THEMES[k]?k:(xmSky()?'snow':''),ck=tk&&tk!=='main'&&['snow','blossom','moon','maple'].includes(tk)?' cl-'+tk:'';
- const D={ca:200,cb:150,cc:260},t=CLOUD_T0;return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+ck+'" style="animation-delay:-'+(t%D[c]).toFixed(2)+'s"></div>').join('');}
+ return ['ca','cb','cc'].map(c=>'<div class="vclouds '+c+ck+'"></div>').join('');}
 function skyFront(){const k=curIsl(),T=THEMES[k],f=T?T.cloud:'none';return '';}
 const skyBg=()=>{const T=THEMES[curIsl()]||(xmSky()?THEMES.snow:null);return T?T.sky:'linear-gradient(180deg,#f3b9d6 0%,#e9cdf3 45%,#d9d4f5 75%,#cfd8f5 100%)';};
 /* 날씨 */
 function wxKind(){const k=curIsl();if(k!=='main')return THEMES[k].wx;return (acc.vil.skin||'base')==='xm'?'snow':null;}
 let WX=null;
+/* 날씨 캔버스: 화면 갱신(morph)이 width/height를 지워도 매 프레임 크기를 맞춤 · 레티나 대응 · 눈은 원근감 있게 */
+let WXSZ=null;
 function wxStart(){const cv=document.getElementById('vwx'),kind=wxKind();if(!cv||!kind){WX&&cancelAnimationFrame(WX.raf);WX=null;return;}
  if(WX&&WX.cv===cv&&WX.kind===kind)return;WX&&cancelAnimationFrame(WX.raf);
- const ctx=cv.getContext('2d'),W=cv.width=cv.clientWidth||800,Hh=cv.height=cv.clientHeight||600,n=kind==='firefly'?40:70,P=[];
- for(let i=0;i<n;i++)P.push({x:Math.random()*W,y:Math.random()*Hh,s:Math.random(),a:Math.random()*6.28});
- const col={snow:'#ffffff',petal:'#ffb7d0',firefly:'#fff4a0',leaf:'#e86a2a'}[kind];
- function step(){const c2=document.getElementById('vwx');if(c2!==cv){WX=null;return;}ctx.clearRect(0,0,W,Hh);
-  P.forEach(p=>{p.a+=.02;if(kind==='firefly'){p.x+=Math.cos(p.a)*.4;p.y+=Math.sin(p.a*.7)*.3;ctx.globalAlpha=.4+.6*Math.abs(Math.sin(p.a*2+p.s*9));ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(p.x,p.y,1.6+p.s,0,6.28);ctx.fill();ctx.shadowBlur=0;}
-   else{p.y+=.5+p.s*(kind==='snow'?1:1.3);p.x+=Math.sin(p.a)*(kind==='snow'?.4:.9)+(kind==='snow'?0:.3);ctx.globalAlpha=.85;ctx.fillStyle=col;
-    if(kind==='snow'){ctx.beginPath();ctx.arc(p.x,p.y,1.2+p.s*2,0,6.28);ctx.fill();}else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.beginPath();ctx.ellipse(0,0,4+p.s*3,2+p.s,0,0,6.28);ctx.fill();ctx.restore();}}
-   if(p.y>Hh+10){p.y=-10;p.x=Math.random()*W;}if(p.x>W+10)p.x=-10;if(p.x<-10)p.x=W+10;});
+ const ctx=cv.getContext('2d'),R=Math.min(2,window.devicePixelRatio||1),col={snow:'#ffffff',petal:'#ffb7d0',firefly:'#fff4a0',leaf:'#e86a2a'}[kind];
+ let W=0,Hh=0;const P=[];
+ /* 부드러운 눈송이 스프라이트 */
+ const fl=document.createElement('canvas');fl.width=fl.height=32;{const g=fl.getContext('2d'),rg=g.createRadialGradient(16,16,0,16,16,16);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(.45,'rgba(255,255,255,.85)');rg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=rg;g.fillRect(0,0,32,32);}
+ function fit(){const cw=cv.clientWidth||800,ch=cv.clientHeight||600,bw=Math.round(cw*R),bh=Math.round(ch*R);
+  if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh;}ctx.setTransform(R,0,0,R,0,0);
+  if(cw!==W||ch!==Hh){const sx=W?cw/W:1,sy=Hh?ch/Hh:1;P.forEach(p=>{p.x*=sx;p.y*=sy;});W=cw;Hh=ch;WXSZ={w:bw,h:bh};
+   const want=kind==='firefly'?40:Math.max(40,Math.min(130,Math.round(W*Hh/7000)));while(P.length<want)P.push(mk(true));P.length=want;}}
+ function mk(any){const d=Math.random();return {x:Math.random()*(W||800),y:any?Math.random()*(Hh||600):-10-Math.random()*40,d,s:Math.random(),a:Math.random()*6.28,w:.6+Math.random()*1.2};}
+ let last=performance.now(),wind=0,wt=0;
+ function step(t){const c2=document.getElementById('vwx');if(c2!==cv){WX=null;return;}fit();const dt=Math.min(.05,(t-last)/1000)||.016;last=t;ctx.clearRect(0,0,W,Hh);
+  wt+=dt;wind=Math.sin(wt*.23)*12+Math.sin(wt*.61)*6;
+  P.forEach((p,i)=>{p.a+=dt*p.w;
+   if(kind==='firefly'){p.x+=Math.cos(p.a)*24*dt;p.y+=Math.sin(p.a*.7)*18*dt;ctx.globalAlpha=.4+.6*Math.abs(Math.sin(p.a*2+p.s*9));ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(p.x,p.y,1.6+p.s,0,6.28);ctx.fill();ctx.shadowBlur=0;}
+   else if(kind==='snow'){/* 가까운 눈(d↑)일수록 크고 빠르고 진함 */
+    const sz=2+p.d*p.d*5,vy=16+p.d*36;p.y+=vy*dt;p.x+=(Math.sin(p.a)*(6+p.d*10)+wind*(.4+p.d))*dt;
+    ctx.globalAlpha=.5+p.d*.45;ctx.drawImage(fl,p.x-sz,p.y-sz,sz*2,sz*2);}
+   else{p.y+=(30+p.s*40)*dt;p.x+=(Math.sin(p.a)*50+18)*dt;ctx.globalAlpha=.85;ctx.fillStyle=col;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.beginPath();ctx.ellipse(0,0,4+p.s*3,2+p.s,0,0,6.28);ctx.fill();ctx.restore();}
+   if(p.y>Hh+12){P[i]=mk(false);}if(p.x>W+12)p.x=-12;if(p.x<-12)p.x=W+12;});
   ctx.globalAlpha=1;WX.raf=requestAnimationFrame(step);}
  WX={cv,kind,raf:requestAnimationFrame(step)};}
+const wxAttr=()=>WXSZ?' width="'+WXSZ.w+'" height="'+WXSZ.h+'"':'';
 /* 테마섬 배경음 */
 let IBGM=null;
 function islBgm(){const k=view==='village'?curIsl():'main',src=k!=='main'?'snd/isl_'+k+'.mp3':null;
@@ -1250,7 +1263,7 @@ function vVillage(){const v=vilInit();vilTick();GEO=null;v.isls=v.isls||[];const
   :'<div class="vtool">'+tabs+'<span class="vstat">'+(main?'환수 '+vilPets().length+'/'+vilCap()+' · 섬 '+mainStage()+'단계'+(bld?' · 건설 중: '+esc(BLD[bld.k].n)+' '+fmtDur(bld.bt.e-now()):''):'구경 온 환수 '+vilPets().filter(p=>p.isl===k).length+'마리')+'</span>'+
    (main?'<button class="btn sm" data-vharvall="1" '+(harv?'':'disabled')+'><img src="i/ui/ui_collect.png" alt="" class="vic"> 한 번에 수확</button><button class="btn teal sm" data-vbuildmenu="1"><img src="i/ui/ui_build.png" alt="" class="vic"> 건설</button>':'<button class="btn teal sm" data-vroam="1">환수 구경 보내기</button>')+
    '<button class="btn soft sm" data-vplace="1">배치 모드</button>'+(main?'<button class="btn soft sm" data-vskin="1">스킨</button>':'<button class="btn soft sm" data-vbgm="1">'+(acc.bgmOff?'🔇':'🔊')+'</button>')+'<button class="btn soft sm" data-vtitle="1"><img src="i/ui2/icon_title.png" alt="" class="vic"> 칭호</button>'+(main?'<button class="btn soft sm" data-vgb="1"><img src="i/ui2/icon_guestbook.png" alt="" class="vic"> 방명록</button>':'')+'<button class="btn soft sm" data-vzoom="-1" aria-label="축소">－</button><button class="btn soft sm" data-vzoom="1" aria-label="확대">＋</button></div>';
- return '<div class="vwrap isl-'+k+(pl?' placing':'')+'">'+bar+'<div class="vview" id="vview" style="background:'+skyBg()+'"><div class="vsize" style="width:'+VMW*z+'px;height:'+VMH*z+'px"><div class="vmap skin-'+(v.skin||'base')+'" id="vmap" style="transform:scale('+z+')">'+skyHtml()+islImgTag(G)+(pl?gridSvg()+vFootprints():'')+objs+pets+skyFront()+'</div></div></div><canvas id="vwx" class="vwx"></canvas></div>';}
+ return '<div class="vwrap isl-'+k+(pl?' placing':'')+'">'+bar+'<div class="vview" id="vview" style="background:'+skyBg()+'"><div class="vsize" style="width:'+VMW*z+'px;height:'+VMH*z+'px"><div class="vmap skin-'+(v.skin||'base')+'" id="vmap" style="transform:scale('+z+')">'+skyHtml()+islImgTag(G)+(pl?gridSvg()+vFootprints():'')+objs+pets+skyFront()+'</div></div></div><canvas id="vwx" class="vwx"'+wxAttr()+'></canvas></div>';}
 function vZmin(){const el=document.getElementById('vview');if(!el)return .3;return Math.max(.3,el.clientWidth/VMW,el.clientHeight/VMH);}
 function vCenter(){const e=document.getElementById('vview');if(!e)return;const g=geo(),cx=(g.q[1][0]+g.q[3][0])/2,cy=(g.q[0][1]+g.q[2][1])/2-60;e.scrollLeft=cx*VS.z-e.clientWidth/2;e.scrollTop=cy*VS.z-e.clientHeight/2;}
 function vFit(){const el=document.getElementById('vview');if(!el)return;wxStart();islBgm();
@@ -2628,7 +2641,7 @@ function vVisit(){const V=SO.visit;if(!V||V.loading)return '<div class="card">�
   const k=curIsl(),main=k==='main',G=geo(),z=VS.z||.8,os=acc.vil.o.filter(inIsl),objs=os.filter(isTile).map(o=>objHtml(o)).join('')+os.filter(o=>!isTile(o)).concat(main?acc.vil.b:[]).map(o=>objHtml(o)).join(''),pets=vilPets().map((p,i)=>(main?(!p.isl||p.vb):(p.isl===k&&!p.vb))?petHtml(p,i):'').join('');
   const tabs='<div class="isltabs">'+['main'].concat(V.vil.isls||[]).map(x=>'<button class="'+(x===k?'on':'')+'" data-visitisl="'+x+'">'+(x==='main'?'🏯 마을':THEMES[x].ic+' '+THEMES[x].n)+'</button>').join('')+'</div>';
   html='<div class="vwrap visit isl-'+k+'"><div class="vtool visitbar"><button class="btn ghost sm" data-view="pvp">← 대전장</button><img class="vav" src="i/ui2/icon_visit.png" alt=""><b class="serif">'+esc(V.nick||'')+'님의 마을</b>'+tPlate(V.title,1)+'<span class="hcount"><img src="i/ui2/icon_heart_on.png" alt="">'+(V.hearts||0)+'</span>'+tabs+'<span style="margin-left:auto"></span>'+heartBtn(V.uid)+'<button class="btn soft sm" data-gbopen="'+esc(V.uid)+'"><img src="i/ui2/icon_guestbook.png" alt="" class="vic"> 방명록</button><button class="btn soft sm" data-vzoom="-1">－</button><button class="btn soft sm" data-vzoom="1">＋</button></div>'+
-   '<div class="vview" id="vview" style="background:'+skyBg()+'"><div class="vsize" style="width:'+VMW*z+'px;height:'+VMH*z+'px"><div class="vmap skin-'+(acc.vil.skin||'base')+'" id="vmap" style="transform:scale('+z+')">'+skyHtml()+islImgTag(G)+objs+pets+skyFront()+'</div></div></div><canvas id="vwx" class="vwx"></canvas></div>';}
+   '<div class="vview" id="vview" style="background:'+skyBg()+'"><div class="vsize" style="width:'+VMW*z+'px;height:'+VMH*z+'px"><div class="vmap skin-'+(acc.vil.skin||'base')+'" id="vmap" style="transform:scale('+z+')">'+skyHtml()+islImgTag(G)+objs+pets+skyFront()+'</div></div></div><canvas id="vwx" class="vwx"'+wxAttr()+'></canvas></div>';}
  finally{acc.vil=mine;VS.isl=iv;VS.place=ip;VS.visiting=false;GEO=null;}
  setTimeout(()=>{const s=VS.isl;VS.isl=SO.visitIsl;wxVisit(V);VS.isl=s;},0);return html;}
 function wxVisit(V){const mine=acc.vil;acc.vil=V.vil;try{wxStart();}finally{acc.vil=mine;}}

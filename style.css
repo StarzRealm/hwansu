@@ -735,10 +735,10 @@ img.sil{filter:brightness(0) opacity(.5)!important}
 .vbg{image-rendering:auto;z-index:1}
 .vt{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:auto;pointer-events:auto}
 .vgrid2{position:absolute;left:0;top:0;pointer-events:none;z-index:3}
-.vclouds{position:absolute;left:0;top:-256px;width:4096px;height:2048px;pointer-events:none;background-repeat:repeat;background-size:2048px 512px;z-index:0;animation:vclx 200s linear infinite;will-change:transform;-webkit-mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);-webkit-mask-size:2048px 512px;mask-size:2048px 512px;-webkit-mask-repeat:repeat;mask-repeat:repeat;}
+.vclouds{position:absolute;left:-512px;top:-256px;width:3072px;height:2048px;pointer-events:none;background-repeat:repeat;background-size:2048px 512px;z-index:0;-webkit-mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);mask-image:linear-gradient(180deg,transparent 12%,#000 32%,#000 66%,transparent 86%);-webkit-mask-size:2048px 512px;mask-size:2048px 512px;-webkit-mask-repeat:repeat;mask-repeat:repeat;}
 .vclouds.ca{background-image:url(v/isl/cloud_back.webp);background-position:0 0}
-.vclouds.cb{background-image:url(v/isl/cloud_mid.webp);background-position:700px 170px;-webkit-mask-position:0 170px;mask-position:0 170px;animation-duration:150s}
-.vclouds.cc{background-image:url(v/isl/cloud_back.webp);background-position:1400px 341px;-webkit-mask-position:0 341px;mask-position:0 341px;opacity:.9;animation-duration:260s}
+.vclouds.cb{background-image:url(v/isl/cloud_mid.webp);background-position:700px 170px;-webkit-mask-position:0 170px;mask-position:0 170px}
+.vclouds.cc{background-image:url(v/isl/cloud_back.webp);background-position:1400px 341px;-webkit-mask-position:0 341px;mask-position:0 341px;opacity:.9}
 @keyframes vclx{from{transform:translateX(-2048px)}to{transform:translateX(0)}}
 .vwx{position:absolute;left:0;right:0;bottom:0;top:auto;width:100%;height:calc(100% - 52px);pointer-events:none;z-index:15}
 .isltabs{display:flex;gap:4px;flex-wrap:wrap;margin-right:6px}
