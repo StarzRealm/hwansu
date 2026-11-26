@@ -1496,6 +1496,15 @@ applyCfg();
 const SKILL={yang:'양기 폭발',yin:'음기 파동',neutral:'음양 구르기',fire:'화염구',water:'물대포',wood:'덩굴채찍',earth:'바위 떨구기',metal:'쇠발톱'};
 const PVP_WIN=10, PVP_LOSE=5, DEF_WIN=3, DEF_LOSE=5, PVP_DAILY=3;
 const PV={list:null,logs:null,busy:false,atk:null,loaded:false};
+/* 약자 보호 (운영자 설정 cfg.pvp)
+   range: 내 전투력의 몇 % 이상인 상대만 도전 (위로는 제한 없음) · minN: 범위 안 상대가 적으면 가장 가까운 아래 상대 몇 명까지 허용
+   tiers: [상대 전투력 % 미만, 이기면 얻는 메달, 상대가 잃는 메달] · cap: 하루에 방어로 메달을 잃는 최대 횟수 */
+const PVP_DEF={range:70,minN:3,cap:3,tiers:[[50,2,1],[80,6,3],[120,10,5],[99999,15,5]]};
+function pvpCfg(){const c=(cfg&&cfg.pvp)||{};return{range:c.range!=null?+c.range:PVP_DEF.range,minN:c.minN!=null?+c.minN:PVP_DEF.minN,cap:c.cap!=null?+c.cap:PVP_DEF.cap,tiers:(c.tiers&&c.tiers.length?c.tiers.map(t=>Array.isArray(t)?t:[t.u,t.w,t.l]):PVP_DEF.tiers).map(t=>t.map(Number)).sort((a,b)=>a[0]-b[0])};}
+const pvpRatio=(myCp,dCp)=>myCp>0?dCp/myCp*100:100;
+function pvpTier(r){const T=pvpCfg().tiers;return T.find(t=>r<t[0])||T[T.length-1];}
+function pvpAllowed(myCp,list){const C=pvpCfg(),L=(list||[]).filter(a=>a&&a.pet&&a.uid!==acc.uid),ok=new Set(L.filter(a=>pvpRatio(myCp,a.pet.cp||0)>=C.range).map(a=>a.uid));
+ if(ok.size<C.minN)L.filter(a=>!ok.has(a.uid)).sort((x,y)=>(y.pet.cp||0)-(x.pet.cp||0)).slice(0,C.minN-ok.size).forEach(a=>ok.add(a.uid));return ok;}
 let arenaKey=null;
 function sunKey(t){const d=new Date(dayKey(t)+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-d.getUTCDay());return d.toISOString().slice(0,10);}
 function aEff(a){return a&&a.week===sunKey(now())?{m:a.medals,w:a.w||0,l:a.l||0,dw:a.dw||0,dl:a.dl||0}:{m:100,w:0,l:0,dw:0,dl:0};}
@@ -1509,7 +1518,12 @@ async function setRep(born){const all=acc.slots.filter(Boolean).concat(vilPets()
 const noArena=no=>isGuest(no)||GRADE_N[no]===-2;
 function atkIdx(){if(PV.atk==='rep'){const r=repPet();if(r&&!noArena(r.p.no)&&r.p.sick==null)return r.i>=0?r.i:'rep';}if(PV.atk!=null&&PV.atk!=='rep'&&acc.slots[PV.atk]&&!noArena(acc.slots[PV.atk].no))return PV.atk;return acc.slots.findIndex(q=>q&&q.sick==null&&!noArena(q.no));}
 function petSnap(p){const s=statsOf(p);return{no:p.no,st:p.st,lv:p.lv,star:p.star||0,cp:powerOf(s),el:ELOF[p.no]||'fire',bs:{hp:s.hp,atk:s.atk,def:s.def,eva:s.eva,pen:s.pen,crit:s.crit}};}
-async function syncArena(force){if(MODE!=='player'||!acc||!db)return;if(acc.arenaRep==null&&!force)return;const r0=repPet(),r=r0&&!noArena(r0.p.no)?r0:null,pet=r?petSnap(r.p):null;
+/* 대표 환수가 비었거나(미등록·해방·삭제) 대전에 못 나가는 환수면 → 가진 환수 중 전투력이 가장 높은 환수로 자동 등록 */
+function autoRep(){const r=repPet();if(r&&!noArena(r.p.no))return false;
+ const all=acc.slots.filter(Boolean).concat(vilPets()).filter(p=>!noArena(p.no));if(!all.length)return false;
+ let best=all[0],bc=cp(best);all.slice(1).forEach(p=>{const c=cp(p);if(c>bc){best=p;bc=c;}});
+ if(!best.born)best.born=Date.now()+Math.floor(Math.random()*1e6);if(acc.arenaRep===best.born)return false;acc.arenaRep=best.born;return true;}
+async function syncArena(force){if(MODE!=='player'||!acc||!db)return;if(autoRep()){force=true;save();}if(acc.arenaRep==null&&!force)return;const r0=repPet(),r=r0&&!noArena(r0.p.no)?r0:null,pet=r?petSnap(r.p):null;
  const key=pet?[pet.no,pet.st,pet.lv,pet.cp,JSON.stringify(pet.bs||{}),acc.title||''].join('|'):'none';if(!force&&key===arenaKey)return;arenaKey=key;
  const ref=db.doc('arena/'+acc.uid);try{const s=await ref.get();if(!s.exists){if(!pet)return;await ref.set({uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,week:sunKey(now()),medals:100,w:0,l:0,dw:0,dl:0,pet,title:acc.title||null,t:Date.now()});}else await ref.update({pet,nick:acc.nick||acc.id,title:acc.title||null,t:Date.now()});}catch(e){arenaKey=null;}}
 function bStat(s){const b=snapStats(s);return{hp:b.hp,atk:b.atk};}
@@ -1529,18 +1543,21 @@ async function fight(uid,re){if(PV.busy)return;const ad=accDaily();
  if(re){if(!(acc.inv.sec_pvp>0))return toast('대전재도전비서가 없어요. 상점에서 살 수 있어요.');}
  else{if((ad.pvp||0)>=PVP_DAILY)return toast('오늘 공격 횟수를 다 썼어요. 내일 오전 6시에 다시 할 수 있어요.');
  if((ad.pvpTo||[]).includes(uid))return toast('같은 상대는 하루에 한 번만 도전할 수 있어요. (대전재도전비서로 한 번 더 할 수 있어요)');}
- const me=repPet();if(!me)return toast('먼저 마을 중심부에 대표 환수를 배치해 주세요.');
+ if(autoRep())save();const me=repPet();if(!me)return toast('대전에 나갈 수 있는 환수가 없어요.');
  const ai=atkIdx(),ap=atkPetGet();if(!ap)return toast('출전할 환수를 골라 주세요.');if(noArena(ap.no))return toast('스타즈렐름·게스트 등급은 대전에 나갈 수 없어요.');if(ap.sick!=null)return toast('아픈 환수는 대전에 나갈 수 없어요.');
  PV.busy=true;try{
   const dRef=db.doc('arena/'+uid),ds=await dRef.get();if(!ds.exists||!ds.data().pet){toast('상대 정보를 찾지 못했어요.');return;}const dd=ds.data();
   const myRef=db.doc('arena/'+acc.uid);let ms=await myRef.get();if(!ms.exists){await syncArena(true);ms=await myRef.get();}const mine=ms.exists?ms.data():null;
-  const A=petSnap(ap),D=dd.pet,res=simBattle(A,D,Math.floor(rnd()*4294967296));
-  const wk=sunKey(now()),ea=aEff(mine),ed=aEff(dd),na=Math.max(0,ea.m+(res.win?PVP_WIN:-PVP_LOSE)),nd=Math.max(0,ed.m+(res.win?-DEF_LOSE:DEF_WIN));
+  const A=petSnap(ap),D=dd.pet;
+  if(!pvpAllowed(A.cp,(PV.list||[]).map(a=>a.uid===uid?dd:a).concat((PV.list||[]).some(a=>a.uid===uid)?[]:[dd])).has(uid)){toast('전투력 차이가 너무 커서 도전할 수 없어요. (내 전투력의 '+pvpCfg().range+'% 이상인 상대만)');return;}
+  const res=simBattle(A,D,Math.floor(rnd()*4294967296)),T=pvpTier(pvpRatio(A.cp,D.cp||0)),C=pvpCfg(),today=dayKey(now());
+  const dc=dd.dcap&&dd.dcap.d===today?dd.dcap.n:0,shield=res.win&&dc>=C.cap;/* 오늘 방어로 메달 잃은 횟수가 상한이면 보호막 */
+  const wk=sunKey(now()),ea=aEff(mine),ed=aEff(dd),na=Math.max(0,ea.m+(res.win?T[1]:-PVP_LOSE)),nd=Math.max(0,ed.m+(res.win?(shield?0:-T[2]):DEF_WIN));
   if(re){acc.inv.sec_pvp--;ad.pvpRe=(ad.pvpRe||0)+1;if(!(ad.pvpTo||[]).includes(uid))ad.pvpTo=(ad.pvpTo||[]).concat([uid]);}else{ad.pvp=(ad.pvp||0)+1;ad.pvpTo=(ad.pvpTo||[]).concat([uid]);}await save();
   if(res.win)acc.pvpWins=(acc.pvpWins||0)+1;
   await myRef.update({week:wk,medals:na,w:ea.w+(res.win?1:0),l:ea.l+(res.win?0:1),dw:ea.dw,dl:ea.dl});
-  await dRef.update({week:wk,medals:nd,w:ed.w,l:ed.l,dw:ed.dw+(res.win?0:1),dl:ed.dl+(res.win?1:0)});
-  const b={t:Date.now(),week:wk,auid:acc.uid,duid:uid,a:{nick:acc.nick||acc.id,pet:A},d:{nick:dd.nick,pet:D},win:res.win,da:na-ea.m,dd:nd-ed.m,ma:na,md:nd,hpA:res.hpA,hpD:res.hpD,logS:JSON.stringify(res.log)};
+  await dRef.update({week:wk,medals:nd,w:ed.w,l:ed.l,dw:ed.dw+(res.win?0:1),dl:ed.dl+(res.win?1:0),dcap:{d:today,n:dc+(res.win&&!shield?1:0)}});
+  const b={t:Date.now(),week:wk,auid:acc.uid,duid:uid,a:{nick:acc.nick||acc.id,pet:A},d:{nick:dd.nick,pet:D},win:res.win,da:na-ea.m,dd:nd-ed.m,shield:shield?1:0,ma:na,md:nd,hpA:res.hpA,hpD:res.hpD,logS:JSON.stringify(res.log)};
   try{await db.collection('battles').add(b);}catch(e){}
   render();battleAnim(b,'atk');
  }catch(e){toast('대전에 실패했어요: '+(e&&e.message||e));}finally{PV.busy=false;}}
@@ -1557,13 +1574,15 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);if(SO.users==null)setTim
  h+='</div><div class="drightcol"><div class="dtabs">'+[['rec','추천 상대','icon_recommend'],['all','전체 유저','icon_users'],['rank','순위','icon_rank'],['log','대전 기록','icon_history']].map(([k,n,ic])=>'<button class="'+(tab===k?'on':'')+'" data-dtab="'+k+'"><img src="i/ui2/'+ic+'.png" alt="">'+n+'</button>').join('')+'<button class="btn soft sm" data-pvprefresh="1" style="margin-left:auto">새로고침</button></div>';
  const users={};(SO.users||[]).forEach(u=>{users[u.uid]=u;});
  const atkEl=atkIdx()!==-1?ELOF[atkPetGet().no]:null;
- const fightBtn=a=>{if(!r||atkIdx()<0||!a.pet)return '';if((ad.pvpTo||[]).includes(a.uid))return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 재도전</button>':'<button class="btn soft sm dbtn" disabled>오늘 도전함</button>';
-  if(used)return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 추가 도전</button>':'';return '<button class="btn sm dbtn" data-fight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="i/ui2/icon_duel.png" alt=""> 도전</button>';};
+ const myCp=atkIdx()!==-1&&atkPetGet()?cp(atkPetGet()):0,allow=pvpAllowed(myCp,PV.list);
+ const fightBtn=a=>{if(!r||atkIdx()<0||!a.pet)return '';if(!allow.has(a.uid))return '<button class="btn soft sm dbtn" disabled title="내 전투력의 '+pvpCfg().range+'% 미만인 상대예요">너무 약한 상대</button>';const gm=pvpTier(pvpRatio(myCp,a.pet.cp||0))[1];if((ad.pvpTo||[]).includes(a.uid))return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 재도전</button>':'<button class="btn soft sm dbtn" disabled>오늘 도전함</button>';
+  if(used)return (acc.inv.sec_pvp||0)>0?'<button class="btn sm dbtn" data-refight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="'+ITEMS.sec_pvp.img+'" alt=""> 추가 도전</button>':'';return '<button class="btn sm dbtn" data-fight="'+esc(a.uid)+'" '+(PV.busy?'disabled':'')+'><img src="i/ui2/icon_duel.png" alt=""> 도전 <small class="dgain">+'+gm+'</small></button>';};
  const rowH=(uid,a,extra,rk)=>{const u=users[uid]||{},pet=a&&a.pet,me2=uid===acc.uid,adv=pet&&atkEl?(isAdv(atkEl,pet.el)?'<span class="advg">상성 유리</span>':isAdv(pet.el,atkEl)?'<span class="advb">상성 불리</span>':''):'';
   return '<div class="drow'+(me2?' me':'')+(rk&&rk<=3?' rk'+rk:'')+'"><div class="dframe">'+(extra||'')+'<div class="dmirror">'+(pet?'<img class="px" src="'+img(pet.no)+'" alt="">':'<img src="i/ui2/icon_users.png" alt="" style="opacity:.6">')+'</div><div class="dinfo"><div class="dname">'+nickT(u.nick||(a&&a.nick)||'?',u.title||(a&&a.title)||null)+'</div><small class="dsub">'+(pet?esc(NAMES[pet.no])+' '+elTag(pet.el)+' '+adv+' · 전투력 '+fmt(pet.cp):'대표 환수 없음')+'</small><small class="dsub">'+(a?MP.replace('class="px mp"','class="px mp sm"')+' '+aEff(a).m+' · ':'')+'<img class="hico" src="i/ui2/icon_heart_on.png" alt=""> '+(u.hearts||0)+'</small></div></div><div class="dbtns">'+(me2?'<span class="muted">나</span>':fightBtn(a||{uid})+(u.vil?'<button class="btn soft sm dbtn" data-visit="'+esc(uid)+'"><img src="i/ui2/icon_visit.png" alt=""> 마을 구경</button>':'')+(u.uid?heartBtn(uid):''))+'</div></div>';};
  const arena={};(PV.list||[]).forEach(a=>{arena[a.uid]=a;});
- if(tab==='rec'){const opp=(PV.list||[]).filter(a=>a.uid!==acc.uid).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>Math.abs(x.em-e.m)-Math.abs(y.em-e.m)||y.em-x.em).slice(0,10);
+ if(tab==='rec'){const opp=(PV.list||[]).filter(a=>a.uid!==acc.uid).map(a=>Object.assign({},a,{em:aEff(a).m,ok:allow.has(a.uid)?0:1})).sort((x,y)=>x.ok-y.ok||Math.abs(x.em-e.m)-Math.abs(y.em-e.m)||y.em-x.em).slice(0,10);
   h+=PV.list==null?'<p class="muted">불러오는 중…</p>':opp.length?'<div class="drows">'+opp.map(a=>rowH(a.uid,a)).join('')+'</div>':'<p class="muted">아직 도전할 상대가 없어요.</p>';
+  {const C=pvpCfg();h+='<p class="muted dnote pgdesc">약자 보호: 내 전투력의 '+C.range+'% 이상인 상대만 도전할 수 있어요. 비슷하거나 강한 상대를 이길수록 메달을 많이 받아요 ('+C.tiers.map(t=>t[0]>=9999?'그 이상 +'+t[1]:t[0]+'% 미만 +'+t[1]).join(' · ')+'). 방어로 메달을 잃는 건 하루 '+C.cap+'번까지예요.</p>';}
   h+='<p class="muted dnote pgdesc">상성: 나무 → 땅 → 물 → 불 → 쇠 → 나무 (화살표 쪽을 이겨요) · 양과 음은 서로를 이겨요. 상성 유리 피해 ×1.2 · 치명 ×1.6 · 직격은 방어 일부 무시.</p>';}
  if(tab==='all'){const ids=[...new Set((SO.users||[]).map(u=>u.uid).concat((PV.list||[]).map(a=>a.uid)))];ids.sort((x,y)=>((users[y]||{}).hearts||0)-((users[x]||{}).hearts||0));
   h+=SO.users==null?'<p class="muted">불러오는 중…</p>':ids.length?'<div class="drows">'+ids.map(id=>rowH(id,arena[id])).join('')+'</div>':'<p class="muted">아직 유저가 없어요.</p>';}
@@ -2431,12 +2450,12 @@ async function igReissue(aid,code){const a=(AS.list||[]).find(x=>x.id===aid);if(
    toast('새 코드: '+nc+' (유저의 발급한 코드 목록에도 바뀌어 들어갔어요)');await AD.loadList();}catch(e){toast('재발급 실패: '+(e&&e.message||e));}});}
 /* ================= 운영자 사이트 ================= */
 const AS={tab:'users',tgt:null,list:null,eggs:null,logs:null,newPw:'',codeGen:'',slot:0};
-const ADM_GROUPS=[['user','유저','users',[['users','유저 관리'],['make','계정 만들기',1]]],['gift','보상·코드','gift',[['mail','우편'],['eggs','알 코드'],['lib','인게임 코드'],['tools','코드 테스트'],['att','출석 보상'],['pass','월정액'],['sup','후원 페이지']]],['cont','콘텐츠','cont',[['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['shop','상점 설정'],['rcp','제작소 레시피'],['cols','컬렉션']]],['log','기록·관리','log',[['backup','수동 저장 복구'],['gb','방명록 기록'],['logs','변경 기록'],['reset','전체 초기화',1]]]];
+const ADM_GROUPS=[['user','유저','users',[['users','유저 관리'],['make','계정 만들기',1]]],['gift','보상·코드','gift',[['mail','우편'],['eggs','알 코드'],['lib','인게임 코드'],['tools','코드 테스트'],['att','출석 보상'],['pass','월정액'],['sup','후원 페이지']]],['cont','콘텐츠','cont',[['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['shop','상점 설정'],['rcp','제작소 레시피'],['cols','컬렉션'],['pvpcfg','대전 설정']]],['log','기록·관리','log',[['backup','수동 저장 복구'],['gb','방명록 기록'],['logs','변경 기록'],['reset','전체 초기화',1]]]];
 function admGroups(){return ADM_GROUPS.map(([g,n,ic,tabs])=>[g,n,ic,tabs.filter(t=>!t[2]||isMain())]);}
 function admGroupOf(tab){const G=admGroups().find(x=>x[3].some(t=>t[0]===tab));return G?G[0]:'user';}
 function adminHeader(){const G=admGroups(),cg=admGroupOf(AS.tab),cur=G.find(x=>x[0]===cg);
  return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main admgrp" aria-label="운영자 메뉴">'+G.map(([g,n,ic,tabs])=>'<button data-xtab="'+tabs[0][0]+'" class="'+(cg===g?'on':'')+'"><img class="px" src="i/adm/hd/ag_'+ic+'.png" alt="" onerror="this.style.display=\'none\'">'+n+'</button>').join('')+'</nav><a class="btn sm" href="index.html?test" target="_blank" rel="noopener" style="background:#f0c75e;color:#3a2414" title="실제 서버와 상관없는 가짜 계정으로 유저 화면을 시험해요">🧪 테스트 모드</a><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div><nav class="admsub" aria-label="세부 메뉴">'+cur[3].map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav></header>';}
-function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,lib:aLib,event:aEvent,tools:aTools,logs:aLogs,reset:aReset,shop:aShop,rcp:aRcp,cols:aCols,gb:aGb,backup:aBackup,att:aAtt,pass:aPass,sup:aSup}[AS.tab]();}
+function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,lib:aLib,event:aEvent,tools:aTools,logs:aLogs,reset:aReset,shop:aShop,rcp:aRcp,cols:aCols,gb:aGb,backup:aBackup,att:aAtt,pass:aPass,sup:aSup,pvpcfg:aPvpCfg}[AS.tab]();}
 const roleN={main:'메인',sub:'보조',player:'플레이어'};
 const VIEWN={village:'마을',home:'성장',train:'수련·심부름',gear:'장비',bag:'가방',shop:'상점',dex:'도감',pvp:'대전',boss:'토벌',tower:'구천탑',xmas:'설화 던전',guest:'전용 공간',code:'코드',mail:'우편',support:'후원',visit:'마을 구경'};
 function viewIc(v){const n=NAV.find(x=>x[0]===v);return n?n[2]:({xmas:'nav_event',guest:'nav_portal',code:'nav_settings',mail:'nav_mail',visit:'nav_village'})[v]||'nav_village';}
@@ -2791,6 +2810,18 @@ function passCheck(){if(MODE!=='player'||!acc||!S.pass)return null;const t=dayKe
 
 /* ----- 플레이어: 후원 탭 ----- */
 const SUP_DEF={intro:'스타즈 렐름을 응원해 주셔서 감사해요! 후원금은 서버 운영에 쓰여요.',how:'구매는 디스코드에서 운영자에게 DM으로 문의해 주세요. 확인 후 운영자가 직접 지급해요.',items:[{n:'월정액',d:'30일 동안 매일 접속하면 그날의 보상을 받아요.',won:9900,rp:0,img:'i/sup/pass.png',pass:1}]};
+/* 운영자 [추천 상품 불러오기] 용 기본 구성 (가격은 제안값 · 자유 수정) */
+const SUP_PRESET=[
+ {n:'월정액',d:'30일 동안 매일 접속하면 그날의 보상을 받아요.',won:9900,rp:0,img:'i/sup/pass.png',pass:1},
+ {n:'첫 구매 패키지',d:'음양알 1 · 환수코인 300 · 성장 비서 세트 (1회 한정)',won:5000,rp:0,img:'i/sup/starter.png',pass:0},
+ {n:'환수코인 300',d:'환수코인 300',won:3000,rp:0,img:'i/sup/coins_s.png',pass:0},
+ {n:'환수코인 550',d:'환수코인 500 + 보너스 50',won:5000,rp:0,img:'i/sup/coins_m.png',pass:0},
+ {n:'환수코인 1,200',d:'환수코인 1,000 + 보너스 200',won:10000,rp:0,img:'i/sup/coins_l.png',pass:0},
+ {n:'음양알',d:'음양알 1개 (주 1개 한정)',won:3000,rp:0,img:'i/sup/egg_yy.png',pass:0},
+ {n:'성장 비서 세트',d:'시간단축 30분×5 · 행동력 회복×3 · 생활수치고정×3',won:1000,rp:0,img:'i/sup/set_grow.png',pass:0},
+ {n:'심부름 세트',d:'심부름충전비서×3',won:2000,rp:0,img:'i/sup/set_errand.png',pass:0},
+ {n:'도전 비서 세트',d:'탑재도전×3 · 대전재도전×3 · 토벌재도전×3',won:1500,rp:0,img:'i/sup/set_challenge.png',pass:0},
+ {n:'강화 세트',d:'강화축복×3 · 파괴방지×1',won:3000,rp:0,img:'i/sup/set_forge.png',pass:0}];
 function supCfg(){const s=cfg&&cfg.sup;return s&&s.items?s:SUP_DEF;}
 function vSupport(){const S_=supCfg(),me=S.pass,left=passLeft(me),dNow=passDay(me),days=passDays();
  let h='<div class="pgtitle t-sup serif">후원</div><div class="card supintro"><p class="pgdesc" style="margin:0">'+esc(S_.intro||'')+'</p></div>';
@@ -2836,7 +2867,7 @@ function aSup(){if(!AS.sup)AS.sup=JSON.parse(JSON.stringify(supCfg()));const S_=
   '<label class="f" style="display:block">소개 문구<textarea id="sIntro" rows="2" style="width:100%">'+esc(S_.intro||'')+'</textarea></label>'+
   '<label class="f" style="display:block;margin-top:6px">구매 방법<textarea id="sHow" rows="3" style="width:100%">'+esc(S_.how||'')+'</textarea></label>'+
   '<h3 class="serif" style="margin:14px 0 6px">상품</h3>'+(S_.items||[]).map((it,i)=>'<div class="rcpe"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f">상품 이름<input type="text" id="si'+i+'n" value="'+esc(it.n||'')+'" style="width:140px"></label><label class="f">현금 (원)<input type="number" id="si'+i+'w" value="'+(+it.won||0)+'" min="0" style="width:90px"></label><label class="f">렐름포인트 (RP)<input type="number" id="si'+i+'r" value="'+(+it.rp||0)+'" min="0" style="width:90px"></label><label class="f">그림 경로<input type="text" id="si'+i+'i" value="'+esc(it.img||'')+'" placeholder="i/sup/pass.png" style="width:140px"></label><label class="f gmchk" style="color:inherit"><input type="checkbox" id="si'+i+'p"'+(it.pass?' checked':'')+'>월정액 상품 (30일 보상표 표시)</label>'+(main?'<button class="btn red sm" data-xsupdel="'+i+'">삭제</button>':'')+'</div><label class="f" style="display:block;margin-top:6px">설명<input type="text" id="si'+i+'d" value="'+esc(it.d||'')+'" style="width:100%"></label></div>').join('')+
-  (main?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn soft sm" data-x="supAdd">상품 추가</button><button class="btn teal sm" data-x="supSave">저장</button></div>':'<p class="muted">보조 운영자는 볼 수만 있어요.</p>')+'</div>';}
+  (main?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn soft sm" data-x="supAdd">상품 추가</button><button class="btn soft sm" data-x="supPreset">추천 상품 불러오기</button><button class="btn teal sm" data-x="supSave">저장</button></div>':'<p class="muted">보조 운영자는 볼 수만 있어요.</p>')+'</div>';}
 function supRead(){const S_=AS.sup,v=id=>document.getElementById(id);if(!v('sIntro'))return;S_.intro=v('sIntro').value;S_.how=v('sHow').value;S_.items=(S_.items||[]).map((it,i)=>v('si'+i+'n')?{n:v('si'+i+'n').value.trim(),d:v('si'+i+'d').value.trim(),won:Math.max(0,+v('si'+i+'w').value||0),rp:Math.max(0,+v('si'+i+'r').value||0),img:v('si'+i+'i').value.trim(),pass:v('si'+i+'p').checked?1:0}:it);}
 
 /* ----- 운영자 버튼 ----- */
@@ -2852,8 +2883,25 @@ Object.assign(AD,{
  async passSave(){passRead();cfg.pass=Object.assign({},cfg.pass||{},{days:AS.pdays.map(rwNorm)});AS.pdays=null;await saveGlobal('월정액 30일 보상 변경');},
  passOn(){passRead();return passSet(true);},
  passOff(){passRead();return passSet(false);},
+ supPreset(){supRead();confirmBox('추천 상품 불러오기','상품 목록을 추천 구성 '+SUP_PRESET.length+'개(그림 포함)로 바꿀까요? 저장을 눌러야 유저 화면에 반영돼요. 필요 없는 상품은 [삭제]로 빼 주세요.',()=>{AS.sup.items=JSON.parse(JSON.stringify(SUP_PRESET));render();});},
  supAdd(){supRead();AS.sup.items=(AS.sup.items||[]).concat([{n:'새 상품',d:'',won:0,rp:0,img:'',pass:0}]);render();},
  async supSave(){supRead();cfg.sup=JSON.parse(JSON.stringify(AS.sup));AS.sup=null;await saveGlobal('후원 페이지 변경 ('+(cfg.sup.items||[]).length+'개 상품)');}
+});
+
+/* ----- 운영자: 대전 약자 보호 설정 ----- */
+function aPvpCfg(){const C=pvpCfg(),main=isMain(),T=C.tiers;
+ return '<div class="card adm"><h2>대전 설정 (약자 보호)</h2><p class="muted">강한 대표 환수가 약한 유저만 골라 때리지 못하게 해요. 바꾸면 유저가 새로고침했을 때 적용돼요.</p>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f">도전 가능 범위 (내 전투력의 %)<input type="number" id="pvR" value="'+C.range+'" min="0" max="100" style="width:80px"></label><label class="f">최소 상대 수<input type="number" id="pvN" value="'+C.minN+'" min="0" style="width:70px"></label><label class="f">하루 방어 메달 손실 횟수<input type="number" id="pvC" value="'+C.cap+'" min="0" style="width:70px"></label></div>'+
+  '<p class="muted" style="margin:6px 0">· 범위 안 상대가 [최소 상대 수]보다 적으면, 범위 밖에서 가장 강한 상대부터 그 수만큼 도전할 수 있어요.<br>· 하루 방어 손실 횟수를 넘으면 그날은 져도 메달이 줄지 않아요 (보호막).</p>'+
+  '<h3 class="serif" style="margin:12px 0 6px">전투력 차이별 메달</h3><table class="t"><tr><th>상대 전투력 (내 기준 %) 미만</th><th>이기면 얻는 메달</th><th>상대가 잃는 메달</th></tr>'+
+  T.map((t,i)=>'<tr><td>'+(i===T.length-1?'그 이상 (나머지 전부)<input type="hidden" id="pvT'+i+'a" value="99999">':'<input type="number" id="pvT'+i+'a" value="'+t[0]+'" style="width:80px"> %')+'</td><td><input type="number" id="pvT'+i+'b" value="'+t[1]+'" style="width:70px"></td><td><input type="number" id="pvT'+i+'c" value="'+t[2]+'" style="width:70px"></td></tr>').join('')+'</table>'+
+  '<p class="muted" style="margin:6px 0">공격에 지면 공격자는 -'+PVP_LOSE+', 방어에 성공하면 방어자는 +'+DEF_WIN+' (그대로).</p>'+
+  (main?'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn soft sm" data-x="pvpDef">기본값</button><button class="btn teal sm" data-x="pvpSave">저장</button></div>':'<p class="muted">보조 운영자는 볼 수만 있어요.</p>')+'</div>';}
+MAIN_ONLY.add('pvpSave');
+Object.assign(AD,{
+ pvpDef(){cfg.pvp=null;render();toast('기본값을 불러왔어요. [저장]을 눌러야 적용돼요.');},
+ async pvpSave(){const g=id=>+document.getElementById(id).value,T=pvpCfg().tiers.map((_,i)=>[g('pvT'+i+'a'),Math.max(0,g('pvT'+i+'b')),Math.max(0,g('pvT'+i+'c'))]).sort((a,b)=>a[0]-b[0]);
+  cfg.pvp={range:Math.max(0,Math.min(100,g('pvR'))),minN:Math.max(0,g('pvN')),cap:Math.max(0,g('pvC')),tiers:T.map(([u,w,l])=>({u,w,l}))};/* Firestore는 배열 안 배열 저장 불가 → 객체로 */await saveGlobal('대전 약자 보호 설정 변경');}
 });
 /* ================= 이벤트 ================= */
 document.addEventListener('submit',async ev=>{const f=ev.target;ev.preventDefault();const fd=new FormData(f),k=f.dataset.form;if(busy)return;busy=true;try{
@@ -3089,7 +3137,7 @@ function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
 (async function boot(){
  const app=document.getElementById('app');
  try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
- db=HS.db;if(TEST)window.__T={bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
+ db=HS.db;if(TEST)window.__T={repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
  HS.onAuth(async uid=>{

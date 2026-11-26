@@ -1811,3 +1811,5 @@ main.v-code .row>.card::after{width:56px!important;height:56px!important;left:15
 .t-sup{background-image:url(i/sup/sup_title.png)}
 main.v-support{background:#0e1020 url(i/sup/sup_bg.webp) center top/cover fixed;max-width:none}
 main.v-support>.card,main.v-support>.supgrid{width:100%;max-width:1100px;box-sizing:border-box;margin-left:auto;margin-right:auto}
+@media (max-width:600px){.supgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.supb{padding:8px 9px;gap:4px}.supb b{font-size:15px}.supb p{font-size:12px}.supp span{font-size:12px;padding:2px 7px}.supst{font-size:11px}}
+.dgain{font-size:11px;opacity:.85;margin-left:2px}
