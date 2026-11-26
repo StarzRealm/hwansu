@@ -751,8 +751,7 @@ function evoAnimA(p,target){
  L.innerHTML='<div class="overlay"><div class="evo stage" id="evo"><div style="position:absolute;inset:0;background:rgba(8,16,20,.55)" id="evoDim"></div><img class="m px" id="evoA" src="'+oldS+'" alt=""><div class="say" id="evoSay">어라…?<br>'+esc(NAMES[p.no])+'의 모습이…!</div></div></div>';
  const box=document.getElementById('evo'),a=document.getElementById('evoA'),say=document.getElementById('evoSay');SFX.play('huh');
  setTimeout(()=>{if(cancelled)return;box.style.background='radial-gradient(circle at 50% 45%,#2a3f52,#070d12 70%)';box.classList.remove('stage');document.getElementById('evoDim').remove();a.classList.add('sil');
-  say.innerHTML='<button class="btn soft" id="evoCancel">진화 취소하기</button>';say.style.background='transparent';say.style.border='none';say.style.textAlign='center';
-  document.getElementById('evoCancel').onclick=()=>{cancelled=true;closeLayer();SFX.play('thud');toast('진화를 멈췄어요.');};
+  say.innerHTML='';say.style.background='transparent';say.style.border='none';say.style.textAlign='center';
   let iv=420,flip=false,t=0;
   const loop=()=>{if(cancelled)return;flip=!flip;a.src=flip?newS:oldS;SFX.evoBlip(t);t+=iv;iv=Math.max(55,iv*.86);if(t<3400)setTimeout(loop,iv);else boom();};loop();},1600);
  function boom(){if(cancelled)return;const el=gEls(target)[0]||'metal';const c=ELC[el];say.innerHTML='';a.src=newS;SFX.play('boom');
@@ -784,8 +783,7 @@ function evoAnimB(p,target){
   x.globalAlpha=1;raf=requestAnimationFrame(frame);}
  setTimeout(()=>{if(cancelled)return;
   box.classList.remove('stage');box.classList.add('on');document.getElementById('evoDim').remove();size();raf=requestAnimationFrame(frame);SFX.play('mystic');
-  say.className='say dvsay';say.innerHTML='<button class="btn soft" id="evoCancel">진화 취소하기</button>';
-  document.getElementById('evoCancel').onclick=()=>{stop();closeLayer();SFX.play('thud');toast('진화를 멈췄어요.');};
+  say.className='say dvsay';say.innerHTML='';
   /* 고리가 위→아래로 훑으면 그 부분부터 새 모습 */
   setTimeout(()=>{if(cancelled)return;box.classList.add('scan');const T0=performance.now(),D=2600;let bl=0;
    const step=()=>{if(cancelled)return;const k=Math.min(1,(performance.now()-T0)/D);scanY=k;nw.style.clipPath='inset(0 0 '+((1-k)*100).toFixed(1)+'% 0)';box.style.setProperty('--ry',(pet.offsetTop+k*pet.offsetHeight).toFixed(1)+'px');
