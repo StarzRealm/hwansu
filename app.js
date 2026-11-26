@@ -736,7 +736,14 @@ const A={
 async function commit(){render();await save();syncArena();syncVillage();}
 
 /* ================= 진화 연출 ================= */
-function evoAnim(p,target){
+/* 진화 연출 2종 중 랜덤: 기존(실루엣 깜빡임) / 기운 공명(데이터 스캔 오마주) */
+function evoAnim(p,target){return (Math.random()<.5?evoAnimA:evoAnimB)(p,target);}
+function evoFinish(p,target,box,a,say){
+ p.prev=JSON.parse(JSON.stringify(Object.assign({},p,{prev:null})));
+ const oldName=NAMES[p.no];p.no=target;p.st=FORMS[target].st;p.lv=1;p.exp=0;p.en=maxEn(p);p.g=newGauge();p.gT=newGauge();p.star=0;dexAdd(target);
+ SFX.play('fanfare');say.style.cssText='';say.className='say';say.innerHTML='축하합니다!<br>'+esc(oldName)+'은(는) <b>'+esc(NAMES[target])+'</b>(으)로 진화했다!<br><small style="color:#2b5a5e">행동력이 가득 찼어요! 오행 게이지는 0부터 다시 채워요.</small><div style="margin-top:10px;text-align:right"><button class="btn" id="evoOk">확인</button></div>';
+ document.getElementById('evoOk').onclick=closeLayer;commit();}
+function evoAnimA(p,target){
  const L=document.getElementById('layer');const oldS=img(p.no),newS=img(target);let cancelled=false;
  L.innerHTML='<div class="overlay"><div class="evo stage" id="evo"><div style="position:absolute;inset:0;background:rgba(8,16,20,.55)" id="evoDim"></div><img class="m px" id="evoA" src="'+oldS+'" alt=""><div class="say" id="evoSay">어라…?<br>'+esc(NAMES[p.no])+'의 모습이…!</div></div></div>';
  const box=document.getElementById('evo'),a=document.getElementById('evoA'),say=document.getElementById('evoSay');SFX.play('huh');
@@ -748,11 +755,44 @@ function evoAnim(p,target){
  function boom(){if(cancelled)return;const el=gEls(target)[0]||'metal';const c=ELC[el];say.innerHTML='';a.src=newS;SFX.play('boom');
   const b=document.createElement('div');b.className='burst';b.style.background='radial-gradient(circle,#fff 0%,#fff6d6 15%,'+c+' 40%,rgba(0,0,0,0) 70%)';box.insertBefore(b,a);
   setTimeout(()=>{if(cancelled)return;
-   p.prev=JSON.parse(JSON.stringify(Object.assign({},p,{prev:null})));
-   const oldName=NAMES[p.no];p.no=target;p.st=FORMS[target].st;p.lv=1;p.exp=0;p.en=maxEn(p);p.g=newGauge();p.gT=newGauge();p.star=0;dexAdd(target);
    a.classList.remove('sil');b.remove();box.classList.add('stage');box.style.background='';
-   SFX.play('fanfare');say.style.cssText='';say.innerHTML='축하합니다!<br>'+esc(oldName)+'은(는) <b>'+esc(NAMES[target])+'</b>(으)로 진화했다!<br><small style="color:#2b5a5e">행동력이 가득 찼어요! 오행 게이지는 0부터 다시 채워요.</small><div style="margin-top:10px;text-align:right"><button class="btn" id="evoOk">확인</button></div>';
-   document.getElementById('evoOk').onclick=closeLayer;commit();},1100);}
+   evoFinish(p,target,box,a,say);},1100);}
+}
+/* 기운 공명 진화: 오행 데이터 흐름 → 기운 고리가 위에서 아래로 훑으며 새 모습으로 바뀜 → 섬광 → 이름판 */
+function evoAnimB(p,target){
+ const L=document.getElementById('layer'),oldS=img(p.no),newS=img(target),el=gEls(target)[0]||'metal',c=ELC[el];let cancelled=false,raf=0;
+ const RING=['wood','fire','earth','metal','water'];
+ L.innerHTML='<div class="overlay"><div class="evo stage dv" id="evo" style="--dvc:'+c+'"><div class="dvdim" id="evoDim"></div><canvas class="dvcv" id="dvcv"></canvas><div class="dvgrid"></div>'
+  +'<div class="dvpet" id="dvpet"><img class="px dvold" id="dvold" src="'+oldS+'" alt=""><img class="px dvnew" id="dvnew" src="'+newS+'" alt=""></div>'
+  +RING.map((k,i)=>'<img class="dvring" src="i/evo2/dv_ring_'+k+'.png" alt="" style="--rd:'+(i*.16)+'s">').join('')+'<img class="dvflash" src="i/evo2/dv_flash.png" alt="">'
+  +'<div class="say" id="evoSay">어라…?<br>'+esc(NAMES[p.no])+'의 기운이 공명하고 있어…!</div></div></div>';
+ const box=document.getElementById('evo'),say=document.getElementById('evoSay'),pet=document.getElementById('dvpet'),nw=document.getElementById('dvnew'),cv=document.getElementById('dvcv');
+ SFX.play('huh');
+ const stop=()=>{cancelled=true;cancelAnimationFrame(raf);};
+ /* 배경 흐름은 CSS(dv_bg_loop), 캔버스는 빛 조각만: dv_shards 4종을 오행 5색으로 미리 물들임 */
+ const x=cv.getContext('2d'),R=Math.min(2,window.devicePixelRatio||1);let W=0,H=0;const GC=RING.map(k=>ELC[k]),SH=[];
+ const sheet=new Image();sheet.onload=()=>{for(let f=0;f<4;f++)GC.forEach(col=>{const o=document.createElement('canvas');o.width=o.height=64;const g=o.getContext('2d');g.drawImage(sheet,f*64,0,64,64,0,0,64,64);g.globalCompositeOperation='source-atop';g.globalAlpha=.75;g.fillStyle=col;g.fillRect(0,0,64,64);SH.push(o);});};sheet.src='i/evo2/dv_shards.png';
+ function size(){W=box.clientWidth;H=box.clientHeight;cv.width=W*R;cv.height=H*R;x.setTransform(R,0,0,R,0,0);}
+ const shards=[];let scanY=-1,last=performance.now();
+ function frame(t){if(cancelled||!box.isConnected)return;const dt=Math.min(.05,(t-last)/1000);last=t;
+  x.clearRect(0,0,W,H);
+  if(scanY>=0){const pr=pet.getBoundingClientRect(),br=box.getBoundingClientRect(),y=pr.top-br.top+scanY*pr.height;for(let k=0;k<3;k++)shards.push({x:pr.left-br.left+pr.width*(.2+Math.random()*.6),y,vx:(Math.random()-.5)*160,vy:-60-Math.random()*120,l:1,s:8+Math.random()*10,c:GC[(Math.random()*5)|0],im:SH.length?SH[(Math.random()*SH.length)|0]:null,r:Math.random()*6});}
+  for(let i=shards.length-1;i>=0;i--){const q=shards[i];q.x+=q.vx*dt;q.y+=q.vy*dt;q.l-=dt*1.4;if(q.l<=0){shards.splice(i,1);continue;}x.globalAlpha=q.l;if(q.im){q.r+=dt*4;x.save();x.translate(q.x,q.y);x.rotate(q.r);x.drawImage(q.im,-q.s/2,-q.s/2,q.s,q.s);x.restore();}else{x.fillStyle=q.c;x.fillRect(q.x,q.y,q.s/3,q.s/3);}}
+  x.globalAlpha=1;raf=requestAnimationFrame(frame);}
+ setTimeout(()=>{if(cancelled)return;
+  box.classList.remove('stage');box.classList.add('on');document.getElementById('evoDim').remove();size();raf=requestAnimationFrame(frame);SFX.play('mystic');
+  say.className='say dvsay';say.innerHTML='<button class="btn soft" id="evoCancel">진화 취소하기</button>';
+  document.getElementById('evoCancel').onclick=()=>{stop();closeLayer();SFX.play('thud');toast('진화를 멈췄어요.');};
+  /* 고리가 위→아래로 훑으면 그 부분부터 새 모습 */
+  setTimeout(()=>{if(cancelled)return;box.classList.add('scan');const T0=performance.now(),D=2600;let bl=0;
+   const step=()=>{if(cancelled)return;const k=Math.min(1,(performance.now()-T0)/D);scanY=k;nw.style.clipPath='inset(0 0 '+((1-k)*100).toFixed(1)+'% 0)';box.style.setProperty('--ry',(pet.offsetTop+k*pet.offsetHeight).toFixed(1)+'px');
+    if(performance.now()-bl>120){bl=performance.now();SFX.evoBlip(k*3400);}
+    if(k<1)requestAnimationFrame(step);else{scanY=-1;flash();}};step();},1400);
+ },1500);
+ function flash(){if(cancelled)return;SFX.play('boom');box.classList.add('flash');say.innerHTML='';
+  setTimeout(()=>{if(cancelled)return;box.classList.remove('scan','flash');box.classList.add('done');
+   const nb=document.createElement('div');nb.className='dvname';nb.innerHTML='<small>진화</small><b>'+esc(NAMES[target])+'</b>';box.appendChild(nb);
+   setTimeout(()=>{if(cancelled)return;stop();evoFinish(p,target,box,nw,say);},1500);},700);}
 }
 function closeLayer(){document.getElementById('layer').innerHTML='';}
 function confirmBox(title,msg,yes){const L=document.getElementById('layer');L.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-label="'+esc(title)+'"><b class="serif" style="font-size:22px;color:#ffd36e">'+esc(title)+'</b><p style="margin:0;white-space:pre-line">'+esc(msg)+'</p><div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="cfY">확인</button><button class="btn ghost" id="cfN">취소</button></div></div></div>';document.getElementById('cfY').onclick=()=>{closeLayer();yes();};document.getElementById('cfN').onclick=closeLayer;}
@@ -1024,7 +1064,7 @@ function islBgm(){const k=view==='village'?curIsl():'main',src=k!=='main'?'snd/i
 let WANDER=null;
 function wanderTick(){const k=curIsl();if(typeof MODE!=='undefined'&&MODE!=='player'||!acc||!acc.vil||view!=='village'||VS.place||VS.visiting)return;const [lo,hi]=islBounds(),occ=k==='main'?vOcc(null):[];
  document.querySelectorAll('.vpet.roam').forEach(el=>{if(Math.random()<.45)return;const z=+el.dataset.z||2,p0=vilPets()[+el.dataset.vpet]||{},cx0=p0.vx==null?(lo+hi)/2:p0.vx,cy0=p0.vy==null?(lo+hi)/2:p0.vy;let x,y,n=0;do{x=Math.round(Math.max(lo,Math.min(hi-z,cx0+(Math.random()*2-1)*6)));y=Math.round(Math.max(lo,Math.min(hi-z,cy0+(Math.random()*2-1)*6)));n++;}while(n<12&&occ.some(q=>overlap(q,{x,y,w:z,h:z})));if(occ.some(q=>overlap(q,{x,y,w:z,h:z})))return;const cx=cellXY(x+z/2,y+z/2),W=el.offsetWidth||60;
-  const ox=parseFloat(el.style.left)||0,pp=vilPets()[+el.dataset.vpet];if(pp){pp.vx=Math.round(x);pp.vy=Math.round(y);}el.classList.toggle('flip',cx[0]-W/2<ox);el.style.transition='left 3.6s linear,top 3.6s linear';el.style.left=Math.round(cx[0]-W/2)+'px';el.style.top=Math.round(cx[1]-W*.9)+'px';el.style.zIndex=100+Math.ceil(x+y+2*z)*5+3;});}
+  const ox=parseFloat(el.style.left)||0,pp=vilPets()[+el.dataset.vpet];const nl=cx[0]-W/2,dir=nl>ox+1?1:nl<ox-1?-1:0;if(pp){pp.vx=Math.round(x);pp.vy=Math.round(y);if(dir)pp.vf=petFlip(pp,dir);}if(dir)el.classList.toggle('flip',!!petFlip(pp||{},dir));el.style.transition='left 3.6s linear,top 3.6s linear';el.style.left=Math.round(cx[0]-W/2)+'px';el.style.top=Math.round(cx[1]-W*.9)+'px';el.style.zIndex=100+Math.ceil(x+y+2*z)*5+3;});}
 setInterval(wanderTick,4000);
 /* 테마섬 아이템·상점 */
 THEME_KEYS.forEach(k=>{ITEMS['isl_'+k]={n:THEMES[k].n+' 열쇠',p:0,img:'v/isl/t_'+k+'.webp',cat:'보상',d:'가방에서 [사용]하면 '+THEMES[k].n+'이(가) 열려요 (꾸미기 전용 섬)'};});
@@ -1184,8 +1224,11 @@ function objHtml(o,sel,bad){const f=fpOf(o);
   else h+='<div class="vact" style="top:'+Math.round((TOP||0)-64)+'px"><button data-vact="move" title="이동"><img src="i/ui2/act_move.png" alt="" onerror="this.replaceWith(\'✥\')"><span>이동</span></button><button data-vact="flip" title="좌우 뒤집기"><img src="i/ui2/act_flip.png" alt="" onerror="this.replaceWith(\'⇋\')"><span>뒤집기</span></button>'+(isB?'<button data-vact="info" title="자세히"><img src="i/ui2/act_info.png" alt="" onerror="this.replaceWith(\'🔍\')"><span>자세히</span></button>':'<button data-vact="store" title="보관함에 넣기"><img src="i/ui2/act_store.png" alt="" onerror="this.replaceWith(\'📦\')"><span>보관함</span></button>')+'</div>';}
  return h+'</div>';}
 function petPos(p){const z=petSz(p);if(p.vb){const b=bOf(p.vb);if(b){const s=bSize(b.k,b.lv),i=(b.pets||[]).indexOf(p.born),n=Math.max(1,(b.pets||[]).length),fx=b.x+(s.w/(n+1))*(i+1)-z/2;return[fx,b.y+s.d+B_FRONT/2-z/2,z];}}return[p.vx||0,p.vy||0,z];}
+/* 마을 환수 방향: 그림 대부분이 왼쪽을 봐서, 오른쪽으로 갈 때 좌우 반전. 오른쪽을 보는 그림은 FACE_R에 번호 추가 */
+const FACE_R=new Set([]);
+function petFlip(p,dir){const r=FACE_R.has(p.no);return (dir>0)!==r?1:0;}
 function petHtml(p,i,sel,bad){const [vx,vy,z]=petPos(p),C=cellXY(vx+z/2,vy+z/2),cx=C[0],by=cellXY(vx+z,vy+z)[1],cw=fpW(vx,vy,z,z)/z,W=Math.round(p.vb?Math.min(z*cw*.8,(()=>{const b=bOf(p.vb),n=Math.max(1,((b&&b.pets)||[]).length);return b?fpW(b.x,b.y,bSize(b.k,b.lv).w,bSize(b.k,b.lv).w)/n*1.15:z*cw;})()):z*cw*.95),roam=!p.vb;
- return '<div class="vpet'+(sel?' sel':'')+(bad?' bad':'')+(p.vb?' work':'')+(roam&&!VS.place?' roam':'')+'" data-vpet="'+i+'" data-z="'+z+'" style="left:'+Math.round(cx-W/2)+'px;top:'+Math.round(by-W-4)+'px;width:'+W+'px;z-index:'+(100+Math.ceil(vx+vy+2*z)*5+3)+';animation-delay:-'+((i*0.41)%2).toFixed(2)+'s"><img class="px" src="'+img(p.no)+'" alt="" draggable="false" style="width:'+W+'px;height:'+W+'px"><span>'+esc(NAMES[p.no])+'</span></div>';}
+ return '<div class="vpet'+(sel?' sel':'')+(bad?' bad':'')+(p.vb?' work':'')+(roam&&!VS.place?' roam':'')+(roam&&p.vf?' flip':'')+'" data-vpet="'+i+'" data-z="'+z+'" style="left:'+Math.round(cx-W/2)+'px;top:'+Math.round(by-W-4)+'px;width:'+W+'px;z-index:'+(100+Math.ceil(vx+vy+2*z)*5+3)+';animation-delay:-'+((i*0.41)%2).toFixed(2)+'s"><img class="px" src="'+img(p.no)+'" alt="" draggable="false" style="width:'+W+'px;height:'+W+'px"><span>'+esc(NAMES[p.no])+'</span></div>';}
 const petHere=p=>(p.isl||'main')===curIsl();
 function vilFreeCell(z){z=z||4;const occ=vOcc(null),pets=vilPets().filter(p=>!p.vb&&petHere(p)).map(p=>({x:p.vx,y:p.vy,w:petSz(p),h:petSz(p)}));for(let r=0;r<VG;r+=2)for(let y=Math.max(0,24-r);y<=Math.min(VG-z,24+r);y++)for(let x=Math.max(0,24-r);x<=Math.min(VG-z,24+r);x++){const f={x,y,w:z,h:z};const [lo,hi]=islBounds();if(x>=lo&&y>=lo&&x+z<=hi&&y+z<=hi&&!occ.some(o=>overlap(o,f))&&!pets.some(o=>overlap(o,f)))return[x,y];}return[0,0];}
 function vOcc(skip){const L=[];if(curIsl()==='main')acc.vil.b.forEach(b=>{if(b.u!==skip)L.push(fpOf(b));});acc.vil.o.forEach(o=>{if(inIsl(o)&&!isTile(o)&&o.u!==skip)L.push(fpOf(o));});return L;}
@@ -2860,7 +2903,7 @@ function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
 (async function boot(){
  const app=document.getElementById('app');
  try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
- db=HS.db;if(TEST)window.__T={get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
+ db=HS.db;if(TEST)window.__T={evoAnimA,evoAnimB,wanderTick,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
  HS.onAuth(async uid=>{
