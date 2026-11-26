@@ -1757,3 +1757,17 @@ main.v-code .row>.card::after{width:56px!important;height:56px!important;left:15
 .evo.dv .dvsay{background:transparent;border:none;text-align:center;z-index:8}
 .evo.dv .say{z-index:8}
 @media (max-width:480px){.evo.dv .dvpet{width:190px;height:190px;margin-left:-95px;top:80px}.evo.dv .dvring{width:240px;height:60px;margin:-30px 0 0 -120px}.evo.dv .dvname{width:280px;height:70px;margin-left:-140px}.evo.dv .dvname b{font-size:20px;top:21px}}
+.admusers.split>*{min-width:0}.admvil,.admvil .admvv{max-width:100%;min-width:0}
+/* 먹이 주기 목록 */
+.feedl{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin:0 auto}
+.feedr{display:flex;align-items:center;gap:12px;width:100%;padding:8px 12px;border-radius:12px;border:2px solid #c9a24a;background:#fff8e6;color:#3a2a17;cursor:pointer;text-align:left;font:inherit;transition:transform .1s,background .15s}
+.feedr:hover:not(:disabled){background:#fff1c9;transform:translateY(-1px)}
+.feedr:disabled{opacity:.45;cursor:default;filter:grayscale(.6)}
+.feedr img{width:44px;height:44px;flex:0 0 44px;object-fit:contain}
+.feedr .fn{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.feedr .fn b{font-size:15px;white-space:nowrap}
+.feedr .fn small{font-size:12px;color:#7a5b2e;word-break:keep-all;line-height:1.3}
+.feedr .fq{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+.feedr .fq em{font-style:normal;font-size:12px;font-weight:700;color:#2b6a4e}
+.feedr .fq small{font-size:12px;color:#6b5a44}
+@media (max-width:380px){.feedr{gap:8px;padding:7px 9px}.feedr img{width:38px;height:38px;flex-basis:38px}.feedr .fn b{font-size:14px}}
