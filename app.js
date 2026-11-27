@@ -3329,7 +3329,7 @@ const KR_ZOB=[['goblin','kite'],['talisman','whirl','goblin'],['thunder','bolt',
 const KR_OB={goblin:{r:30},kite:{r:30},talisman:{r:22,vx:260},whirl:{r:40},thunder:{r:38},meteor:{r:28,vx:200,vy:200},wisp:{r:20},pillar:{w:70,h:300},bolt:{}};
 const KR_UP={dur:['내구','체력이 닳는 속도 -8%'],mag:['자석','복숭아·엽전을 끌어오는 범위 +20'],asc:['승천','여의주 승천 타임 +0.6초'],boost:['출발 가속','시작하자마자 고속질주 +1초']};
 const KR_UPCOST=[10,20,40,70,110];
-function krDef(){return{open:0,daily:3,perStage:1,dailyCap:30,tc:[50,35,20,10,3],tk:[10,5,3,0,0],ty:[1,0,0,0,0],rushT:25,drain:100,obst:100};}
+function krDef(){return{wreset:1,open:0,daily:3,perStage:1,dailyCap:30,tc:[50,35,20,10,3],tk:[10,5,3,0,0],ty:[1,0,0,0,0],rushT:25,drain:100,obst:100};}
 function krRushDur(st){return st>=10?6:st>=7?5:st>=4?4:3;}
 function krMaxHp(cp){return Math.min(8,3+Math.floor(cp/1000));}
 function krNew(o){const C=Object.assign(krDef(),o.cfg||{}),U=Object.assign({dur:0,mag:0,asc:0,boost:0},o.up||{});
@@ -3420,10 +3420,11 @@ const KRI={};
 function krI(k){let o=KRI[k];if(!o){o=KRI[k]={im:new Image(),ok:0};o.im.onload=()=>{o.ok=1;};o.im.onerror=()=>{o.ok=-1;};o.im.src='i/kr/kr_'+k+'.png?'+IMG_V;}return o.ok===1?o.im:null;}
 function krSpr(k,w,h){const im=krI(k);if(!im)return null;const d=Math.min(2,devicePixelRatio||1),bw=Math.max(8,Math.ceil(w*d/8)*8),bh=Math.max(8,Math.ceil((h||w*im.height/im.width)*d/8)*8),key=k+'@'+bw+'x'+bh;let c=KRI[key];
  if(!c){c=KRI[key]=document.createElement('canvas');c.width=bw;c.height=bh;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,0,0,bw,bh);}return c;}
-function krCfg(){const c=Object.assign(krDef(),(cfg&&cfg.kr)||{});['daily','perStage','dailyCap','rushT','drain','obst'].forEach(k=>{c[k]=Math.max(0,+c[k]||0);});c.rushT=c.rushT||25;c.drain=c.drain||100;c.obst=c.obst||100;return c;}
+function krCfg(){const c=Object.assign(krDef(),(cfg&&cfg.kr)||{});['daily','perStage','dailyCap','rushT','drain','obst','wreset'].forEach(k=>{c[k]=Math.max(0,+c[k]||0);});c.rushT=c.rushT||25;c.drain=c.drain||100;c.obst=c.obst||100;return c;}
 function krOpen(){return !!(krCfg().open||(typeof TEST!=='undefined'&&TEST));}
 function dgOpen(){return !!(dgCfg().open||(typeof TEST!=='undefined'&&TEST));}
-function krAcc(){acc.kr=acc.kr||{};const k=acc.kr;k.tok=k.tok||0;k.up=Object.assign({dur:0,mag:0,asc:0,boost:0},k.up||{});return k;}
+function krAcc(){acc.kr=acc.kr||{};const k=acc.kr;k.tok=k.tok||0;k.up=Object.assign({dur:0,mag:0,asc:0,boost:0},k.up||{});
+ const wk=weekKey(now());if(k.upWk!==wk){const had=k.upWk&&(k.tok||k.up.dur||k.up.mag||k.up.asc||k.up.boost);if(k.upWk&&krCfg().wreset){let spent=0;for(const q in k.up)for(let i=0;i<k.up[q];i++)spent+=KR_UPCOST[i]||0;const back=Math.floor(spent/2);k.up={dur:0,mag:0,asc:0,boost:0};k.tok+=back;if(had)KRV.resetMsg=back;}k.upWk=wk;}return k;}
 function krLeft(){const d=accDaily();return Math.max(0,krCfg().daily+(d.krBonus||0)-(d.kr||0));}
 function krCoinLeft(){const d=accDaily();return Math.max(0,krCfg().dailyCap-(d.krCoin||0));}
 function krCloud(){const u=krAcc().up,s=u.dur+u.mag+u.asc+u.boost;return s>=14?'cloud3':s>=7?'cloud2':'cloud1';}
@@ -3444,7 +3445,7 @@ function vKr(){if(!krOpen())return krClosed('근두운 질주');const R=dgRep(),
  (!left&&sec>0?'<button class="btn soft krfill" data-krfill="1"><img class="px" src="'+ITEMS.sec_kr.img+'" alt="">근두운충전비서 사용 · 입장 +1 (보유 '+sec+')</button>':'')+
  '<div class="krview"><span>모바일 화면</span><button class="btn sm '+(K.view!=='port'?'teal':'soft')+'" data-kr="view" data-v="land">가로로 보기</button><button class="btn sm '+(K.view==='port'?'teal':'soft')+'" data-kr="view" data-v="port">세로로 보기</button></div>'+'<button class="btn teal krstart" data-kr="start"'+(p&&left?'':' disabled')+'>'+(!p?'대표 환수가 필요해요':!left?'오늘 입장을 다 했어요':'출발하기')+'</button>'+
  '<p class="krnote">판 보상: 도달 스테이지 × 환수코인 '+C.perStage+' · 오늘 받을 수 있는 코인 <b>'+krCoinLeft()+'</b> / '+C.dailyCap+'</p>'+
- '<h3 class="krh3 serif">근두운 강화 <small>엽전으로 강화해요</small></h3><div class="krup">'+up+'</div>'+
+ (KRV.resetMsg!==undefined&&KRV.resetMsg!==0?((back=>(KRV.resetMsg=0,setTimeout(()=>toast('새 주가 시작돼서 근두운 강화가 초기화됐어요. 강화에 쓴 엽전의 절반('+back+'개)을 돌려받았어요.'),200),''))(KRV.resetMsg)):'')+'<h3 class="krh3 serif">근두운 강화 <small>엽전으로 강화해요'+(C.wreset?' · 매주 월요일 0시 초기화 (쓴 엽전 50% 돌려받음)':'')+'</small></h3><div class="krup">'+up+'</div>'+
  '<h3 class="krh3 serif">주간 랭킹 <small>'+wk+' 주 · 월요일 0시 정산</small></h3><div class="krrank">'+rows+'</div>'+
  '<details class="krrules"><summary>주간 랭킹 보상</summary><ul>'+krTiers().map(t=>'<li><b>'+t[0]+'</b> '+krTierTxt(t)+'</li>').join('')+'</ul></details></div></section>';}
 function krRow(r,i,me){return '<div class="krrow'+(me?' me':'')+'"><span class="krno">'+(i<3?'<img class="px" src="i/kr/kr_crown'+(i+1)+'.png" alt="'+(i+1)+'위">':'<b>'+(i+1)+'</b>')+'</span><span class="krnm">'+esc(r.nick||'?')+'</span><span class="krsc">'+fmt(r.score)+'<small>'+r.stage+'스테이지</small></span></div>';}
@@ -3576,7 +3577,7 @@ function aKrCfg(){const C=krCfg(),main=isMain(),wk=AS.krwk||weekKey(now()),RK=KR
  const n=(id,l,v,w)=>'<label class="f">'+l+'<input type="number" id="'+id+'" value="'+v+'" min="0" style="width:'+(w||72)+'px"></label>';
  const last=weekKey(now()-7*86400000);
  return '<div class="card adm"><h2>근두운 질주</h2>'+admOpenRow('kr',C.open)+
- '<h3 class="serif adh3">설정</h3><div class="admrow">'+n('krD','하루 입장',C.daily)+n('krP','스테이지당 코인',C.perStage)+n('krM','하루 코인 상한',C.dailyCap)+n('krR','고속질주 간격(초)',C.rushT)+n('krDr','체력 감소 %',C.drain)+n('krO','장애물 양 %',C.obst)+'</div>'+
+ '<h3 class="serif adh3">설정</h3><label class="f gmchk" style="color:inherit;margin:4px 0"><input type="checkbox" id="krWr"'+(C.wreset?' checked':'')+'>매주 월요일 0시에 근두운 강화 초기화 (강화에 쓴 엽전 50% 돌려줌, 남은 엽전은 유지)</label><div class="admrow">'+n('krD','하루 입장',C.daily)+n('krP','스테이지당 코인',C.perStage)+n('krM','하루 코인 상한',C.dailyCap)+n('krR','고속질주 간격(초)',C.rushT)+n('krDr','체력 감소 %',C.drain)+n('krO','장애물 양 %',C.obst)+'</div>'+
  (main?'<div class="admrow"><button class="btn soft sm" data-x="krDef">기본값</button><button class="btn teal sm" data-x="krSave">저장</button></div>':'<p class="muted">보조 운영자는 볼 수만 있어요.</p>')+
  '<h3 class="serif adh3">주간 랭킹</h3><div class="admrow"><button class="btn '+(wk===weekKey(now())?'teal':'soft')+' sm" data-x="krWk" data-w="'+weekKey(now())+'">이번 주</button><button class="btn '+(wk===last?'teal':'soft')+' sm" data-x="krWk" data-w="'+last+'">지난주</button><span class="muted">'+wk+' 주</span>'+(RK&&RK.settled?'<b style="color:#2b6a4e">정산 완료</b>':'')+'</div>'+
  (RK?'<table class="t"><tr><th>순위</th><th>닉네임</th><th>점수</th><th>스테이지</th><th>시간</th><th></th></tr>'+RK.list.slice(0,50).map((r,i)=>'<tr'+(krScoreOk(r.score,r.t)?'':' style="background:#fde8e6"')+'><td>'+(i+1)+'</td><td>'+esc(r.nick)+'</td><td>'+fmt(r.score)+'</td><td>'+r.stage+'</td><td>'+dgClock(r.t)+'</td><td>'+(main?'<button class="btn red sm" data-x="krDel" data-u="'+r.uid+'">삭제</button>':'')+'</td></tr>').join('')+'</table>'+(RK.list.length?'':'<p class="muted">기록이 없어요.</p>'):'<p class="muted">불러오는 중…</p>')+
@@ -3588,7 +3589,7 @@ MAIN_ONLY.add('krSave');MAIN_ONLY.add('krDel');MAIN_ONLY.add('krSettle');MAIN_ON
 Object.assign(AD,{
  async openTgl(b){const k=b.dataset.k,C=k==='kr'?krCfg():dgCfg(),on=!C.open;cfg[k]=Object.assign({},cfg[k]||{},{open:on?1:0});await saveGlobal((k==='kr'?'근두운 질주':'도깨비 야행')+(on?' 열기':' 닫기'));render();},
  krDef(){const o=(cfg.kr&&cfg.kr.open)||0;cfg.kr={open:o};render();toast('기본값을 불러왔어요. [저장]을 눌러야 적용돼요.');},
- async krSave(){const g=id=>Math.max(0,+document.getElementById(id).value||0);cfg.kr=Object.assign({},cfg.kr||{},{tc:[0,1,2,3,4].map(i=>g('krTc'+i)),tk:[0,1,2,3,4].map(i=>g('krTk'+i)),ty:[0,1,2,3,4].map(i=>Math.min(3,g('krTy'+i))),daily:g('krD'),perStage:g('krP'),dailyCap:g('krM'),rushT:Math.max(5,g('krR')),drain:Math.max(10,g('krDr')),obst:Math.max(10,g('krO'))});await saveGlobal('근두운 질주 설정 변경');},
+ async krSave(){const g=id=>Math.max(0,+document.getElementById(id).value||0);cfg.kr=Object.assign({},cfg.kr||{},{wreset:document.getElementById('krWr').checked?1:0,tc:[0,1,2,3,4].map(i=>g('krTc'+i)),tk:[0,1,2,3,4].map(i=>g('krTk'+i)),ty:[0,1,2,3,4].map(i=>Math.min(3,g('krTy'+i))),daily:g('krD'),perStage:g('krP'),dailyCap:g('krM'),rushT:Math.max(5,g('krR')),drain:Math.max(10,g('krDr')),obst:Math.max(10,g('krO'))});await saveGlobal('근두운 질주 설정 변경');},
  krWk(b){AS.krwk=b.dataset.w;krRankLoad(AS.krwk,1);render();},
  async krDel(b){const u=b.dataset.u,wk=AS.krwk||weekKey(now());if(!confirm('이 기록을 지울까요?'))return;await db.doc('krweek/'+wk+'/s/'+u).delete();log('근두운 랭킹 기록 삭제 '+wk+' '+u);await krRankLoad(wk,1);render();},
  async krSettle(){const wk=AS.krwk;if(!wk||wk===weekKey(now()))return;const meta=await db.doc('krweek/'+wk).get();if(meta.exists&&meta.data().settled)return toast('이미 정산한 주예요.');
