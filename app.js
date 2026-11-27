@@ -356,7 +356,7 @@ const ST_G=[1,1.04,1.08,1.18,1.29,1.41,1.55,1.70,1.86,2.10,2.39,2.75];
 const maxLv=st=>ST_MAX[Math.max(1,Math.min(12,st))-1];
 // 수련지 시간당 경험치 · 단계별 권장 수련지에서 만렙까지 걸리는 수련 시간 (구간 배율 1~3단계 ×0.6 · 4~6 ×1 · 7~9 ×1.6 · 10~12 ×2.5 반영)
 const XPH=[60,80,106,141,188,250,332,442,588,782,1040,1383];
-const ST_HOURS=[.5,1.5,4,8,13,20,40,60,90,140,200,320];
+const ST_HOURS=[.5,1.5,4,8,13,20,40,60,135,210,300,480];/* 9~12단계 ×1.5 */
 const ST_TOT=ST_HOURS.map((h,i)=>h*XPH[i]);
 const LV_W=(st)=>{let s=0;for(let l=1;l<maxLv(st);l++)s+=1+.06*(l-1);return s;};
 const LVW=ST_MAX.map((_,i)=>LV_W(i+1));
@@ -364,14 +364,17 @@ const need=(lv,st)=>Math.max(1,Math.round(ST_TOT[st-1]*(1+.06*(lv-1))/LVW[st-1])
 /* ===== 전투 스탯 ===== */
 const BASE={hp:40,atk:10,def:6},GROW={hp:8,atk:2.5,def:1.5},EVO_K=.7;
 const ST_START=[];{let s=Object.assign({},BASE);for(let i=0;i<12;i++){ST_START[i]=s;const n={};for(const k in BASE)n[k]=(s[k]+(ST_MAX[i]-1)*GROW[k]*ST_G[i])*EVO_K;s=n;}}
-const GRADE_PCT=[0,.01,.02,.035,.05],GRADE_RATE=[0,3,6,9,12];
+const GRADE_PCT=[0,.04,.08,.12,.16],GRADE_RATE=[0,4,8,12,16];
 const EL_STAT={yang:['crit','atk'],yin:['pen','eva'],wood:['hp','eva'],fire:['atk','crit'],earth:['def','hp'],metal:['pen','crit'],water:['eva','hp']};
 const STAT_N={hp:'체력',atk:'공격력',def:'방어력',eva:'회피',pen:'직격',crit:'치명'};
 const STAR_MAX=no=>{if(isGuest(no)||!isFinalNo(no))return 0;const s=FORMS[no].st;return s>=12?5:s>=9?3:s>=6?1:0;};
-const STAR_COST=[30,50,80,120,180];
+const STAR_COST=[60,100,160,240,360];
 const HEART_T=[20,40,60,80,100], HEART_BON=[0,2,4,6,8,10];
 /* ===== 오행 게이지 ===== */
-const gCap=st=>st>=11?50:Math.max(0,5*(st-1));
+/* 오행 게이지 최대치: 단계 × 등급. 환수 등급은 예전 값(5~50), 신수 등급으로 갈수록 늘어 11단계 신수급 99 */
+const G_OLD=[0,5,10,15,20,25,30,35,40,45,50,50],G_TOP=[0,5,10,16,22,29,37,46,58,75,99,99],G_TF=[0,.25,.5,.75,1];
+const gCap=(st,no)=>{st=Math.max(1,Math.min(12,st));if(st<=1)return 0;const t=no==null?0:isGuest(no)?2:grTier(GRADE_N[no]||0);return Math.round(G_OLD[st-1]+(G_TOP[st-1]-G_OLD[st-1])*G_TF[t]);};
+const gCapP=p=>gCap(p.st,p.no);
 const gEls=no=>String(ELOF[no]||'neutral').split('|').map(e=>e==='yang'||e==='yin'?'yy':e).filter(e=>e!=='neutral');
 const KI={fire:'ki_fire',water:'ki_water',wood:'ki_wood',earth:'ki_earth',metal:'ki_metal',yy:'ki_yy'};
 /* ===== 상점 · 아이템 ===== */
@@ -545,7 +548,7 @@ function petStats(no,st,lv,star){const guest=isGuest(no),g0=guest?0:(GRADE_N[no]
  ['eva','pen','crit'].forEach(k=>{r[k]=(3*st+GRADE_RATE[gr])*gx;});
  const els=String(ELOF[no]||'neutral').split('|').filter(e=>EL_STAT[e]),w=els.length>1?.6:1;
  els.forEach(e=>{const [m,s]=EL_STAT[e];if(BASE[m]!=null)r[m]+=mx[m]*.15*w;else r[m]+=st*8*w;if(BASE[s]!=null)r[s]+=mx[s]*.08*w;else r[s]+=st*4*w;});
- if(star){for(const k in BASE)r[k]*=1+.04*star;const add=star>=5?10:star>=3?5:0;['eva','pen','crit'].forEach(k=>{r[k]+=add;});}
+ if(star){for(const k in BASE)r[k]*=1+.04*star;const add=star>=5?10:star>=3?6:3;['eva','pen','crit'].forEach(k=>{r[k]+=add;});}
  return r;}
 function statsOf(p){const r=petStats(p.no,p.st,p.lv,p.star||0),G=gearSum(p),hb=(1+HEART_BON[hearts(p)]/100)*(1+titleEff('cp')/100);
  r.atk+=G.atk;r.pen+=G.pen;r.def+=G.def;r.hp+=G.hp;r.crit+=G.crit;r.eva+=G.eva;
@@ -572,7 +575,7 @@ function accDaily(){const d=dayKey(now());if(!acc.daily||acc.daily.d!==d)acc.dai
 const huRate=p=>p.st===2?100/3:10;
 function addAff(p,v){p.aff=Math.min(100,p.aff+v);}
 // 오행 게이지: 단계별 최대치(5×(단계-1), 11·12단계 50)까지만
-function addG(p,k,n){const cap=gCap(p.st),cur=p.g[k]||0,nv=Math.min(cap,cur+n);if(nv>cur){p.g[k]=nv;p.gT[k]=now();}return nv-cur;}
+function addG(p,k,n){const cap=gCapP(p),cur=p.g[k]||0,nv=Math.min(cap,cur+n);if(nv>cur){p.g[k]=nv;p.gT[k]=now();}return nv-cur;}
 function addExp(p,amt){const mx=maxLvP(p);if(p.lv>=mx)return;p.exp+=amt;while(p.lv<mx&&p.exp>=needP(p)){p.exp-=needP(p);p.lv++;}if(p.lv>=mx){p.lv=mx;p.exp=0;}}
 function lvUp(p,n){const mx=maxLvP(p);p.lv=Math.min(mx,p.lv+n);if(p.lv>=mx)p.exp=0;}
 const stN=p=>p&&isGuest(p.no)?(isGFinal(p.no)?'STARZ':(p.st===1?'STARZ 알':'STARZ 유체')):p.st+'단계';
@@ -653,7 +656,7 @@ function condOk(p,c){return Object.entries(c).every(([k,v])=>(p.g[k]||0)>=v);}
 function condT(p,c){return Math.max(...Object.keys(c).map(k=>p.gT[k]||0));}
 /* 도깨비 계통: 한 모습이 여러 단계(st~st2)를 이어 가요. 구간 안에서는 같은 모습으로 단계만 올라요 */
 const DK_SLOT=['yy','yy','fire','water','wood','metal','earth'];
-function dkTargets(p){const f=FORMS[p.no],cap=gCap(p.st),full=k=>cap>0&&(p.g[k]||0)>=cap,main=gEls(p.no);
+function dkTargets(p){const f=FORMS[p.no],cap=gCapP(p),full=k=>cap>0&&(p.g[k]||0)>=cap,main=gEls(p.no);
  if(p.st<(f.st2||f.st))return main.every(full)?{list:[p.no],stay:1}:{stuck:true,needG:main};
  const R=DK_RULE[p.no];if(!R)return{done:true};
  const firstFull=ks=>ks.filter(full).sort((a,b)=>(p.gT[a]||0)-(p.gT[b]||0))[0];
@@ -669,7 +672,7 @@ function evoTargets(p){if(isDk(p.no))return dkTargets(p);const kids=CHILD[p.no]|
  if(br.length){const ok=br.filter(k=>condOk(p,FORMS[k].cond));
   if(ok.length){const mk=Math.max(...ok.map(k=>Object.keys(FORMS[k].cond).length));let c=ok.filter(k=>Object.keys(FORMS[k].cond).length===mk);const t0=Math.min(...c.map(k=>condT(p,FORMS[k].cond)));c=c.filter(k=>condT(p,FORMS[k].cond)===t0);return{list:c};}
   if(POOL[p.no])return{list:POOL[p.no],pool:true};return{stuck:true};}
- const k=kids[0],need_=gEls(k),cap=gCap(p.st);if(need_.every(e=>(p.g[e]||0)>=cap))return{list:[k]};return{stuck:true,needG:need_};}
+ const k=kids[0],need_=gEls(k),cap=gCapP(p),fl=e=>(p.g[e]||0)>=cap;if(need_.every(fl)&&(p.st<11||need_.length>=2||GAUGES.some(e=>!need_.includes(e)&&fl(e))))return{list:[k]};return{stuck:true,needG:need_};}
 function evoCheck(p){
  if(isGFinal(p.no))return{done:true,reason:'스타즈렐름 환수는 더 진화하지 않고 Lv '+GUEST_MAX+'까지 성장해요'};
  const T=evoTargets(p);if(T.done)return{done:true,reason:'최종 형태예요'};
@@ -687,7 +690,8 @@ function condText(no){return '';}
 function dexAdd(no){if(!acc.dex[no])acc.dex[no]={d:dayKey(now()).slice(5).replace('-','.'),freed:false};}
 function badgeOf(p){const e=evoCheck(p);return e.stuck?'wait':e.done?'final':'';}
 // 각성: 최종 형태 + 최대 레벨 · 6단계 최종 ★1 · 9단계 ★3 · 12단계 ★5 · 재료는 주 속성 기운(이중 속성은 반씩)
-function awakeCost(p){const n=STAR_COST[p.star||0],els=gEls(p.no);if(!els.length)return {};const each=Math.ceil(n/els.length),r={};els.forEach(e=>{r[KI[e]]=each;});return r;}
+function awakeCost(p){const s=(p.star||0)+1,n=STAR_COST[s-1],els=gEls(p.no);if(!els.length)return {};const r={},add=(k,v)=>{r[KI[k]]=(r[KI[k]]||0)+v;};
+ if((s===3||s===5)&&!els.includes('yy')){const h=Math.ceil(n/2),each=Math.ceil(h/els.length);els.forEach(e=>add(e,each));add('yy',n-h);}else{const each=Math.ceil(n/els.length);els.forEach(e=>add(e,each));}return r;}
 function awakeOk(p){const mx=STAR_MAX(p.no);if(!mx)return '각성할 수 없는 환수예요 (6·9·12단계 최종 형태만)';if((p.star||0)>=mx)return '최대 각성이에요 (★'+mx+')';if(p.lv<maxLvP(p))return '최대 레벨에서 각성할 수 있어요';return '';}
 /* ===== 스타즈렐름 전용 공간 ===== */
 function gspSend(i){const sp=acc.slots[i];if(!sp||!isGuest(sp.no))return;const w=moveBlock(sp);if(w)return toast(w);
@@ -721,7 +725,7 @@ const A={
   if(fi===3){const g=randG();addG(p,g,1);addAff(p,2);fx.push(ELK[g]+' 기운 +1','호감도 +2');}
   if(fi===5){addAff(p,5);fx.push('호감도 +5');if(!busy){const e=foodXp(5,p.st);if(e.fx)p.fxp=e.fx;else p.fxm=e.fm;fx.push('다음 수련 경험치 '+fxTxt(p)+' (1회)');}else fx.push(bt);}
   SFX.play('munch');toast((full?'배가 불렀는데 또 먹었어요… 호감도 -3':ITEMS[k].n+'을(를) 먹었어요! 포만감 +'+v)+(fx.length?' · '+fx.join(' · '):''));closeLayer();commit();},
- ki(v){const p=P();if(!guard(p))return;const [k,n0]=String(v).split(':'),n=+n0||1,id=KI[k];if(!id)return;const cap=gCap(p.st);
+ ki(v){const p=P();if(!guard(p))return;const [k,n0]=String(v).split(':'),n=+n0||1,id=KI[k];if(!id)return;const cap=gCapP(p);
   if(!cap)return toast('알은 아직 기운을 받을 수 없어요. 유체가 되면 쓸 수 있어요.');
   const room=cap-(p.g[k]||0);if(room<=0)return toast(ELK[k]+' 게이지가 이미 가득해요 ('+cap+').');
   const use=Math.min(n,room,acc.inv[id]||0);if(use<=0)return toast(ITEMS[id].n+'이(가) 없어요. 마을에서 생산해 주세요.');
@@ -741,7 +745,7 @@ const A={
  resetKi(){const p=P();if(!p)return;confirmBox('오행 초기화',NAMES[p.no]+'의 오행 게이지를 모두 0으로 만들까요?',()=>{if(!take('reset_ki'))return;p.g=newGauge();p.gT=newGauge();SFX.play('mystic');toast('오행 게이지가 초기화됐어요.');commit();});},
  awaken(){const p=P();if(!p)return;const w=awakeOk(p);if(w)return toast(w);const c=awakeCost(p);const lack=Object.entries(c).filter(([k,n])=>(acc.inv[k]||0)<n);
   if(lack.length)return toast('기운이 부족해요: '+lack.map(([k,n])=>ITEMS[k].n+' '+(acc.inv[k]||0)+'/'+n).join(', '));
-  confirmBox('각성 ★'+((p.star||0)+1),NAMES[p.no]+'을(를) 각성할까요?\n재료: '+Object.entries(c).map(([k,n])=>ITEMS[k].n+' ×'+n).join(', ')+'\n각성할 때마다 체력·공격력·방어력 +4%'+((p.star||0)+1===3?', 회피·직격·치명 +5':(p.star||0)+1===5?', 회피·직격·치명 +5 추가':''),()=>{
+  confirmBox('각성 ★'+((p.star||0)+1),NAMES[p.no]+'을(를) 각성할까요?\n재료: '+Object.entries(c).map(([k,n])=>ITEMS[k].n+' ×'+n).join(', ')+'\n각성할 때마다 체력·공격력·방어력 +4%'+((p.star||0)+1===1?', 회피·직격·치명 +3':(p.star||0)+1===3?', 회피·직격·치명 +6 (★1 포함)':(p.star||0)+1===5?', 회피·직격·치명 +10 (★3 포함)':''),()=>{
    Object.entries(c).forEach(([k,n])=>{acc.inv[k]-=n;});p.star=(p.star||0)+1;SFX.play('fanfare');toast(NAMES[p.no]+' 각성 ★'+p.star+'!');commit();});},
  admItem(k){const p=P();if(!p)return;if(!take(k))return;
   if(TCUT[k]){const job=p.train||p.errand,nm=p.train?'수련':'심부름';if(!job){acc.inv[k]++;return toast('진행 중인 수련이나 심부름이 없어요. 건설 단축은 마을의 건물에서 써 주세요.');}const cut=TCUT[k]*MIN,left=job.end-now();SFX.play('magic');if(left<=cut){job.end=now();tickAll();toast(nm+'이 바로 끝났어요!');}else{job.end-=cut;toast('남은 '+nm+' 시간이 '+fmtDur(cut)+' 줄었어요.');}}
@@ -840,7 +844,7 @@ function feedMenu(){const L=document.getElementById('layer'),p=P();
 function foodFx(k,p){const st=p?p.st:1,xp=e=>e.fx?'+'+fmt(e.fx):'+'+Math.round(e.fm*100)+'%';
  if(k===1)return '배고픔 해결';if(k===3)return '오행 기운 +1 · 호감도 +2';
  const t='다음 수련 경험치 '+xp(foodXp(k,st));return k===5?'호감도 +5 · '+t:t;}
-function kiMenu(){const L=document.getElementById('layer'),p=P();if(!p)return;const cap=gCap(p.st);
+function kiMenu(){const L=document.getElementById('layer'),p=P();if(!p)return;const cap=gCapP(p);
  L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="기운 먹이기"><b class="serif" style="font-size:20px">기운 먹이기</b><small style="color:#c9d8d5">'+stN(p)+' 게이지 최대 '+cap+' · 기운 1개 = 게이지 +1</small><div class="kigrid">'+GAUGES.map(k=>{const id=KI[k],have=acc.inv[id]||0,v=p.g[k]||0,full=v>=cap;
   return '<div class="kirow"><img class="px" src="'+ITEMS[id].img+'" alt=""><div class="kib"><b style="color:'+ELC[k]+'">'+ELK[k]+'</b> <small>'+v+' / '+cap+' · 보유 '+have+'</small><div class="trk"><i style="width:'+(cap?v/cap*100:0)+'%;background:linear-gradient(90deg,'+ELG[k]+')"></i></div></div>'+[1,5,10].map(n=>'<button class="btn sm '+(full||!have?'soft':'')+'" data-a="ki" data-v="'+k+':'+n+'" '+(full||!have||!cap?'disabled':'')+'>×'+n+'</button>').join('')+'</div>';}).join('')+'</div><button class="btn ghost" data-close="1">닫기</button></div></div>';}
 function susMenu(){const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="modal" role="dialog" aria-label="수상한 기운"><b class="serif" style="font-size:20px">수상한 기운</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">'+['sus_s','sus_m','sus_l'].map((k,i)=>'<button class="act" data-a="sus" data-v="'+k+'" '+((acc.inv[k]||0)?'':'disabled')+'><img class="px" src="'+ITEMS[k].img+'" alt=""><b>'+['소','중','대'][i]+'</b><small>보유 '+(acc.inv[k]||0)+'</small></button>').join('')+'</div><p class="muted" style="color:#c9d8d5">빨리 크는 대신 오행 게이지가 무작위로 오르고 부작용이 있어요.<br>소: 포만감 -10 · 중: 포만감·청결·목마름 -20 · 대: 무작위 오행 +3</p><button class="btn ghost" data-close="1">닫기</button></div></div>';}
@@ -915,7 +919,7 @@ function lifeTip(p,k,html){const E=lifeEta(p),r=E.R[k]*E.dm,L=[];const v=p[k];
  if(v>0)L.push('0까지 '+etaTxt(E.o[k+'0']));
  return '<div class="entip" tabindex="0">'+html+'<span class="tipbox">'+L.join('<br>')+'</span></div>';}
 function bar(lb,v,max,grad,warn){const w=Math.max(0,Math.min(100,v/max*100));return '<div class="stat"><span class="lb">'+lb+'</span><div class="tr"><i style="width:'+w+'%;background:linear-gradient(90deg,'+grad+')"></i></div><span class="v" style="'+(warn?'color:#b02a1f':'')+'">'+fmt(v)+(max!==100?'/'+fmt(max):'')+'</span></div>';}
-function gaugeBars(p){const cap=gCap(p.st),need_=gEls(p.no);
+function gaugeBars(p){const cap=gCapP(p),need_=gEls(p.no);
  return GAUGES.map(k=>{const v=p.g[k]||0,full=cap>0&&v>=cap;return '<div class="el"><div class="orb'+(full?' glow':'')+'"><img class="px elmed" src="'+ITEMS[KI[k]].img+'" alt=""></div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-size:13px"><b style="color:'+ELC[k]+'">'+ELK[k]+(need_.includes(k)?' <small class="muted">주 속성</small>':'')+'</b><b>'+v+' <span class="muted">/ '+cap+'</span></b></div><div class="trk'+(full?' glow':'')+'" style="border:1px solid '+ELC[k]+'"><i style="width:'+(cap?v/cap*100:0)+'%;background:linear-gradient(90deg,'+ELG[k]+')"></i></div></div></div>';}).join('');}
 function statBlock(p){const s=statsOf(p),pc=x=>(x*100).toFixed(1).replace(/\.0$/,'')+'%';
  return '<div class="sgrid"><span>체력</span><b>'+fmt(s.hp)+'</b><span>공격력</span><b>'+fmt(s.atk)+'</b><span>방어력</span><b>'+fmt(s.def)+'</b><span>치명</span><b>'+s.crit+' <small>('+pc(critP(s.crit))+')</small></b><span>회피</span><b>'+s.eva+' <small>(최대 '+pc(evaP(s.eva,0))+')</small></b><span>직격</span><b>'+s.pen+' <small>(방어 무시 '+pc(penP(s.pen))+')</small></b></div>';}
@@ -931,7 +935,7 @@ function vHome(){
  const status=p.errand?'<span class="chip" style="background:rgba(160,100,30,.92);color:#fff8e6">심부름 · '+esc(ERR[p.errand.m].n)+' · '+fmtDur(p.errand.end-now())+'</span>':p.train?'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">수련 · '+esc(TMAP[p.train.m].n)+' · '+fmtDur(p.train.end-now())+(p.train.cp?' · 판정 전투력 '+fmt(p.train.cp)+' 고정':'')+(p.train.xb?' · 경험의 비서 +'+Math.round(p.train.xb*100)+'%':'')+'</span> <button class="btn soft sm" data-a="tcancel" data-v="'+sel+'" style="min-height:0;padding:3px 10px">수련 취소</button>':p.sick!=null?'<span class="chip" style="background:#8f2219;color:#fff">아파요! 소멸까지 '+fmtDur(p.sick+24*H-now())+'</span>':p.sleep?'<span class="chip" style="background:#2c3466;color:#e6e9ff">자는 중 · '+fmtDur(p.sleep-now())+'</span>':'<span class="chip" style="background:rgba(43,90,94,.9);color:#e8fff8">쉬는 중</span>';
  const warns=[];if(p.hu<=10)warns.push('배가 너무 고파요! 호감도가 시간마다 줄어요.');if(p.th<=10)warns.push('목이 너무 말라요! 호감도가 시간마다 줄어요.');if(p.cl<=10)warns.push('너무 더러워요! 호감도가 시간마다 줄어요.');if(p.aff<=5&&p.sick==null)warns.push('호감도가 0이 되면 병에 걸려요.');
  const lvTxt=p.lv>=mx?'Lv '+p.lv+' MAX':'Lv '+p.lv,expW=p.lv>=mx?100:p.exp/needP(p)*100;
- const acts=[['feed','','i/act_feed.png','먹이 주기','포만감 '+Math.round(p.hu)],['dew','','i/act_dew.png','설화의 이슬','보유 '+(acc.inv.dew||0)],['soap','','i/act_wash.png','씻기기','비누 '+(acc.inv.soap||0)],['kimenu','','i/ui/icon_ki_yinyang.png','기운 먹이기','게이지 '+gCap(p.st)],['pat','','i/act_pat.png','쓰다듬기','오늘 '+d.pat+'/2'],['play','','i/act_play.png','놀아주기',d.play?'오늘 완료':'미니게임 · 호감도 +10'],['sleep','','i/act_sleep.png',p.sleep?'깨우기':'재우기','남은 '+(2-d.sleep)+'회'],['elixir','','i/act_elixir.png','영약환단','보유 '+(acc.inv.elixir||0)],['susm','',ITEMS.sus_s.img,'수상한 기운','소·중·대'],['energy','',ITEMS.sec_active.img,'행동력 비서','보유 '+(acc.inv.sec_active||0)],['resetKi','',ITEMS.reset_ki.img,'오행초기화','보유 '+(acc.inv.reset_ki||0)]];
+ const acts=[['feed','','i/act_feed.png','먹이 주기','포만감 '+Math.round(p.hu)],['dew','','i/act_dew.png','설화의 이슬','보유 '+(acc.inv.dew||0)],['soap','','i/act_wash.png','씻기기','비누 '+(acc.inv.soap||0)],['kimenu','','i/ui/icon_ki_yinyang.png','기운 먹이기','게이지 '+gCapP(p)],['pat','','i/act_pat.png','쓰다듬기','오늘 '+d.pat+'/2'],['play','','i/act_play.png','놀아주기',d.play?'오늘 완료':'미니게임 · 호감도 +10'],['sleep','','i/act_sleep.png',p.sleep?'깨우기':'재우기','남은 '+(2-d.sleep)+'회'],['elixir','','i/act_elixir.png','영약환단','보유 '+(acc.inv.elixir||0)],['susm','',ITEMS.sus_s.img,'수상한 기운','소·중·대'],['energy','',ITEMS.sec_active.img,'행동력 비서','보유 '+(acc.inv.sec_active||0)],['resetKi','',ITEMS.reset_ki.img,'오행초기화','보유 '+(acc.inv.reset_ki||0)]];
  const adm=['xm_seal','sec_fix','tal_time','sec_t60','sec_t180','sec_t300','sec_t480','sec_aff','sec_cure','sec_xp50','sec_xp100'].filter(k=>acc.inv[k]>0).map(k=>['admItem',k,ITEMS[k].img,ITEMS[k].n,'보유 '+acc.inv[k]]);
  const star=smx?'<span class="stars">'+[...Array(smx)].map((_,i)=>'<i class="'+(i<(p.star||0)?'on':'')+'">★</i>').join('')+'</span>':'';
  return slotsBar()+'<div class="row"><section class="grow" aria-label="환수 탐험"><div class="stagebox explore'+stCls+'" style="'+(p.train||p.errand||!(acc.deco&&acc.deco.bg)?'background-image:url('+stageBg(p)+')':'')+'"><div style="position:absolute;left:18px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:3"><div class="plate gname" style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="serif" style="font-size:24px;font-weight:700">'+NAMES[p.no]+'</span>'+star+'<span class="muted">no.'+dexNo(p.no)+' · '+stN(p)+'</span>'+elTag(ELOF[p.no])+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+(gradeTag(p.no)+(bd==='final'?finalIcon:bd==='wait'?waitIcon:'')+'<span class="chip" style="background:rgba(255,250,240,.92);color:#3a2a08">특성 '+TRAITN[TRAIT[p.no]]+'</span>')+status+decoBtn()+'</div></div><div class="plate cpp" style="position:absolute;right:18px;top:16px;min-width:170px;z-index:3"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="muted">전투력</span><b style="font-size:18px;color:#8a2a12">'+fmt(cp(p))+'</b></div><div class="muted" style="display:flex;justify-content:space-between"><span>호감도 보너스</span><span>+'+HEART_BON[hr]+'%</span></div></div><img class="pet px'+(isGuest(p.no)&&gSer(p.no)==='s2'?' chii':'')+'" src="'+img(p.no)+'" alt="'+NAMES[p.no]+'"><div class="expbar"><b>'+lvTxt+'</b><div class="ebt"><i style="width:'+expW+'%"></i></div><span style="font-size:13px">'+(p.lv>=mx?'경험치 MAX':fmt(p.exp)+' / '+fmt(needP(p)))+'</span></div></div>'+
@@ -946,7 +950,7 @@ function vHome(){
   W(canHome?'선계 귀환 보상: 환수코인 '+coin+'개\n환수는 선계로 돌아가고 성장 슬롯이 비어요.':NO+(isGuest(p.no)?'완전체가 되어야 선계로 돌려보낼 수 있어요.':'최종 형태만 선계로 돌려보낼 수 있어요.')+'\n(최종 형태 귀환 보상: 환수코인 '+coin+'개)','<button class="bigb ret" data-a="home" '+(canHome?'':'disabled')+'><img class="px" src="i/act_return.png" alt=""><span>선계 귀환</span></button>')+'</div>';})()+(e.stuck?'<p class="warn" style="margin:10px 0 0">지금 오행으로는 진화할 수 없어요. (조건 미충족)</p>':'')+'</div></section>'+
  '<aside class="side ornate" aria-label="환수 상태"><div class="card"><h2>상태</h2>'+enTip(p,bar('행동력',p.en,maxEn(p),'#3d7d84,#7cc4c2'))+lifeTip(p,'hu',bar('포만감',p.hu,100,'#c9822b,#f0c98a',p.hu<=10))+lifeTip(p,'th',bar('목마름',p.th,100,'#3b8beb,#a9d6ff',p.th<=10))+lifeTip(p,'cl',bar('청결도',p.cl,100,p.cl<=10?'#c0392b,#f08a7e':'#6fae3a,#bfe59a',p.cl<=10))+(p.fix&&p.fix>now()?'<div class="fixon"><img class="px" src="'+ITEMS.sec_fix.img+'" alt="">생활 수치 고정 중 · 남은 '+fmtDur(p.fix-now())+'</div>':'')+
  '<div class="stat"><span class="lb">호감도</span><span role="img" aria-label="하트 5개 중 '+hr+'개" style="display:flex;gap:3px">'+[0,1,2,3,4].map(i=>'<img class="px uiheart'+(i<hr?' on':'')+'" src="i/ui_heart_'+(i<hr?'full':'empty')+'.png" alt="">').join('')+'</span><span class="muted" style="margin-left:auto">'+Math.round(p.aff)+'/100</span></div></div>'+
- '<div class="card"><h2 style="margin:0 0 6px">오행 게이지</h2>'+gaugeBars(p)+'<p class="muted" style="margin:6px 0 0">기운 1개 = +1 · '+stN(p)+' 최대 '+gCap(p.st)+' · 진화하면 0부터 다시 채워요.</p></div>'+
+ '<div class="card"><h2 style="margin:0 0 6px">오행 게이지</h2>'+gaugeBars(p)+'<p class="muted" style="margin:6px 0 0">기운 1개 = +1 · '+stN(p)+' 최대 '+gCapP(p)+' · 진화하면 0부터 다시 채워요.</p></div>'+
  '<div class="card"><h2 style="margin:0 0 6px">전투 능력치</h2>'+statBlock(p)+'</div>'+
  '<div class="card"><div style="display:flex;justify-content:space-between"><h2 style="margin:0 0 8px">장비</h2><button class="btn soft sm" data-view="gear">장비 관리</button></div><div class="eqrow">'+GT.map(t=>{const g=p.eq[t]?gearOf(p.eq[t]):null;return g?'<button class="gear g'+g.g+'" data-gpick="'+g.u+'"><img class="px" src="'+gearImg(g)+'" alt=""><b class="c'+g.g+'" style="font-size:11px">'+GN[g.g]+' +'+g.p+'</b><small class="muted">'+TN[t]+'</small></button>':'<button class="gear" data-view="gear"><div class="geq0 muted">비어 있음</div><small class="muted">'+TN[t]+'</small></button>';}).join('')+'</div></div></aside></div>';
 }
@@ -1179,7 +1183,7 @@ const BLD_ORDER=['fire','water','wood','metal','earth','food','drink','soap','yi
 const CRAFT_MAX_BY_C=[0,0,1,2,3,5];
 const B_COIN=[0,30,50,150,500,1200],C_COIN=[0,0,100,300,1000,2400],B_KI=[0,0,30,80,200,500],C_KI=[0,0,5,50,150,400];
 const B_TIME=[0,20*MIN,1*H,4*H,12*H,36*H],C_TIME=[0,0,6*H,24*H,72*H,168*H];
-const PRD={ki:{iv:[30,25,20,15,10],cap:[8,12,16,24,36]},life:{iv:[40,35,30,25,20],cap:[6,8,12,16,24]},sus:{iv:[180,150,120,90,60],cap:[3,4,6,8,10]},wish:{iv:[720,600,480,360,240],cap:[1,2,2,3,3]}};
+const PRD={ki:{iv:[36,30,24,18,12],cap:[8,12,16,24,36]},life:{iv:[40,35,30,25,20],cap:[6,8,12,16,24]},sus:{iv:[180,150,120,90,60],cap:[3,4,6,8,10]},wish:{iv:[720,600,480,360,240],cap:[1,2,2,3,3]}};
 const MARKET_DAY=[30,45,65,90,120];
 const B_SLOTS=[1,1,2,2,3];
 const bSlots=b=>b.k==='center'?1:b.k==='wish'?0:(B_SLOTS[Math.max(0,b.lv-1)]||1);
@@ -2646,7 +2650,7 @@ const AD={
  async itemGive(){const k=document.getElementById('xItem').value,n=Math.max(1,+document.getElementById('xQty').value||1);AS.tgt.inv[k]=(AS.tgt.inv[k]||0)+n;await saveTgt(ITEMS[k].n+' ×'+n+' 지급');},
  async invSave(){const ch=[];document.querySelectorAll('[data-xinv]').forEach(el=>{const k=el.dataset.xinv,v=Math.max(0,+el.value||0);if((AS.tgt.inv[k]||0)!==v){ch.push(ITEMS[k].n+' '+(AS.tgt.inv[k]||0)+'→'+v);AS.tgt.inv[k]=v;}});if(!ch.length)return toast('바뀐 게 없어요.');await saveTgt('아이템 수정: '+ch.join(', '));},
  async eqGive(){const tv=document.getElementById('xEqT').value,g=+document.getElementById('xEqG').value,pl=Math.min(MAXP[g],Math.max(0,+document.getElementById('xEqP').value||0));const [t,o]=tv.split(':');const n=gearNew(t,g);if(t==='n'&&o){n.o=o;n.subs=[];ngFill(n);}if(t==='b'&&o)n.k=o;n.p=pl;AS.tgt.gear.push(n);await saveTgt('장비 지급 '+gearName(n)+' +'+pl);},
- async petApply(){const p=aSelPet();if(!p)return;const no=+document.getElementById('xNo').value;if(no!==p.no){p.no=no;p.st=FORMS[no].st;tDex(no);}p.lv=Math.max(1,Math.min(maxLvP(p),+document.getElementById('xLv').value||1));if(p.lv>=maxLvP(p))p.exp=0;p.star=Math.max(0,Math.min(STAR_MAX(p.no),+document.getElementById('xStar').value||0));GAUGES.forEach((e,i)=>{p.g[e]=Math.max(0,Math.min(gCap(p.st),+document.getElementById('xEl_'+e).value||0));p.gT[e]=Date.now()+i;});['hu','th','cl'].forEach(k=>p[k]=Math.max(0,Math.min(100,+document.getElementById('xS_'+k).value||0)));p.aff=Math.min(100,+document.getElementById('xS_aff').value||0);p.en=Math.max(0,+document.getElementById('xS_en').value||0);await saveTgt('환수 편집: '+NAMES[p.no]+' Lv'+p.lv);},
+ async petApply(){const p=aSelPet();if(!p)return;const no=+document.getElementById('xNo').value;if(no!==p.no){p.no=no;p.st=FORMS[no].st;tDex(no);}p.lv=Math.max(1,Math.min(maxLvP(p),+document.getElementById('xLv').value||1));if(p.lv>=maxLvP(p))p.exp=0;p.star=Math.max(0,Math.min(STAR_MAX(p.no),+document.getElementById('xStar').value||0));GAUGES.forEach((e,i)=>{p.g[e]=Math.max(0,Math.min(gCapP(p),+document.getElementById('xEl_'+e).value||0));p.gT[e]=Date.now()+i;});['hu','th','cl'].forEach(k=>p[k]=Math.max(0,Math.min(100,+document.getElementById('xS_'+k).value||0)));p.aff=Math.min(100,+document.getElementById('xS_aff').value||0);p.en=Math.max(0,+document.getElementById('xS_en').value||0);await saveTgt('환수 편집: '+NAMES[p.no]+' Lv'+p.lv);},
  async restore(){const no=+document.getElementById('xRestore').value,lv=+document.getElementById('xRLv').value||1;const p=tPet();p.no=no;p.st=FORMS[no].st;p.lv=Math.max(1,Math.min(maxLvP(p),lv));AS.tgt.slots[AS.slot]=p;AS.tgt.notice[AS.slot]=null;tDex(no);await saveTgt('환수 복구: '+NAMES[no]);},
  async dexAdd(){const n=parseDexNo(document.getElementById('xDex').value);if(n<0)return toast('도감 번호를 확인해 주세요. (예: 12, s1-03)');tDex(n);await saveTgt('도감 채움 '+dexNo(n));},
  async dexDel(){const n=parseDexNo(document.getElementById('xDex').value);if(n<0)return toast('도감 번호를 확인해 주세요. (예: 12, s1-03)');delete AS.tgt.dex[n];await saveTgt('도감 지움 '+dexNo(n));},
@@ -2960,7 +2964,7 @@ const DG_MT={m1:{h:1,s:62,d:1,r:15,x:1},m2:{h:.6,s:112,d:.8,r:13,x:1},m3:{h:4.5,
  b3:{h:190,s:58,d:3.2,r:60,x:25,boss:2,ch:'gold',n:'무쇠 불가사리'},b4:{h:200,s:70,d:3.2,r:56,x:25,boss:2,ch:'gold',n:'그림자 이매'},
  bx:{h:520,s:62,d:3.6,r:74,x:25,boss:3,ch:'myth',n:'도깨비 대왕'}};
 const DG_BOSST=[[300,'e1'],[600,'b1'],[900,'b2'],[1200,'b3'],[1500,'b4'],[1620,'bx']];
-function dgDef(){return{open:0,daily:1,cMin:1,cClear:10,cMax:40,k5:2,kRank:1,kMax:20,en:20,hp:100,dmg:100,spawn:100,eTime:[[1080,'e2'],[1260,'e2'],[1440,'e2']]};}
+function dgDef(){return{open:0,daily:1,cMin:1,cClear:10,cMax:40,k5:2,kRank:1,kMax:10,en:20,hp:100,dmg:100,spawn:100,eTime:[[1080,'e2'],[1260,'e2'],[1440,'e2']]};}
 function dgGrow(t){const m=t/60;return m<=10?Math.pow(1.12,m):m<=20?3.106*Math.pow(1.16,m-10):13.7*Math.pow(1.2,m-20);}
 function dgDGrow(t){return Math.pow(1.075,t/60);}
 function dgNeed(lv){return Math.round(8+(lv-1)*8+Math.pow(lv,1.8));}
