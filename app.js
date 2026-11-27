@@ -329,6 +329,7 @@ const EGG_NO={egg_n:0,egg_yy:146,egg_x:221,egg_dk:282};
 const isDk=no=>no>=DK_FIRST&&no<=DK_LAST;
 const DEX_N=NAMES.filter(x=>x!=null).length;
 /* 손님 환수 번호 이전(282~314 → 600~632): 예전 기록을 새 번호로 */
+function gFixDoc(d){if(!d||d.gm)return d;const off=GBASE-GBASE_OLD,inR=n=>typeof n==='number'&&n>=GBASE_OLD&&n<GBASE_OLD+GID.length;const walk=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o)){o.forEach(walk);return;}if(inR(o.no))o.no+=off;for(const k in o)if(o[k]&&typeof o[k]==='object')walk(o[k]);};walk(d);return d;}
 function gMigrate(a){if(a.gmig)return a;const off=GBASE-GBASE_OLD,inR=n=>typeof n==='number'&&n>=GBASE_OLD&&n<GBASE_OLD+GID.length;
  const walk=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o)){o.forEach(walk);return;}if(inR(o.no)&&('st' in o||'lv' in o))o.no+=off;for(const k in o)if(o[k]&&typeof o[k]==='object')walk(o[k]);};
  ['slots','vil','gsp','mail','bench'].forEach(k=>walk(a[k]));if(a.tower&&inR(a.tower.bestNo))a.tower.bestNo+=off;
@@ -337,9 +338,9 @@ function gMigrate(a){if(a.gmig)return a;const off=GBASE-GBASE_OLD,inR=n=>typeof 
 /* 등급 번호(도감 6번째 칸): 0환수 1영물 2영수 3성수 4신수 / 신규 5도깨비(영수급) 6터주신(성수급) 7이십팔수(신수급) 8삼신(신수급) 9~12 주작·청룡·현무·백호칠전사(신수 ×1.2) */
 const GRADES=['환수','영물','영수','성수','신수','도깨비','터주신','이십팔수','삼신','주작칠전사','청룡칠전사','현무칠전사','백호칠전사'];
 const GRADE_TIER=[0,1,2,3,4,2,3,4,4,4,4,4,4],GRADE_X=[1,1,1,1,1,1,1,1,1,1,1,1,1];
-/* 알 계통 보정 (전투 스탯 전체에 곱함): 일반 1 · 음양/성탄 1.2 · 손님 1.3 · 도깨비 1.3~1.5 (등급별) */
+/* 알 계통 보정 (전투 스탯 전체에 곱함): 일반 1 · 음양 1.2 · 성탄 1.1 · 손님 1.3 · 도깨비 1.3~1.5 (등급별) */
 const DK_FIRST=282,DK_LAST=408;
-function lineX(no,guest){if(guest)return 1.3;if(no>=146&&no<282)return 1.2;if(no>=DK_FIRST&&no<=DK_LAST){const g=GRADE_N[no]||0;return g>=8?1.5:(g===3||g===6||g===7)?1.4:1.3;}return 1;}
+function lineX(no,guest){if(guest)return 1.3;if(no>=146&&no<221)return 1.2;if(no>=221&&no<282)return 1.1;if(no>=DK_FIRST&&no<=DK_LAST){const g=GRADE_N[no]||0;return g>=8?1.5:(g===3||g===6||g===7)?1.4:1.3;}return 1;}
 function lineN(no){return isGuest(no)?'':no>=146&&no<221?'음양알':no>=221&&no<282?'성탄알':no>=DK_FIRST&&no<=DK_LAST?'도깨비알':'환수알';}
 const grTier=g=>GRADE_TIER[g]!=null?GRADE_TIER[g]:Math.max(0,Math.min(4,g|0));
 const GRADE_KEY={'환수':'hwansu','영물':'yeongmul','영수':'yeongsu','성수':'seongsu','신수':'sinsu','스타즈렐름':'starz','게스트':'guest','도깨비':'dokkaebi','터주신':'teoju','이십팔수':'28su','삼신':'samsin','주작칠전사':'jujak7','청룡칠전사':'cheongryong7','현무칠전사':'hyeonmu7','백호칠전사':'baekho7'};
@@ -1803,7 +1804,7 @@ async function bossCalcRun(){const g=id=>+document.getElementById(id).value,atk=
  }catch(e){AS.bcalc.busy=false;toast('계산 실패: '+(e&&e.message||e));}
  AS.bcalc.busy=false;render();}
 async function loadBoss(){if(!acc)return;BV.loaded=true;try{const s=await db.doc('boss/current').get();BV.cur=s.exists?s.data():null;
-  if(BV.cur){const q=await db.collection('bosshits').where('iid','==',BV.cur.iid).get();BV.hits=q.docs.map(d=>d.data()).sort((a,b)=>b.dmg-a.dmg);}else BV.hits=[];}
+  if(BV.cur){const q=await db.collection('bosshits').where('iid','==',BV.cur.iid).get();BV.hits=q.docs.map(d=>gFixDoc(d.data())).sort((a,b)=>b.dmg-a.dmg);}else BV.hits=[];}
  catch(e){BV.cur=BV.cur||null;BV.hits=BV.hits||[];if(MODE==='player')toast('월드보스 정보를 불러오지 못했어요.');}
  if(MODE==='admin'||(view==='boss'&&!document.getElementById('layer').innerHTML))render();}
 async function bossAttack(){if(BV.busy)return;const c=BV.cur;if(!c||c.killed)return toast('지금은 공격할 수 있는 보스가 없어요.');const ad=accDaily();if((ad.boss||0)>=BOSS_DAILY+(ad.bossBonus||0))return toast('오늘 공격 횟수를 다 썼어요. 토벌재도전비서로 한 번 더 도전할 수 있어요.');
@@ -1814,7 +1815,7 @@ async function bossAttack(){if(BV.busy)return;const c=BV.cur;if(!c||c.killed)ret
   await ref.incr('hp',-res.dealt);const after=(await ref.get()).data();let killed=false;
   if(after.hp<=0&&!after.killed){await ref.update({hp:0,killed:true,killedAt:Date.now(),killer:acc.nick||acc.id});killed=true;}
   const hRef=db.doc('bosshits/'+cur.iid+'_'+acc.uid),hs=await hRef.get(),old=hs.exists?hs.data():null;const myTotal=(old?old.dmg:0)+res.dealt;
-  await hRef.set({iid:cur.iid,uid:acc.uid,nick:acc.nick||acc.id,title:acc.title||null,dmg:myTotal,n:(old?old.n:0)+1,last:Date.now(),best:Math.max(old?old.best||0:0,res.dealt),pet:{no:A.no,st:A.st},claimed:old?!!old.claimed:false});
+  await hRef.set({iid:cur.iid,uid:acc.uid,nick:acc.nick||acc.id,title:acc.title||null,dmg:myTotal,n:(old?old.n:0)+1,last:Date.now(),best:Math.max(old?old.best||0:0,res.dealt),pet:{no:A.no,st:A.st},gm:1,claimed:old?!!old.claimed:false});
   const D=bossPet(cur);render();
   battleAnim({kind:'boss',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:D.name,pet:D},hpA:res.hpA,hpD:cur.maxHp,hpD0:cur.hp,logS:JSON.stringify(res.log),dealt:res.dealt,myTotal,killed},'atk');
  }catch(e){toast('공격에 실패했어요: '+(e&&e.message||e));}finally{BV.busy=false;}}
@@ -2220,7 +2221,7 @@ function twStart(){const t=twState();if(t.run)return;if(t.best>=TW_TOP)return to
 function twBlessN(best){return Math.min(3,Math.floor(best/20));}
 function twRetreat(){const t=twState();if(!t.run)return;confirmBox('등반 끝내기','지금 등반을 끝낼까요? 다음 도전은 기회 1회를 써서 모든 환수가 체력이 가득 찬 상태로 '+(t.best+1)+'층부터 시작해요.',()=>{t.run=null;SFX.play('wake');commit();});}
 function twTicketUse(){const k=twTickets();if(k.left>0)return toast('아직 도전 기회가 남아 있어요.');if(!take('sec_tower'))return;acc.twTk.n++;SFX.play('magic');toast('구천탑 도전 기회 +1');commit();}
-async function twSync(){if(!db||!acc||MODE!=='player')return false;const t=twState();if(!t.best)return false;try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,title:acc.title||null});TV.err=null;return true;}catch(e){TV.err=(e&&(e.code||e.message))||'error';console.warn('twSync',e);return false;}}
+async function twSync(){if(!db||!acc||MODE!=='player')return false;const t=twState();if(!t.best)return false;try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,gm:1,title:acc.title||null});TV.err=null;return true;}catch(e){TV.err=(e&&(e.code||e.message))||'error';console.warn('twSync',e);return false;}}
 async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.slots[i];if(!run)return toast('먼저 도전을 시작해 주세요.');if(run.choice)return toast('먼저 보상을 하나 골라 주세요.');if(!q)return;
  const key=petKey(q,i);if(run.down.includes(key))return toast('쓰러진 환수는 이번 등반에서 나갈 수 없어요.');if(q.sick!=null)return toast('아픈 환수는 나갈 수 없어요.');
  const f=t.best+1;if(f>TW_TOP)return;TV.busy=true;
@@ -2234,8 +2235,8 @@ async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.sl
   const bz='tw_bg'+String(twZone(f)).padStart(2,'0');battleAnim({kind:'tower',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:'',pet:D},hpA:res.hpA,hpA0:res.hpA0,hpD:res.hpD,hpD0:res.hpD0,logS:JSON.stringify(res.log),win:res.win,floor:f,lbl:'구천탑 '+f+'층',wtxt:f+'층 돌파!',rlbl:'첫 돌파 보상',cut:f===TW_TOP?'최종 보스':f+'층 수문장',bgUrl:TW_ART[bz]?'t/'+bz+'.png?'+IMG_V:'',reward:rw?twRewardTxt(rw):'',ended,endTxt:ended?(f>=TW_TOP&&res.win?'구천탑 정복!':'출전할 환수가 없어 등반이 끝났어요.'):'',left:twUsable(run).length},'atk');
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
 async function loadTower(){TV.loaded=true;try{const s=twSeason(),p=twPrevSeason();
-  const getT=async()=>{const a=await db.collection('tower').where('season','==',s).get();return a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};let L=await getT();{const t=twState(),me=L.find(r=>r.uid===acc.uid);if(t.best>0&&(!me||me.best<t.best)){if(await twSync())L=await getT();}}TV.rank=L;
-  const b=await db.collection('tower').where('season','==',p).get();TV.prev=b.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
+  const getT=async()=>{const a=await db.collection('tower').where('season','==',s).get();return a.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};let L=await getT();{const t=twState(),me=L.find(r=>r.uid===acc.uid);if(t.best>0&&(!me||me.best<t.best)){if(await twSync())L=await getT();}}TV.rank=L;
+  const b=await db.collection('tower').where('season','==',p).get();TV.prev=b.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
  catch(e){TV.rank=TV.rank||[];TV.prev=TV.prev||[];}
  if(view==='tower'&&!document.getElementById('layer').innerHTML)render();}
 function twMonHp(run,k,D){if(!run||!run.mhp||run.mhp.k!==k)return '';const mx=twStat(D).hp,v=run.mhp.hp/mx;return '<div class="twmhp"><small>남은 체력 '+fmt(run.mhp.hp)+' / '+fmt(mx)+' · 다음 환수가 이어서 싸워요</small>'+twHpBar(v)+'</div>';}
@@ -2321,9 +2322,9 @@ async function xmFight(i){if(TV.busy)return;const x=xmState(),run=x.run,q=acc.sl
    lbl:'설화 던전 · '+T.n+' '+(g+1)+'관문',wtxt:cleared?T.n+' 클리어!':(g+1)+'관문 돌파!',rlbl:'획득',reward:res.win?(T.endless&&!got?'환수코인 한도 도달 · 순위 기록만 올라가요':'이벤트 코인 +'+got)+(first?' · 첫 클리어 환수코인 +'+first+(T.title?' · 칭호 「'+T.title+'」':''):''):'',cut:T.endless?(g+1)+'관문 강적':T.n+' 보스',bgUrl:XM_ART[bgk]?'x/'+bgk+'.png?'+IMG_V:'',
    ended,endTxt:cleared?'이번 입장에서 이벤트 코인 '+run.earned+'개를 모았어요.':ended?'출전할 환수가 없어 이번 입장이 끝났어요. 모은 이벤트 코인 '+run.earned+'개':'',left:xmUsable(run).length},'atk');
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
-async function xmSync(){if(!db||!acc||MODE!=='player')return false;const x=xmState();if(!x.eb)return false;try{await db.doc('xmrank/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',ev:XM_ID,best:x.eb,t:x.ebT||Date.now(),title:acc.title||null,no:(()=>{const r=repPet(),q=r?r.p:acc.slots.find(q=>q);return q?q.no:null;})()});XV.err=null;return true;}catch(e){XV.err=(e&&(e.code||e.message))||'error';console.warn('xmSync',e);return false;}}
+async function xmSync(){if(!db||!acc||MODE!=='player')return false;const x=xmState();if(!x.eb)return false;try{await db.doc('xmrank/'+acc.uid).set({gm:1,uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',ev:XM_ID,best:x.eb,t:x.ebT||Date.now(),title:acc.title||null,no:(()=>{const r=repPet(),q=r?r.p:acc.slots.find(q=>q);return q?q.no:null;})()});XV.err=null;return true;}catch(e){XV.err=(e&&(e.code||e.message))||'error';console.warn('xmSync',e);return false;}}
 const XV={tab:'dun',rank:null};
-async function xmLoadRank(){const get=async()=>{const a=await db.collection('xmrank').where('ev','==',XM_ID).get();return a.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};
+async function xmLoadRank(){const get=async()=>{const a=await db.collection('xmrank').where('ev','==',XM_ID).get();return a.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};
  try{let L=await get();const x=xmState(),me=L.find(r=>r.uid===acc.uid);if(x.eb>0&&(!me||me.best<x.eb||me.no==null)){if(await xmSync())L=await get();}
   await Promise.all(L.slice(0,3).filter(r=>r.no==null).map(async r=>{try{const d=await db.doc('arena/'+r.uid).get();if(d.exists&&d.data().pet)r.no=d.data().pet.no;}catch(e){}}));XV.rank=L;}catch(e){XV.rank=XV.rank||[];XV.err=(e&&(e.code||e.message))||'error';}if(view==='xmas'&&!document.getElementById('layer').innerHTML)render();}
 // 이벤트 상점
@@ -2601,7 +2602,7 @@ const AD={
  igCheck(){AS.igChk=(document.getElementById('igChkIn').value||'').trim();render();},
  async libDone(){const uid=AS.twUid,lid=AS.libId;if(!uid||!lid)return;const ref=db.doc('accounts/'+uid),s0=await ref.get();if(!s0.exists)return toast('계정을 찾지 못했어요.');const a=s0.data(),libs=(a.libs||[]).map(l=>l.id===lid?Object.assign({},l,{done:true,by:acc.id,at:Date.now()}):l);
   await ref.update({libs,rev:(a.rev||0)+1});const l=libs.find(x=>x.id===lid);log('해방 인게임 보상 지급: '+a.id+' · '+(l?NAMES[l.no]+' '+stN(l)+' · '+l.game:''));toast('지급 완료로 표시했어요.');await AD.loadList();},
- async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());const q=await db.collection('tower').where('season','==',AS.twSeason).get();AS.tw=q.docs.map(d=>d.data()).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);render();},
+ async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());const q=await db.collection('tower').where('season','==',AS.twSeason).get();AS.tw=q.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);render();},
  async twDel(){const uid=AS.twUid;if(!uid)return;const r=(AS.tw||[]).find(x=>x.uid===uid);
   confirmBox('구천탑 기록 삭제',(r?r.nick+'의 ':'')+'이번 시즌 구천탑 기록을 지울까요? 진행도도 1층으로 돌아가요.',async()=>{await db.doc('tower/'+uid).delete();const ref=db.doc('accounts/'+uid),s0=await ref.get();if(s0.exists){const a=s0.data();if(a.tower&&a.tower.season===(AS.twSeason||twSeason()))await ref.update({tower:null,rev:(a.rev||0)+1});}log('구천탑 기록 삭제 '+(r?r.id:uid));toast('기록을 지웠어요.');AS.tw=null;await AD.twLoad();});},
  async loadList(){const q=await db.collection('accounts').get();AS.list=q.docs.map(d=>Object.assign({uid:d.id},d.data())).sort((a,b)=>(a.id>b.id?1:-1));if(AS.tgt){const n=AS.list.find(a=>a.uid===AS.tgt.uid);AS.tgt=n?normT(n):null;AS.base=CL(AS.tgt);}render();},
@@ -2754,10 +2755,10 @@ let vilKey=null,vilT=0;
 function vilSnap(){const v=acc.vil;if(!v)return null;
  return{b:v.b.filter(b=>b.lv>0).map(b=>({u:b.u,k:b.k,lv:b.lv,x:b.x,y:b.y,pets:b.pets||[]})),o:v.o.map(o=>Object.assign({k:o.k,x:o.x,y:o.y,u:o.u},o.i?{i:o.i}:{})),pets:vilPets().map(p=>Object.assign({no:p.no,st:p.st,born:p.born,vx:p.vx||0,vy:p.vy||0},p.vb?{vb:p.vb}:{},p.isl?{isl:p.isl}:{})),cap:v.cap,skin:v.skin||'base',isls:v.isls||[]};}
 async function syncVillage(force){if(MODE!=='player'||!acc||!db||!acc.vil)return;const sn=vilSnap(),key=JSON.stringify([sn,acc.title||null,acc.nick]);if(!force&&(key===vilKey||Date.now()-vilT<20000))return;vilKey=key;vilT=Date.now();
- const d={uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,title:acc.title||null,vil:sn,t:Date.now()},ref=db.doc('villages/'+acc.uid);try{try{await ref.update(d);}catch(e){await ref.set(Object.assign({hearts:0},d));}}catch(e){vilKey=null;}}
+ const d={uid:acc.uid,id:acc.id,nick:acc.nick||acc.id,title:acc.title||null,vil:sn,gm:1,t:Date.now()},ref=db.doc('villages/'+acc.uid);try{try{await ref.update(d);}catch(e){await ref.set(Object.assign({hearts:0},d));}}catch(e){vilKey=null;}}
 /* ===== 유저 목록·구경·하트·방명록 ===== */
 const SO={users:null,loading:false,visit:null,gb:null,tab:'rec'};
-async function loadUsers(){if(SO.loading)return;SO.loading=true;try{const q=await db.collection('villages').get();SO.users=q.docs.map(d=>d.data()).filter(u=>u&&u.uid);const me=SO.users.find(u=>u.uid===acc.uid);if(me){const hg=me.hearts||0;if(hg!==acc.heartsGot){acc.heartsGot=hg;titleCheck();}}}catch(e){SO.users=SO.users||[];}
+async function loadUsers(){if(SO.loading)return;SO.loading=true;try{const q=await db.collection('villages').get();SO.users=q.docs.map(d=>gFixDoc(d.data())).filter(u=>u&&u.uid);const me=SO.users.find(u=>u.uid===acc.uid);if(me){const hg=me.hearts||0;if(hg!==acc.heartsGot){acc.heartsGot=hg;titleCheck();}}}catch(e){SO.users=SO.users||[];}
  SO.loading=false;if((view==='pvp'||view==='visit')&&!document.getElementById('layer').innerHTML)render();}
 const heartsToday=()=>accDaily().likeTo||[];
 function heartBtn(uid){const sent=heartsToday().includes(uid),left=5-heartsToday().length;if(uid===acc.uid)return '';
@@ -2767,7 +2768,7 @@ async function sendHeart(uid){const ad=accDaily();ad.likeTo=ad.likeTo||[];if(uid
  ad.likeTo.push(uid);acc.heartsGiven=(acc.heartsGiven||0)+1;const c=1+Math.floor(rnd()*5);acc.coins+=c;const u=(SO.users||[]).find(x=>x.uid===uid);if(u)u.hearts=(u.hearts||0)+1;if(SO.visit&&SO.visit.uid===uid)SO.visit.hearts=(SO.visit.hearts||0)+1;
  titleCheck();SFX.play('coins');toast('💗 하트를 보냈어요! 환수코인 +'+c+' (오늘 남은 하트 '+(5-ad.likeTo.length)+'개)');commit();}
 async function visitOpen(uid){if(uid===acc.uid){view='village';return render();}SO.visit={uid,loading:true};SO.visitIsl='main';view='visit';render();
- try{const d=await db.doc('villages/'+uid).get();SO.visit=d.exists?Object.assign({uid},d.data()):{uid,none:true};}catch(e){SO.visit={uid,none:true};}render();setTimeout(vCenter,0);}
+ try{const d=await db.doc('villages/'+uid).get();SO.visit=d.exists?Object.assign({uid},gFixDoc(d.data())):{uid,none:true};}catch(e){SO.visit={uid,none:true};}render();setTimeout(vCenter,0);}
 function vVisit(){const V=SO.visit;if(!V||V.loading)return '<div class="card">마을을 불러오는 중…</div>';
  if(V.none||!V.vil)return '<div class="card"><p>아직 마을을 공개하지 않은 유저예요.</p><button class="btn soft" data-view="pvp">대전장으로 돌아가기</button></div>';
  const mine=acc.vil,iv=VS.isl,ip=VS.place;let html='';try{acc.vil=JSON.parse(JSON.stringify(V.vil));acc.vil.g=2;acc.vil.store={};VS.isl=(V.vil.isls||[]).includes(SO.visitIsl)?SO.visitIsl:'main';VS.place=null;VS.visiting=true;GEO=null;
