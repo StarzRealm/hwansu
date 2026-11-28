@@ -3054,7 +3054,7 @@ function dgNear(G,x,y,max,skip){let b=null,bd=max*max;for(const e of G.E){if(ski
 function dgSpawn(G,k,x,y,small){const T=DG_MT[k],g=dgGrow(G.t)*(G.C.hp/100),hu=20;
  const hp=T.h*hu*g*(small?.5:1);
  const e={id:G.seq++,k,x,y,hp,mhp:hp,s:T.s*(small?1.15:1)*(G.mu&&G.mu.rage?1.25:1),d:T.d,r:T.r*(small?.7:1),x0:T.x,boss:T.boss||0,small:small?1:0,cd:2+G.rnd()*2,slow:0,kb:0,kx:0,ky:0,dash:0,ph:G.rnd()*6};
- G.E.push(e);if(e.boss){e.bt=G.t;G.ev.push({k:'boss',e});}return e;}
+ G.E.push(e);if(e.boss){e.bt=G.t;e.sh=2.5;G.ev.push({k:'boss',e});}return e;}
 function dgEdge(G){const a=G.rnd()*Math.PI*2,R=520+G.rnd()*120;return[G.p.x+Math.cos(a)*R,G.p.y+Math.sin(a)*R];}
 function dgPick(G){const m=G.t/60,L=[['m1',m<20?6:2]];if(m>=2)L.push(['m2',3]);if(m>=5)L.push(['m3',1.5],['m4',1.2]);if(m>=10)L.push(['m5',1.4],['m7',1.6]);if(m>=15)L.push(['m6',1.2]);if(m>=20)L.push(['m8',2.5]);
  if(G.df>=1){const f=G.df;if(m>=3)L.push(['m9',.8+.3*f]);if(m>=5)L.push(['m12',.6+.3*f],['m14',.4+.15*f]);if(m>=7)L.push(['m10',.6+.3*f],['m13',.6+.3*f]);if(m>=9)L.push(['m11',.5+.3*f]);}
@@ -3067,7 +3067,7 @@ function dgSpawnTick(G,dt){const rate=(1.3+G.t/60*.6)*(G.C.spawn/100);G.spAcc+=r
  const ET=G.C.eTime||[];while(G.eI<ET.length&&G.t>=ET[G.eI][0]){const [x,y]=dgEdge(G);dgSpawn(G,ET[G.eI][1],x,y);G.eI++;}}
 
 /* --- 피해 --- */
-function dgHit(G,e,v,kb,src){if(e.hp<=0)return;let c=0;
+function dgHit(G,e,v,kb,src){if(e.hp<=0)return;if(e.sh>0)return;let c=0;
  // 방패 도깨비: 앞(환수 쪽)에서 오는 공격은 절반
  if(DG_MT[e.k]&&DG_MT[e.k].shield){const sx=(src&&src.x!=null?src.x:G.p.x)-e.x,sy=(src&&src.y!=null?src.y:G.p.y)-e.y,px=G.p.x-e.x,py=G.p.y-e.y,a=Math.hypot(sx,sy)*Math.hypot(px,py);if(a>0&&(sx*px+sy*py)/a>.4)v*=.5;}if(G.rnd()<.05+.06*(G.P.crit||0)){v*=2;c=1;}e.hp-=v;
  // 밀어내기: 보스·정예는 무시, 큰 도깨비(hv)는 강한 밀어내기(100 이상)만 약하게, 한 번 밀린 적은 0.5초 동안 다시 안 밀려요
@@ -3221,7 +3221,7 @@ function dgChain(G,e0,n,v,burn,fk){let cur=e0;const seen={[e0.id]:1};for(let i=0
 function dgEnemies(G,dt){const p=G.p;
  for(const e of G.E){if(e.hp<=0)continue;const T=DG_MT[e.k];const dx=p.x-e.x,dy=p.y-e.y,d=Math.hypot(dx,dy)||1;
   if(e.burn>0){e.burn-=dt;e.bnT=(e.bnT||0)-dt;if(e.bnT<=0){e.bnT=.5;dgHit(G,e,e.burnD*.5);if(e.hp<=0)continue;}}
-  if(e.kbCd>0)e.kbCd-=dt;
+  if(e.kbCd>0)e.kbCd-=dt;if(e.sh>0)e.sh-=dt;
   let sp=e.s*(1-e.slow);e.slow=Math.max(0,e.slow-dt*.8);
   if(e.kb>0){e.kb-=dt;e.x+=e.kx*dt*6;e.y+=e.ky*dt*6;continue;}
   if(e.boss){if(dgBossAI(G,e,dx,dy,d,dt))continue;}
@@ -3453,6 +3453,7 @@ function dgDraw(T){const cv=document.getElementById('dgc');if(!cv)return;const d
   else{c.fillStyle=DG_COL[e.k]||'#5b8cff';c.beginPath();c.arc(e.x,e.y-bob,e.r,0,7);c.fill();c.fillStyle='#f4e6c8';c.beginPath();c.moveTo(e.x-e.r*.3,e.y-bob-e.r*.8);c.lineTo(e.x-e.r*.1,e.y-bob-e.r*1.35);c.lineTo(e.x+e.r*.1,e.y-bob-e.r*.85);c.fill();
    c.fillStyle='#fff';const ex=fl?.3:-.3;c.fillRect(e.x+e.r*(ex-.2),e.y-bob-e.r*.2,e.r*.22,e.r*.28);c.fillRect(e.x+e.r*(ex+.1),e.y-bob-e.r*.2,e.r*.22,e.r*.28);if(e.boss){c.strokeStyle='#ffd36e';c.lineWidth=3;c.stroke();}}
   c.globalAlpha=1;
+  if(e.boss&&e.sh>0){c.strokeStyle='rgba(255,230,150,'+(.35+.25*Math.sin(T*12))+')';c.lineWidth=4;c.beginPath();c.arc(e.x,e.y,e.r*1.25,0,7);c.stroke();}
   if(e.boss){c.fillStyle='#000a';c.fillRect(e.x-e.r,e.y-e.r-14,e.r*2,6);c.fillStyle='#e5484d';c.fillRect(e.x-e.r,e.y-e.r-14,e.r*2*Math.max(0,e.hp/e.mhp),6);}}
  // 환수
  const pi=DGV.petImg,ps=78,fl=(p.fx>0)!==FACE_R.has(DGV.pet.no),bob=Math.sin(T*10)*2;
