@@ -2210,3 +2210,33 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 .krrep{padding:20px 22px}
 .krtree{margin-top:70px}.krcrest{transform:translate(-50%,-58%)}
 @media (max-width:520px){.krtree{margin-top:64px}.krcrest{width:140px}}
+/* ===== 이십팔수 성도 ===== */
+.skyban{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 6px;padding:16px 20px;border-radius:14px;cursor:pointer;color:#e9f3f6;
+ background:linear-gradient(90deg,rgba(5,10,28,.9),rgba(5,10,28,.55)),url(i/sky/sky_bg.jpg) center/cover;border:1px solid rgba(240,210,140,.45);box-shadow:inset 0 0 30px rgba(90,230,200,.12)}
+.skyban b{display:block;font-size:20px;color:#f6e7bf;letter-spacing:2px;text-shadow:0 0 12px rgba(255,220,150,.5)}.skyban span{font-size:13px;color:#a9c4d4}
+.skyban em{font-style:normal;font-weight:800;font-size:18px;color:#ffe7a8;white-space:nowrap}.skyban:hover{box-shadow:inset 0 0 40px rgba(90,230,200,.25)}
+.skyw{position:fixed;inset:0;z-index:60;background:#050816 url(i/sky/sky_bg.jpg) center/cover no-repeat;color:#e3ecf2;overflow:hidden;touch-action:manipulation}
+@media (orientation:portrait){.skyw{background-image:url(i/sky/sky_bg_m.jpg)}}
+.skyw canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.skytop{position:absolute;left:24px;top:18px;pointer-events:none}.skytop h2{font-size:28px;letter-spacing:4px;color:#f2e6c4;text-shadow:0 0 16px rgba(255,220,150,.45);margin:0}
+.skytop p{margin:2px 0 0;font-size:14px;color:#9fbccb}.skytop b{color:#ffe7a8;font-size:16px}
+.skyhd{position:absolute;left:24px;top:94px;pointer-events:none;opacity:0;transition:opacity .5s}.skyhd.on{opacity:1}
+.skyhd b{display:block;font-size:34px;letter-spacing:6px;color:#f4fffb;text-shadow:0 0 18px rgba(var(--c),.95)}.skyhd span{font-size:13px;color:#b9d6dd}
+.skybtn{position:absolute;border:1px solid rgba(240,210,140,.55);background:rgba(6,14,30,.6);color:#f2e6c4;border-radius:20px;cursor:pointer;font-size:14px;min-height:40px;min-width:40px;padding:6px 14px;backdrop-filter:blur(4px)}
+.skyx{right:18px;top:16px;font-size:16px;padding:0}.skyback{right:70px;top:16px}
+.skyhint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12.5px;color:rgba(200,220,230,.7);pointer-events:none;margin:0}
+.skypb{position:absolute;inset:0;display:grid;place-items:center;background:rgba(2,6,14,.55);animation:skyfade .3s ease-out;z-index:5}
+.skypc{position:relative;width:min(380px,88vw);aspect-ratio:4/5.4;max-height:92vh;background:url(i/sky/sky_pop.png) center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:19% 12% 12%;animation:skyin .35s ease-out}
+.skyhan{font-family:"Noto Serif KR","Noto Serif CJK KR",serif;font-weight:900;font-size:clamp(34px,10vw,46px);line-height:1;color:#fff6dc;text-shadow:0 0 18px rgba(var(--c),.95)}
+.skymn{font-size:12.5px;color:#a9d6cf;margin:4px 0 2px}
+.skyimg{flex:1;min-height:0;width:100%;display:grid;place-items:center}.skyimg img{max-width:64%;max-height:100%;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 0 16px rgba(var(--c),.6))}
+.skypc small{font-size:12px;color:#8fd8cb;letter-spacing:1px}.skypc h3{margin:0 0 4px;font-size:21px;color:#fff3d6}
+.skypc p{margin:0;font-size:12.5px;color:#b5c8d3;line-height:1.5}
+.skytag{margin-top:8px;font-size:12px;font-weight:700;color:#06221f;background:rgb(var(--c));border-radius:10px;padding:3px 12px}
+.skypc.dark .skyimg img{filter:brightness(0) drop-shadow(0 0 1px rgba(160,180,200,.7));opacity:.7}.skypc.dark .skytag{background:#3a4456;color:#c9d3df}.skypc.dark .skyhan{color:#9aa6b8;text-shadow:none}
+.skypx{right:10%;top:12%;min-height:32px;min-width:32px;font-size:13px;padding:0}
+@keyframes skyfade{from{opacity:0}to{opacity:1}}@keyframes skyin{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:760px){.skytop{left:14px;top:12px}.skytop h2{font-size:22px}.skyhd{left:0;right:0;top:66px;text-align:center}.skyhd b{font-size:26px}.skyback{right:auto;left:50%;transform:translateX(-50%);top:auto;bottom:34px}.skyx{right:12px;top:12px}}
+@media (max-height:520px) and (orientation:landscape){.skypc{width:min(620px,92vw);aspect-ratio:auto;height:86vh;display:grid;grid-template-columns:40% 1fr;grid-template-rows:auto auto 1fr auto auto auto;column-gap:4%;padding:7% 8% 5%;align-items:center}
+ .skypc .skyimg{grid-column:1;grid-row:1/7;height:100%}.skypc .skyimg img{max-width:100%}.skypc>*:not(.skyimg):not(.skypx){grid-column:2}.skyhan{font-size:34px}.skypx{right:5%;top:8%}}
+.skytag{justify-self:center;align-self:center}

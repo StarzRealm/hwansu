@@ -1509,6 +1509,7 @@ function colClaim(id){const c=colsNow().find(x=>x.id===id);if(!c)return;acc.colD
  acc.colDone[id]=1;acc.mail=acc.mail||[];acc.mail.push(stampMail(Object.assign({title:'컬렉션 「'+c.n+'」 완성 보상',from:'선계 도감관',msg:'컬렉션을 완성했어요! 축하해요.'},c.rw||{})));SFX.play('fanfare');toast('완성 보상이 우편함에 도착했어요!');commit();}
 function vDex(){const tab=S.dex||'all',own=Object.keys(acc.dex).length,freed=Object.values(acc.dex).filter(d=>d.freed).length;
  let h='<div class="dexhead"><div class="dextitle serif">환수 도감</div><div style="display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:420px"><div class="stat" style="flex:1;margin:0"><div class="tr"><i style="width:'+own/DEX_N*100+'%;background:linear-gradient(90deg,#c9a24a,#f0d78a)"></i></div></div><b>'+own+' / '+DEX_N+'</b><span class="muted">해방 '+freed+'</span></div></div><div class="tmode">'+[['all','전체 도감'],['col','컬렉션']].map(([k,n])=>'<button class="'+(tab===k?'on':'')+'" data-dextab="'+k+'">'+n+'</button>').join('')+'</div>';
+ if(typeof skyBanner==='function')h+=skyBanner();
  if(tab==='col'){const cs=colsNow().map(colCard),done=cs.filter(c=>c.full).length;return h+'<div class="colhead"><span class="muted">완성 '+done+' / '+cs.length+' · 해방한 환수에만 불이 들어와요 (해방할 수 없는 1~3단계·스타즈렐름은 컬렉션에 넣지 않아요)</span></div><div class="colgrid">'+cs.map(c=>c.h).join('')+'</div>';}
  return h+'<p class="muted pgdesc" style="margin:4px 0 8px">획득하면 실루엣이 보이고, 해방하면 불이 들어와요. 해방할 수 없는 1~3단계와 스타즈렐름 환수는 획득만 해도 불이 들어와요.</p><div class="dex dexnum">'+NAMES.map((n,i)=>{const d=acc.dex[i],no=dexNo(i);
   if(!d)return '<div class="dc no" data-tip="?'+i+'"><span class="dno">'+no+'</span><b class="q">?</b><span class="n">???</span></div>';
@@ -3855,6 +3856,133 @@ Object.assign(AD,{
   await db.doc('krweek/'+wk).set({settled:1,at:Date.now(),n:ok});(KRV.rank[wk]||{}).settled=1;log('근두운 주간 정산 '+wk+' '+ok+'명');toast(ok+'명에게 보냈어요.');render();}});
 if(/[?&](test|mock)/.test(location.search))window.__KR={KRV,accDaily,krStart,krFinish,krLeft,krCfg,krAcc,krRankLoad,krMods,krMergeDo,krBuy,krLearn,KR_TREE,KR_CH,KR_MUT,krMut,mgEv,go:v=>{view=v;render();},__step:krStep};
 if(/[?&](test|mock)/.test(location.search))window.__DK={evoCheck,evoPick,dkTargets,newPet,FORMS,NAMES,GRADE_N,ELOF,DK_RULE,gCap,GAUGES,acc:()=>acc,img,skillOf,cp,hatch,DEX_N,gMigrate,isGuest,gno,go:v=>{view=v;render();}};
+/* ===== 이십팔수 성도 (도감 → 이십팔수 성도) · 그림: i/sky/ ===== */
+// [한자, 한글, 방위, 칠전사 번호, 설명, 별 좌표(u 방위각 0~1, v 안→밖 0~1), 선(번호 이어 그리기)]
+const SKY_M=[
+ ['角','각','e',314,'청룡의 뿔이 되는 별. 봄 하늘 동쪽에서 가장 먼저 떠올라요.',[[.45,.22],[.56,.78]],[[0,1]]],
+ ['亢','항','e',320,'청룡의 목. 활처럼 휘어 하늘의 바람을 살펴요.',[[.25,.18],[.62,.34],[.72,.6],[.45,.86]],[[0,1,2,3]]],
+ ['氐','저','e',332,'청룡의 가슴. 네 별이 단단한 바탕을 이뤄요.',[[.28,.24],[.76,.3],[.7,.76],[.24,.7]],[[0,1,2,3,0]]],
+ ['房','방','e',317,'청룡의 배. 하늘 임금이 머무는 방이라 불려요.',[[.5,.1],[.44,.37],[.5,.63],[.6,.9]],[[0,1,2,3]]],
+ ['心','심','e',329,'청룡의 심장. 가운데 붉은 큰 별이 뜨겁게 뛰어요.',[[.32,.28],[.5,.5],[.66,.74]],[[0,1,2]]],
+ ['尾','미','e',326,'청룡의 꼬리. 아홉 별이 갈고리처럼 휘어져요.',[[.3,.08],[.38,.22],[.43,.37],[.4,.52],[.34,.66],[.4,.8],[.56,.9],[.72,.84],[.78,.7]],[[0,1,2,3,4,5,6,7,8]]],
+ ['箕','기','e',323,'청룡의 꼬리 끝. 곡식을 까부르는 키 모양이에요.',[[.24,.3],[.72,.2],[.78,.7],[.3,.82]],[[0,1,2,3,0]]],
+ ['斗','두','n',384,'남쪽의 국자. 여섯 별이 국자 모양으로 늘어서요.',[[.2,.28],[.46,.18],[.56,.44],[.3,.54],[.7,.66],[.84,.86]],[[0,1,2,3,0],[2,4,5]]],
+ ['牛','우','n',381,'견우의 소. 은하수 곁에서 묵묵히 걸어요.',[[.28,.14],[.5,.26],[.72,.14],[.5,.5],[.36,.76],[.66,.8]],[[0,1,2],[1,3,4],[3,5]]],
+ ['女','녀','n',369,'베 짜는 여인. 작은 네 별이 나란히 앉아 있어요.',[[.28,.24],[.66,.3],[.56,.6],[.34,.76]],[[0,1,2,3]]],
+ ['虛','허','n',375,'텅 빈 하늘. 두 별만이 고요하게 빛나요.',[[.38,.3],[.62,.72]],[[0,1]]],
+ ['危','위','n',366,'지붕 마루. 세 별이 비스듬히 기울어 있어요.',[[.28,.22],[.62,.5],[.4,.82]],[[0,1,2]]],
+ ['室','실','n',372,'하늘의 집. 두 별이 기둥처럼 서 있어요.',[[.44,.18],[.56,.82]],[[0,1]]],
+ ['壁','벽','n',378,'하늘의 담장. 집 동쪽을 든든히 지켜요.',[[.52,.18],[.44,.82]],[[0,1]]],
+ ['奎','규','w',340,'열여섯 별이 둥글게 이어진 하늘의 고리예요.',[[.5,.06],[.7,.12],[.82,.28],[.86,.48],[.8,.68],[.66,.84],[.48,.92],[.3,.84],[.18,.66],[.14,.46],[.2,.26],[.34,.12]],[[0,1,2,3,4,5,6,7,8,9,10,11,0]]],
+ ['婁','루','w',352,'제물을 기르는 곳. 세 별이 한 줄로 이어져요.',[[.3,.28],[.5,.5],[.7,.72]],[[0,1,2]]],
+ ['胃','위','w',358,'하늘의 곳간. 세 별이 곡식을 모아 둬요.',[[.34,.28],[.72,.44],[.4,.76]],[[0,1,2,0]]],
+ ['昴','묘','w',343,'좀생이별. 일곱 별이 옹기종기 모여 반짝여요.',[[.44,.32],[.56,.36],[.5,.48],[.64,.5],[.4,.56],[.56,.62],[.48,.72]],[[0,1,3,5,6,4,0],[2,5]]],
+ ['畢','필','w',346,'사냥 그물. 여덟 별이 V자로 펼쳐져요.',[[.18,.18],[.34,.38],[.46,.54],[.62,.48],[.82,.28],[.5,.7],[.48,.88],[.66,.66]],[[0,1,2,5,6],[4,3,2],[3,7]]],
+ ['觜','자','w',355,'호랑이의 수염. 작은 세 별이 오밀조밀해요.',[[.44,.38],[.6,.48],[.46,.6]],[[0,1,2,0]]],
+ ['參','삼','w',349,'세 장수 별. 허리띠 세 별이 나란히 빛나요.',[[.24,.14],[.76,.17],[.4,.47],[.5,.5],[.6,.53],[.5,.62],[.5,.7],[.27,.86],[.73,.83]],[[0,2,3,4,1],[2,7],[4,8],[3,5,6]]],
+ ['井','정','s',297,'하늘의 우물. 두 줄 별이 우물 난간을 이뤄요.',[[.28,.12],[.31,.38],[.28,.64],[.31,.88],[.7,.1],[.72,.36],[.69,.62],[.72,.86]],[[0,1,2,3],[4,5,6,7],[1,5],[2,6]]],
+ ['鬼','귀','s',291,'신령의 수레. 네 별 가운데 희미한 기운이 서려요.',[[.34,.34],[.66,.34],[.66,.66],[.34,.66]],[[0,1,2,3,0]]],
+ ['柳','류','s',300,'주작의 부리. 버들가지처럼 휘어 늘어져요.',[[.2,.18],[.35,.26],[.5,.28],[.62,.36],[.68,.5],[.66,.63],[.58,.76],[.5,.88]],[[0,1,2,3,4,5,6,7]]],
+ ['星','성','s',288,'주작의 목. 일곱 별이 목덜미를 그려요.',[[.3,.12],[.4,.28],[.5,.44],[.58,.58],[.72,.64],[.44,.7],[.38,.88]],[[0,1,2,3,4],[3,5,6]]],
+ ['張','장','s',306,'주작의 모이주머니. 여섯 별이 활짝 펼쳐져요.',[[.22,.3],[.5,.18],[.78,.3],[.72,.62],[.5,.74],[.28,.62]],[[0,1,2,3,4,5,0]]],
+ ['翼','익','s',303,'주작의 날개. 스물두 별이 하늘 가득 날개를 펴요.',[[.5,.5],[.1,.28],[.26,.37],[.4,.45],[.9,.28],[.74,.37],[.6,.45],[.5,.68],[.42,.88],[.58,.88]],[[1,2,3,0,6,5,4],[0,7,8],[7,9]]],
+ ['軫','진','s',294,'주작의 꼬리. 수레 뒤턱처럼 네 별이 받쳐요.',[[.3,.28],[.7,.22],[.74,.7],[.26,.74]],[[0,1,2,3,0]]]];
+const SKY_Q={e:{a0:135,col:[90,230,200],han:'青龍',ko:'청룡',dir:'동방'},n:{a0:225,col:[150,140,255],han:'玄武',ko:'현무',dir:'북방'},w:{a0:315,col:[225,235,255],han:'白虎',ko:'백호',dir:'서방'},s:{a0:45,col:[255,130,120],han:'朱雀',ko:'주작',dir:'남방'}};
+const SKYV={on:0,raf:0,W:0,H:0,L:null,cam:{z:1,rot:0,fx:0,fy:0,d:0,foc:null,sx:0,sy:0},anim:null,foc:null,pop:-1,T0:0};
+const SKYI={};function skyI(k){let o=SKYI[k];if(!o){o=SKYI[k]={im:new Image(),ok:0};o.im.onload=()=>{o.ok=1;};o.im.onerror=()=>{o.ok=-1;};o.im.src='i/sky/sky_'+k+'.png?'+IMG_V;}return o.ok===1?o.im:null;}
+function skyGot(i){return !!(acc.dex&&acc.dex[SKY_M[i][3]]);}
+function skyCnt(q){let n=0;SKY_M.forEach((m,i)=>{if((!q||m[2]===q)&&skyGot(i))n++;});return n;}
+function skyBanner(){const n=skyCnt();return '<div class="skyban" data-sky="open"><div><b class="serif">이십팔수 성도</b><span>칠전사를 모으면 하늘의 별자리가 하나씩 깨어나요</span></div><em>'+n+' / 28</em></div>';}
+/* --- 열기 · 닫기 --- */
+function skyOpen(){const L=document.getElementById('layer');SKYV.on=1;SKYV.foc=null;SKYV.pop=-1;SKYV.anim=null;Object.assign(SKYV.cam,{z:1,rot:0,fx:0,fy:0,d:0,foc:null});
+ ['orn','star','star_dim','sil_e','sil_n','sil_w','sil_s','md_e_on','md_e_off','md_n_on','md_n_off','md_w_on','md_w_off','md_s_on','md_s_off'].forEach(skyI);
+ L.innerHTML='<div class="skyw" id="skyw"><canvas id="skyc"></canvas><div class="skytop"><h2 class="serif">이십팔수 성도</h2><p>모은 칠전사 <b>'+skyCnt()+'</b> / 28</p></div>'+
+  '<div class="skyhd" id="skyhd"></div><button class="skybtn skyx" data-skyb="close" aria-label="닫기">✕</button><button class="skybtn skyback" data-skyb="back" hidden>‹ 전체 보기</button><p class="skyhint" id="skyhint">신수나 별자리를 누르면 크게 볼 수 있어요</p><div id="skypop"></div></div>';
+ const w=document.getElementById('skyw');w.addEventListener('click',skyClick);document.documentElement.classList.add('dgon');addEventListener('resize',skyLayout);addEventListener('keydown',skyKey);
+ skyLayout();SKYV.T0=performance.now();SKYV.raf=requestAnimationFrame(skyLoop);}
+function skyClose(){cancelAnimationFrame(SKYV.raf);SKYV.on=0;removeEventListener('resize',skyLayout);removeEventListener('keydown',skyKey);document.documentElement.classList.remove('dgon');closeLayer();}
+function skyKey(e){if(e.key==='Escape'){if(SKYV.pop>=0)skyPop(-1);else if(SKYV.foc)skyZoom(null);else skyClose();}}
+/* --- 배치 --- */
+function skyLayout(){const c=document.getElementById('skyc');if(!c)return;const W=innerWidth,H=innerHeight,d=Math.min(2,devicePixelRatio||1);c.width=Math.round(W*d);c.height=Math.round(H*d);SKYV.W=W;SKYV.H=H;SKYV.dpr=d;
+ const mob=W<760,top=mob?92:70,S=Math.min(W*.97,H-top-(mob?24:20)),C=[W/2,top+S/2],R=S*.43;const P=(a,r)=>[C[0]+Math.cos(a*Math.PI/180)*r,C[1]+Math.sin(a*Math.PI/180)*r];
+ const L={S,C,R,P,mob,cons:[]};
+ SKY_M.forEach((m,i)=>{const q=SKY_Q[m[2]],j=i%7,a0=q.a0+j*90/7,w=90/7;const pts=m[5].map(([u,v])=>P(a0+w*(.12+.76*u),R*(.47+.37*v)));L.cons.push({i,q,k:m[2],a0,w,pts,lines:m[6],ph:(i*2.399)%6.28});});
+ const all=[];L.cons.forEach(o=>o.pts.forEach(p=>all.push(p)));L.cons.forEach(o=>{o.nd=o.pts.map(p=>{let m=1e9;for(const q of all){if(q===p)continue;const d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<m)m=d;}return m;});});
+ const tw=[];let s=99;const rr=()=>{s=(s*16807)%2147483647;return s/2147483647;};for(let i=0;i<160;i++)tw.push([rr()*W,rr()*H,rr(),rr()*6.28]);L.tw=tw;SKYV.L=L;
+ if(SKYV.foc)skyCamAt(1,SKYV.foc);else skyCamAt(0,null);}
+const skyEz=k=>k<=0?0:k>=1?1:k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+function skyCamAt(k,qk){const L=SKYV.L,cam=SKYV.cam,e=skyEz(k);if(!qk){Object.assign(cam,{z:1,rot:0,fx:0,fy:0,d:0,foc:null,sx:L.C[0],sy:L.C[1]});return;}
+ const q=SKY_Q[qk],R=L.R,W=SKYV.W,H=SKYV.H,mid=q.a0+45,tgt=L.mob?180:90,rot=(tgt-mid)*Math.PI/180;
+ const fx=Math.cos(mid*Math.PI/180)*R*.66,fy=Math.sin(mid*Math.PI/180)*R*.66;
+ const Zt=L.mob?Math.min(W*.96/(R*.78),(H-170)/(R*1.55)):Math.min((W-60)/(R*1.6),(H-150)/(R*.82));
+ Object.assign(cam,{z:1+(Zt-1)*e,rot:rot*e,fx:fx*e,fy:fy*e,d:e,foc:qk,sx:L.C[0]+(W/2-L.C[0])*e,sy:L.C[1]+((L.mob?H*.53:H*.57)-L.C[1])*e});}
+function skyT(p){const L=SKYV.L,c=SKYV.cam,co=Math.cos(c.rot),si=Math.sin(c.rot),dx=p[0]-L.C[0]-c.fx,dy=p[1]-L.C[1]-c.fy;return[c.sx+c.z*(dx*co-dy*si),c.sy+c.z*(dx*si+dy*co)];}
+function skyInv(p){const L=SKYV.L,c=SKYV.cam,co=Math.cos(-c.rot),si=Math.sin(-c.rot),dx=(p[0]-c.sx)/c.z,dy=(p[1]-c.sy)/c.z;return[L.C[0]+c.fx+dx*co-dy*si,L.C[1]+c.fy+dx*si+dy*co];}
+function skyZoom(qk){const from=SKYV.foc;SKYV.foc=qk;SKYV.anim={t:0,dur:1.1,to:qk,from};SFX.play(qk?'whoosh':'tap');skyHud();}
+function skyHud(){const hd=document.getElementById('skyhd'),bk=document.querySelector('.skyback'),hint=document.getElementById('skyhint');if(!hd)return;const qk=SKYV.foc;
+ if(qk){const q=SKY_Q[qk],n=skyCnt(qk);hd.innerHTML='<b class="serif" style="--c:'+q.col.join(',')+'">'+q.han+'</b><span>'+q.dir+' '+q.ko+' · '+(n>=7?'깨어남':'별자리 '+n+' / 7')+'</span>';}
+ hd.classList.toggle('on',!!qk);bk.hidden=!qk;hint.textContent=qk?'별자리를 누르면 칠전사를 볼 수 있어요':'신수나 별자리를 누르면 크게 볼 수 있어요';}
+/* --- 누르기 --- */
+function skyClick(e){const b=e.target.closest('[data-skyb]');e.stopPropagation();
+ if(b){const a=b.dataset.skyb;SFX.play('tap');if(a==='close')return skyClose();if(a==='back')return skyZoom(null);if(a==='popx')return skyPop(-1);return;}
+ if(SKYV.pop>=0){if(!e.target.closest('.skypc'))skyPop(-1);return;}
+ if(e.target.id!=='skyc'||SKYV.anim)return;const L=SKYV.L,w=skyInv([e.clientX,e.clientY]),dx=w[0]-L.C[0],dy=w[1]-L.C[1],r=Math.hypot(dx,dy);let a=Math.atan2(dy,dx)*180/Math.PI;if(a<0)a+=360;
+ // 가운데 신수 문장
+ for(const k in SKY_Q){const q=SKY_Q[k],m=L.P(q.a0+45,L.R*.245);if(Math.hypot(w[0]-m[0],w[1]-m[1])<L.S*.075){if(!SKYV.foc)skyZoom(k);else if(SKYV.foc!==k)skyZoom(null);return;}}
+ if(r<L.R*.4||r>L.R*1.02)return;let i=-1;SKY_M.forEach((m,ii)=>{const o=L.cons[ii];let d=a-o.a0;if(d<0)d+=360;if(d>=0&&d<o.w)i=ii;});if(i<0)return;const qk=SKY_M[i][2];
+ if(!SKYV.foc)return skyZoom(qk);if(SKYV.foc!==qk)return skyZoom(null);skyPop(i);}
+function skyPop(i){SKYV.pop=i;const el=document.getElementById('skypop');if(!el)return;if(i<0){el.innerHTML='';return;}
+ const m=SKY_M[i],q=SKY_Q[m[2]],got=skyGot(i),no=m[3],nm=NAMES[no]||'',sp=nm.split('·'),j=i%7;SFX.play(got?'magic':'tap');
+ el.innerHTML='<div class="skypb"><div class="skypc'+(got?'':' dark')+'" style="--c:'+q.col.join(',')+'"><div class="skyhan">'+m[0]+'</div><div class="skymn">'+m[1]+'수 · '+q.dir+' '+q.ko+'의 '+['첫','둘','셋','넷','다섯','여섯','일곱'][j]+'째 별자리</div>'+
+  '<div class="skyimg"><img class="px" src="'+img(no)+'" alt=""></div><small>'+(got?esc(sp[0]):q.ko+'칠전사')+'</small><h3 class="serif">'+(got?esc(sp[1]||nm):'???')+'</h3><p>'+m[4]+'</p>'+
+  '<span class="skytag">'+(got?'✦ 빛나는 중':'아직 어두운 별자리')+'</span><button class="skybtn skypx" data-skyb="popx" aria-label="닫기">✕</button></div></div>';}
+/* --- 그리기 --- */
+function skyRing(x,O,r,rot){x.save();x.translate(O[0],O[1]);x.rotate(rot);
+ const g=x.createLinearGradient(-r,-r,r,r);g.addColorStop(0,'#fff0c0');g.addColorStop(.35,'#d6a64a');g.addColorStop(.6,'#8a5a1e');g.addColorStop(1,'#f2d48a');
+ x.strokeStyle=g;x.lineWidth=Math.max(3,r*.016);x.beginPath();x.arc(0,0,r+x.lineWidth/2,0,7);x.stroke();x.lineWidth=1.2;x.beginPath();x.arc(0,0,r+Math.max(3,r*.016)+5,0,7);x.stroke();
+ x.strokeStyle='rgba(240,210,140,.55)';for(let i=0;i<112;i++){const a=i/112*6.283,l=i%4?3:7,r0=r+Math.max(3,r*.016)+6;x.lineWidth=i%4?1:1.5;x.beginPath();x.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);x.lineTo(Math.cos(a)*(r0+l),Math.sin(a)*(r0+l));x.stroke();}
+ const orn=skyI('orn');for(let i=0;i<4;i++){const a=Math.PI/4+i*Math.PI/2,sz=Math.max(46,r*.2);x.save();x.rotate(a);x.translate(r+Math.max(3,r*.016)/2,0);x.rotate(Math.PI/2);
+  if(orn)x.drawImage(orn,-sz/2,-sz*.74,sz,sz);else{x.fillStyle=g;x.beginPath();x.moveTo(0,-sz*.32);x.lineTo(sz*.2,0);x.lineTo(0,sz*.32);x.lineTo(-sz*.2,0);x.closePath();x.fill();x.strokeStyle='#5a3a10';x.lineWidth=1;x.stroke();x.fillStyle='#fff3c8';x.beginPath();x.arc(0,0,sz*.06,0,7);x.fill();}x.restore();}
+ x.restore();}
+const SKYS={};
+function skyStar(col){const k='s'+col;if(SKYS[k])return SKYS[k];const im=skyI('star');if(!im)return null;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+ x.drawImage(im,0,0,256,256);x.globalCompositeOperation='source-atop';x.fillStyle='rgba('+col+',.75)';x.fillRect(0,0,256,256);x.globalCompositeOperation='lighter';x.globalAlpha=.7;x.drawImage(im,0,0,256,256);return SKYS[k]=c;}
+function skyLoop(now){if(!SKYV.on||!document.getElementById('skyc'))return;SKYV.raf=requestAnimationFrame(skyLoop);const t=(now-SKYV.T0)/1000;
+ const dt=Math.min(.05,(now-(SKYV.last||now))/1000);SKYV.last=now;if(SKYV.anim){const A=SKYV.anim;A.t+=dt||1/60;let k=Math.min(1,A.t/A.dur);if(A.to)skyCamAt(k,A.to);else skyCamAt(1-k,A.from);if(k>=1){SKYV.anim=null;if(!A.to)skyCamAt(0,null);}}
+ skyDraw(t);}
+function skyDraw(t){const cv=document.getElementById('skyc'),x=cv.getContext('2d'),L=SKYV.L,cam=SKYV.cam,W=SKYV.W,H=SKYV.H,{S,C,R,P}=L,D=cam.d,foc=cam.foc,rad=a=>a*Math.PI/180,Z=cam.z,O=skyT(C),rot=cam.rot;
+ x.setTransform(SKYV.dpr,0,0,SKYV.dpr,0,0);x.clearRect(0,0,W,H);
+ for(const s of L.tw){const tw=.5+.5*Math.sin(t*(1+s[2]*2.4)+s[3]);x.fillStyle='rgba(255,255,255,'+(.08+.45*s[2]*tw)+')';const z=s[2]>.9?2:1;x.fillRect(s[0],s[1],z,z);}
+ const dim=k=>foc&&k!==foc?1-.72*D:1,done=k=>skyCnt(k)>=7;
+ // 방위 바탕
+ for(const k in SKY_Q){const q=SKY_Q[k];x.save();x.globalAlpha=dim(k);x.beginPath();x.moveTo(O[0],O[1]);x.arc(O[0],O[1],R*Z,rad(q.a0)+rot,rad(q.a0+90)+rot);x.closePath();const g=x.createRadialGradient(O[0],O[1],R*.4*Z,O[0],O[1],R*Z);const pa=done(k)?.16+.04*Math.sin(t*1.2):.05;g.addColorStop(0,'rgba('+q.col+','+pa*.3+')');g.addColorStop(1,'rgba('+q.col+','+pa+')');x.fillStyle=g;x.fill();x.restore();}
+ x.save();x.beginPath();x.arc(O[0],O[1],R*Z,0,7);x.fillStyle='rgba(4,8,20,.28)';x.fill();x.restore();
+ // 신수 실루엣
+ for(const k in SKY_Q){const q=SKY_Q[k],im=skyI('sil_'+k);if(!im)continue;const[cx,cy]=skyT(P(q.a0+45,R*.66)),sz=R*.82*Z*(foc===k?1+.15*D:1),ar=im.height/im.width;x.save();x.globalAlpha=(done(k)?.42+.2*(foc===k?D:0):.14)*dim(k)*(1+.06*Math.sin(t*.7));x.drawImage(im,cx-sz/2,cy-sz*ar/2,sz,sz*ar);x.restore();}
+ // 고리·칸
+ x.lineWidth=1;[[R*.87,.3],[R*.42,.35],[R*.39,.18]].forEach(([r,a])=>{x.strokeStyle='rgba(210,225,235,'+a+')';x.beginPath();x.arc(O[0],O[1],r*Z,0,7);x.stroke();});
+ L.cons.forEach(o=>{const j=o.i%7,a=skyT(P(o.a0,R*.42)),b=skyT(P(o.a0,R));x.strokeStyle=j===0?'rgba(240,210,140,.55)':'rgba(210,225,235,.12)';x.lineWidth=j===0?1.5:1;x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke();});
+ skyRing(x,O,R*Z,rot);
+ // 별자리
+ const ds=skyI('star_dim');
+ L.cons.forEach(o=>{const q=o.q,got=skyGot(o.i),pts=o.pts.map(skyT),col=q.col.join(','),bz=foc===o.k?D:0;x.save();x.globalAlpha=dim(o.k);
+  if(got){x.save();x.shadowColor='rgba('+col+',.9)';x.shadowBlur=5+6*bz;x.strokeStyle='rgba('+q.col.map(v=>Math.min(255,v+30)).join(',')+','+(.55+.15*bz)+')';x.lineWidth=1+1.3*bz;o.lines.forEach(l=>{x.beginPath();l.forEach((n,k)=>k?x.lineTo(pts[n][0],pts[n][1]):x.moveTo(pts[n][0],pts[n][1]));x.stroke();});x.restore();
+   const sp=skyStar(col);pts.forEach((p,k)=>{const ph=o.ph+k*1.9,tw=.5+.5*Math.sin(t*(1.3+(k%3)*.4)+ph),s=Math.min(S*(.02+.04*bz)*(k===0?1.15:1),o.nd[k]*Z*1.15)*(.92+.12*tw);x.save();x.globalCompositeOperation='lighter';x.translate(p[0],p[1]);x.rotate(ph+t*(k%2?.16:-.12));x.globalAlpha=(.55+.25*tw)*dim(o.k);
+    if(sp){x.drawImage(sp,-s/2,-s/2,s,s);x.rotate(Math.PI/4);x.globalAlpha=.22*tw*dim(o.k);x.drawImage(sp,-s*.3,-s*.3,s*.6,s*.6);}else{x.fillStyle='#fff';x.beginPath();x.arc(0,0,2+2*bz,0,7);x.fill();}x.restore();});}
+  else{x.save();x.strokeStyle='rgba(140,155,175,.28)';x.setLineDash([3,4]);x.lineWidth=1;o.lines.forEach(l=>{x.beginPath();l.forEach((n,k)=>k?x.lineTo(pts[n][0],pts[n][1]):x.moveTo(pts[n][0],pts[n][1]));x.stroke();});x.restore();
+   pts.forEach((p,k)=>{const tw=.5+.5*Math.sin(t*1.1+o.ph+k*2),s=Math.min(S*(.02+.025*bz),o.nd[k]*Z*1.1);x.save();x.globalAlpha=(.45+.3*tw)*dim(o.k);x.translate(p[0],p[1]);x.rotate(o.ph+k+t*.08);if(ds)x.drawImage(ds,-s/2,-s/2,s,s);else{x.fillStyle='rgba(150,165,185,.7)';x.beginPath();x.arc(0,0,1.8,0,7);x.fill();}x.restore();});}
+  const m=SKY_M[o.i],[lx,ly]=skyT(P(o.a0+o.w/2,R*.935)),fs=S*(.03+.02*bz);x.textAlign='center';x.textBaseline='middle';x.font='700 '+Math.round(fs)+'px "Noto Serif KR","Noto Serif CJK KR",serif';
+  if(got){x.shadowColor='rgba('+col+',1)';x.shadowBlur=10;x.fillStyle='#fff6dc';}else{x.shadowBlur=0;x.fillStyle='rgba(150,165,185,.45)';}
+  x.fillText(m[0],lx,ly-fs*.22);x.shadowBlur=0;x.font=Math.round(fs*.55)+'px sans-serif';x.fillStyle=got?'rgba(225,240,240,.85)':'rgba(150,165,185,.4)';x.fillText(m[1]+(bz>.5?'수':''),lx,ly+fs*.68);x.restore();});
+ // 가운데
+ const cg=x.createRadialGradient(O[0],O[1],0,O[0],O[1],R*.39*Z);cg.addColorStop(0,'rgba(30,50,80,.45)');cg.addColorStop(1,'rgba(8,12,28,.35)');x.fillStyle=cg;x.beginPath();x.arc(O[0],O[1],R*.39*Z,0,7);x.fill();
+ const all=skyCnt()>=28,ps=skyStar(all?'255,226,150':'160,170,190');if(ps){const s=S*(all?.14:.05)*(1+.08*Math.sin(t*1.4));x.save();x.globalCompositeOperation='lighter';x.globalAlpha=all?1:.5;x.translate(O[0],O[1]);x.rotate(t*.05);x.drawImage(ps,-s/2,-s/2,s,s);x.restore();}
+ for(const k in SKY_Q){const q=SKY_Q[k],on=done(k),im=skyI('md_'+k+(on?'_on':'_off')),[mx,my]=skyT(P(q.a0+45,R*.245)),rr=S*.078*(1+.4*(foc===k?D:0));x.save();x.globalAlpha=dim(k);
+  if(on){const g=x.createRadialGradient(mx,my,rr*.5,mx,my,rr*1.5);g.addColorStop(0,'rgba('+q.col+','+(.35+.12*Math.sin(t*1.5))+')');g.addColorStop(1,'rgba('+q.col+',0)');x.fillStyle=g;x.beginPath();x.arc(mx,my,rr*1.5,0,7);x.fill();}
+  if(im)x.drawImage(im,mx-rr,my-rr,rr*2,rr*2);else{x.fillStyle='rgba(40,50,70,.8)';x.beginPath();x.arc(mx,my,rr*.8,0,7);x.fill();x.font='700 '+Math.round(rr*.8)+'px serif';x.fillStyle=on?'#ffe7a8':'#778';x.textAlign='center';x.textBaseline='middle';x.fillText(q.han[1],mx,my);}x.restore();}
+ x.save();x.globalAlpha=1-D;[['東',180],['北',270],['西',0],['南',90]].forEach(([tx,a])=>{const[px,py]=skyT(P(a,R+S*.058));x.font='700 '+Math.round(S*.026)+'px "Noto Serif KR","Noto Serif CJK KR",serif';x.fillStyle='rgba(255,231,168,.8)';x.textAlign='center';x.textBaseline='middle';x.fillText(tx,px,py);});x.restore();}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-sky]');if(!t)return;e.stopPropagation();SFX.play('tap');if(t.dataset.sky==='open')skyOpen();},true);
+if(/[?&](test|mock)/.test(location.search))window.__SKY={SKYV,skyOpen,skyClose,skyZoom,skyPop,skyCnt,SKY_M,skyDraw,skyCamAt,skyT,acc:()=>acc};
 /* ================= 이벤트 ================= */
 document.addEventListener('submit',async ev=>{const f=ev.target;ev.preventDefault();const fd=new FormData(f),k=f.dataset.form;if(busy)return;busy=true;try{
  if(k==='login'){const id=String(fd.get('id')).trim();if(!/^[A-Za-z0-9_-]{1,40}$/.test(id)){S.loginMsg='아이디 또는 비밀번호가 틀렸어요.';return render();}
