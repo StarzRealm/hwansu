@@ -2331,3 +2331,14 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 .bmlist .bmrow small{display:block;margin-top:2px;font-weight:400;opacity:.85}
 .modal .bmlist{width:100%}
 .mgpick{margin-top:8px;align-self:flex-start}
+
+/* v205 도깨비 야행 보스 제한시간 */
+.dgboss.hurry small{color:#ff6b6b;animation:dgHurry .6s ease-in-out infinite alternate}
+@keyframes dgHurry{from{opacity:1}to{opacity:.45}}
+.dgslots{margin:-4px 0 10px;font-size:13px;opacity:.85;text-align:center}
+
+/* v205 무기 조합 카드 */
+.dgcd.evo{background:url(i/dg/dg_card_evo.png) center/100% 100% no-repeat,#3a1430;color:#ffe9b0;filter:drop-shadow(0 0 14px rgba(255,200,90,.85));animation:dgEvoGlow 1.4s ease-in-out infinite alternate}
+.dgcd.evo b{color:#ffe08a}
+.dgcd.evo small{color:#f3dcc0}
+@keyframes dgEvoGlow{from{filter:drop-shadow(0 0 8px rgba(255,200,90,.6))}to{filter:drop-shadow(0 0 20px rgba(255,210,110,1))}}
