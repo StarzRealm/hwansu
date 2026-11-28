@@ -2305,3 +2305,11 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 .ltwh{position:relative;padding-right:110px;min-height:96px}.ltdrum{position:absolute;right:0;top:0;width:100px;aspect-ratio:1;background:url(i/lt/lt_drum.png) 0 0/800% 100% no-repeat;animation:ltdrum .9s steps(7) infinite}
 @keyframes ltdrum{to{background-position:100% 0}}
 @media (max-width:520px){.ltwh{padding-right:78px}.ltdrum{width:72px}}
+/* 팝업 여백을 카드 너비 기준으로 (퍼센트 여백은 화면 너비 기준이라 넓은 화면에서 글자가 세로로 눌렸음) */
+.skypc{--w:min(380px,88vw);width:var(--w);height:calc(var(--w)*1.35);max-height:92vh;aspect-ratio:auto;padding:calc(var(--w)*.19) calc(var(--w)*.12) calc(var(--w)*.12)}
+.skypx{right:calc(var(--w)*.1);top:calc(var(--w)*.12)}
+@media (max-height:520px) and (orientation:landscape){.skypc{--w:min(620px,92vw);width:var(--w);height:86vh;padding:calc(var(--w)*.07) calc(var(--w)*.08) calc(var(--w)*.05)}.skypx{right:calc(var(--w)*.05);top:calc(var(--w)*.06)}}
+.skypc{--w:min(440px,88vw,68vh)}
+@media (max-height:520px) and (orientation:landscape){.skypc{--w:min(620px,92vw);padding-top:calc(var(--w)*.1)}}
+.skypc{padding:calc(var(--w)*.23) calc(var(--w)*.12) calc(var(--w)*.14)}
+@media (max-height:520px) and (orientation:landscape){.skypc{padding:calc(var(--w)*.12) calc(var(--w)*.08) calc(var(--w)*.06)}}
