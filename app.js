@@ -1779,8 +1779,11 @@ const BOSSES=[
  {n:'흑화 해신(亥神)',a:'돼지',el:'water',sk:{n:'흑해 해일',fx:'wave',pal:'water'}}];
 // 자동 보정: 첫 보스 체력 = 참여 인원 × 3300 × 7일, 이후 = 직전 보스의 하루 평균 피해 × 7일 × 1.2 · 공격력 400 / 방어력 300에서 보스마다 ×1.15
 const BOSS_ROUNDS=10, BOSS_DAILY=1, BOSS_DAYS=7;
-function bossSuggest(){const c=BV.cur,k=c?(c.k||0)+1:0,hits=BV.hits||[];let hp,why;
- if(c&&hits.length){const tot=hits.reduce((s,h)=>s+h.dmg,0),end=c.killed?c.killedAt:Date.now(),days=Math.max(1,(end-c.start)/(24*H));hp=Math.round(tot/days*BOSS_DAYS*1.2/1000)*1000;why='직전 보스 하루 평균 피해 '+fmt(tot/days)+' × '+BOSS_DAYS+'일 × 1.2';}
+// 내린 보스 요약 저장 (자동 보정용)
+async function bossSaveLast(c,hits){if(!c)return;const tot=(hits||[]).reduce((s,h)=>s+(h.dmg||0),0);const L={iid:c.iid,no:c.no,k:c.k||0,start:c.start,killed:!!c.killed,killedAt:c.killedAt||Date.now(),tot,n:(hits||[]).length,hp:c.maxHp||c.hp0||0};try{await db.doc('boss/last').set(L);BV.last=L;}catch(e){}}
+function bossSuggest(){const c=BV.cur||BV.last,live=!!BV.cur,k=c?(c.k||0)+1:0,hits=BV.hits||[];let hp,why;
+ const tot0=live?hits.reduce((s,h)=>s+h.dmg,0):(c?c.tot||0:0);
+ if(c&&tot0>0){const tot=tot0,end=c.killed?c.killedAt:Date.now(),days=Math.max(1,(end-c.start)/(24*H));hp=Math.round(tot/days*BOSS_DAYS*1.2/1000)*1000;why=(live?'':'내린 보스 기준 · ')+'직전 보스 하루 평균 피해 '+fmt(tot/days)+' × '+BOSS_DAYS+'일 × 1.2';}
  else{const n=Math.max(1,(AS.list||[]).filter(a=>a.role==='player'&&!a.banned).length);hp=Math.round(n*1700*BOSS_DAYS*.9/1000)*1000;why='참여 예상 '+n+'명 × 1,700 × '+BOSS_DAYS+'일 × 0.9 (대략값 · 정확히는 아래 난이도 계산기)';}
  return{k,hp:Math.max(10000,hp),atk:Math.round(150*Math.pow(1.15,k)),def:Math.round(150*Math.pow(1.15,k)),why};}
 const BV={cur:null,hits:null,loaded:false,busy:false,atk:null};
@@ -1818,7 +1821,7 @@ async function bossCalcRun(){const g=id=>+document.getElementById(id).value,atk=
   const cps=rows.map(r=>r.cp);AS.bcalc={atk,def,days,per,act,res:{n:rows.length,cpMin:cps.length?Math.min(...cps):0,cpMax:cps.length?Math.max(...cps):0,avg:rows.length?Math.round(sum/rows.length):0,daily,rec,recCur,left,days,bands}};
  }catch(e){AS.bcalc.busy=false;toast('계산 실패: '+(e&&e.message||e));}
  AS.bcalc.busy=false;render();}
-async function loadBoss(){if(!acc)return;BV.loaded=true;try{const s=await db.doc('boss/current').get();BV.cur=s.exists?s.data():null;
+async function loadBoss(){if(!acc)return;BV.loaded=true;try{const s=await db.doc('boss/current').get();BV.cur=s.exists?s.data():null;if(MODE!=='player'){try{const l=await db.doc('boss/last').get();BV.last=l.exists?l.data():null;}catch(e){}}
   if(BV.cur){const q=await db.collection('bosshits').where('iid','==',BV.cur.iid).get();BV.hits=q.docs.map(d=>gFixDoc(d.data())).sort((a,b)=>b.dmg-a.dmg);}else BV.hits=[];}
  catch(e){BV.cur=BV.cur||null;BV.hits=BV.hits||[];if(MODE==='player')toast('월드보스 정보를 불러오지 못했어요.');}
  if(MODE==='admin'||(view==='boss'&&!document.getElementById('layer').innerHTML))render();}
@@ -1834,9 +1837,15 @@ async function bossAttack(){if(BV.busy)return;const c=BV.cur;if(!c||c.killed)ret
   const D=bossPet(cur);render();
   battleAnim({kind:'boss',t:Date.now(),a:{nick:acc.nick||acc.id,pet:A},d:{nick:D.name,pet:D},hpA:res.hpA,hpD:cur.maxHp,hpD0:cur.hp,logS:JSON.stringify(res.log),dealt:res.dealt,myTotal,killed},'atk');
  }catch(e){toast('공격에 실패했어요: '+(e&&e.message||e));}finally{BV.busy=false;}}
+// 보상 우편 만들기 (유저 직접 받기 · 운영자 일괄 발송 공용)
+function bossMails(c,uid,hits){const top=(hits||[])[0],mvp=top&&top.uid===uid;const mk=(r,title)=>Object.assign({id:newMailId(),t:Date.now(),from:'월드보스',title,msg:pnm(bossPet(c))+' 토벌 보상이에요.',coins:0,eggs:0,items:{},gear:[]},r||{},{id:newMailId(),title});
+ const ms=[];const has=r=>r&&(r.coins||r.eggs||r.yyEggs||Object.keys(r.items||{}).length||(r.gear||[]).length);if(has(c.reward))ms.push(mk(c.reward,'월드보스 토벌 보상'));if(mvp&&has(c.mvpReward))ms.push(mk(c.mvpReward,'월드보스 MVP 보상'));return{ms,mvp};}
+// 운영자: 아직 안 받은 참여자에게 우편으로 보내기
+async function bossSendUnclaimed(c){if(!c||!c.killed)return{ok:0,fail:0};const snap=await db.collection('bosshits').where('iid','==',c.iid).get();const hits=snap.docs.map(d=>d.data()).sort((x,y)=>y.dmg-x.dmg);let ok=0,fail=0;
+ for(const h of hits){if(h.claimed)continue;const{ms}=bossMails(c,h.uid,hits);try{for(const m of ms)await db.doc('accounts/'+h.uid).pushMail(stampMail(Object.assign({},m,{msg:m.msg+' (받지 않은 보상을 우편으로 보내 드려요)'})));await db.doc('bosshits/'+c.iid+'_'+h.uid).update({claimed:true});ok++;}catch(e){fail++;}}
+ return{ok,fail};}
 async function bossClaim(){const c=BV.cur;if(!c||!c.killed)return;const ref=db.doc('bosshits/'+c.iid+'_'+acc.uid),s=await ref.get();if(!s.exists)return toast('이번 토벌에 참여하지 않았어요.');const h=s.data();if(h.claimed)return toast('이미 보상을 받았어요.');
- const top=(BV.hits||[])[0],mvp=top&&top.uid===acc.uid;const mk=(r,title)=>Object.assign({id:newMailId(),t:Date.now(),from:'월드보스',title,msg:pnm(bossPet(c))+' 토벌 보상이에요.',coins:0,eggs:0,items:{},gear:[]},r||{},{id:newMailId(),title});
- const ms=[];const has=r=>r&&(r.coins||r.eggs||r.yyEggs||Object.keys(r.items||{}).length||(r.gear||[]).length);if(has(c.reward))ms.push(mk(c.reward,'월드보스 토벌 보상'));if(mvp&&has(c.mvpReward))ms.push(mk(c.mvpReward,'월드보스 MVP 보상'));
+ const{ms,mvp}=bossMails(c,acc.uid,BV.hits);
  await ref.update({claimed:true});acc.mail=(acc.mail||[]).concat(ms);SFX.play('fanfare');toast(ms.length?'보상을 우편함으로 보냈어요!'+(mvp?' (MVP 보상 포함)':''):'이번 보스에는 설정된 보상이 없어요.');await commit();loadBoss();}
 function bossCard(c,hits,admin){if(!c)return '<div class="card" style="text-align:center;padding:36px 16px"><img class="px" src="i/q.png" alt="" style="width:56px;opacity:.5"><p class="muted">지금은 출현한 월드보스가 없어요.'+(admin?'':' 운영자가 보스를 소환하면 알려드릴게요.')+'</p></div>';
  const D=bossPet(c),pct=Math.max(0,c.hp/c.maxHp*100),tot=(hits||[]).reduce((s,h)=>s+h.dmg,0);
@@ -2636,10 +2645,11 @@ const AD={
  reload(){AD.loadList();},
  close(){AS.tgt=null;render();},
  async bossSpawn(){const no=+document.getElementById('bNo').value,hp=Math.max(1,Math.round(+document.getElementById('bHp').value||0)),atk=Math.max(1,Math.round(+document.getElementById('bAtk').value||0)),def=Math.max(0,Math.round(+document.getElementById('bDef').value||0)),k=bossSuggest().k,reward=readMail('bR'),mvpReward=readMail('bM');
-  confirmBox('월드보스 소환',BOSSES[no-1].n+' (체력 '+fmt(hp)+', 공격력 '+fmt(atk)+', 방어력 '+fmt(def)+')을(를) 소환할까요? 지금 보스는 내려가요.',async()=>{await db.doc('boss/current').set({iid:'w'+Date.now().toString(36),no,maxHp:hp,hp,atk,def,k,start:Date.now(),killed:false,reward,mvpReward,by:acc.id});log('월드보스 소환: '+BOSSES[no-1].n+' 체력 '+hp+' 공격력 '+atk+' / 보상 '+(mailParts(reward).join(', ')||'없음')+' / MVP '+(mailParts(mvpReward).join(', ')||'없음'));toast('소환했어요!');await loadBoss();});},
+  const oc=BV.cur;confirmBox('월드보스 소환',BOSSES[no-1].n+' (체력 '+fmt(hp)+', 공격력 '+fmt(atk)+', 방어력 '+fmt(def)+')을(를) 소환할까요? 지금 보스는 내려가요.'+(oc&&oc.killed?' 지난 보스 보상을 안 받은 참여자에게는 우편으로 자동 발송해요.':''),async()=>{if(oc&&oc.killed){const r=await bossSendUnclaimed(oc);if(r.ok)log('지난 월드보스 미수령 보상 우편 '+r.ok+'명');}if(oc)await bossSaveLast(oc,BV.hits);await db.doc('boss/current').set({iid:'w'+Date.now().toString(36),no,maxHp:hp,hp,atk,def,k,start:Date.now(),killed:false,reward,mvpReward,by:acc.id});log('월드보스 소환: '+BOSSES[no-1].n+' 체력 '+hp+' 공격력 '+atk+' / 보상 '+(mailParts(reward).join(', ')||'없음')+' / MVP '+(mailParts(mvpReward).join(', ')||'없음'));toast('소환했어요!');await loadBoss();});},
  async bossSaveReward(){const reward=readMail('bR'),mvpReward=readMail('bM');await db.doc('boss/current').update({reward,mvpReward});log('월드보스 보상 변경: '+(mailParts(reward).join(', ')||'없음')+' / MVP '+(mailParts(mvpReward).join(', ')||'없음'));toast('보상을 바꿨어요.');await loadBoss();},
  async bossHeal(){const c=BV.cur;if(!c)return;await db.doc('boss/current').update({hp:c.maxHp,killed:false});log('월드보스 체력 회복');toast('체력을 가득 채웠어요.');await loadBoss();},
- bossEnd(){confirmBox('보스 내리기','지금 월드보스를 내릴까요? 아직 보상을 안 받은 유저는 받을 수 없게 돼요.',async()=>{await db.doc('boss/current').delete();log('월드보스 내림');BV.cur=null;BV.hits=[];toast('보스를 내렸어요.');render();});},
+ bossEnd(){const c=BV.cur,un=c&&c.killed?(BV.hits||[]).filter(h=>!h.claimed).length:0;
+  confirmBox('보스 내리기','지금 월드보스를 내릴까요?'+(c&&c.killed?(un?' 아직 보상을 안 받은 '+un+'명에게는 보상을 우편으로 자동 발송해요.':' 참여자 모두 보상을 받았어요.'):' 아직 토벌되지 않은 보스라 보상은 없어요.'),async()=>{let r={ok:0,fail:0};if(c&&c.killed)r=await bossSendUnclaimed(c);await bossSaveLast(c,BV.hits);await db.doc('boss/current').delete();log('월드보스 내림'+(r.ok?' · 미수령 보상 우편 '+r.ok+'명':''));BV.cur=null;BV.hits=[];toast('보스를 내렸어요.'+(r.ok?' 미수령 보상 '+r.ok+'명 우편 발송':'')+(r.fail?' (실패 '+r.fail+'명)':''));render();});},
  bossReload(){return loadBoss();},
  bossCalc(){return bossCalcRun();},
  bossCalcFill(){const r=AS.bcalc&&AS.bcalc.res;if(!r)return;const s=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};s('bcMax',r.rec);if(r.recCur!=null)s('bcHp',Math.min(r.rec,r.recCur));s('bcAtk',AS.bcalc.atk);s('bcDef',AS.bcalc.def);toast('지금 보스 칸에 넣었어요. [난이도 적용]을 눌러야 바뀌어요.');},
@@ -4336,7 +4346,7 @@ function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
 (async function boot(){
  const app=document.getElementById('app');
  try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
- db=HS.db;if(TEST)window.__T={GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
+ db=HS.db;if(TEST)window.__T={bossSendUnclaimed,bossSaveLast,bossSuggest,BV,get db(){return db;},GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
  HS.onAuth(async uid=>{
