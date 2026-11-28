@@ -1636,7 +1636,7 @@ function vArena(){if(!PV.loaded)setTimeout(loadArena,0);if(SO.users==null)setTim
   h+='<p class="muted dnote pgdesc">상성: 나무 → 땅 → 물 → 불 → 쇠 → 나무 (화살표 쪽을 이겨요) · 양과 음은 서로를 이겨요. 상성 유리 피해 ×1.2 · 치명 ×1.6 · 직격은 방어 일부 무시.</p>';}
  if(tab==='all'){const ids=[...new Set((SO.users||[]).map(u=>u.uid).concat((PV.list||[]).map(a=>a.uid)))];ids.sort((x,y)=>((users[y]||{}).hearts||0)-((users[x]||{}).hearts||0));
   h+=SO.users==null?'<p class="muted">불러오는 중…</p>':ids.length?'<div class="drows">'+ids.map(id=>rowH(id,arena[id])).join('')+'</div>':'<p class="muted">아직 유저가 없어요.</p>';}
- if(tab==='rank'){const rank=(PV.list||[]).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>y.em-x.em).slice(0,20);
+ if(tab==='rank'){h+=spNote('a');const rank=(PV.list||[]).map(a=>Object.assign({},a,{em:aEff(a).m})).sort((x,y)=>y.em-x.em).slice(0,20);
   h+=rank.length?'<div class="drows">'+rank.map((a,i)=>rowH(a.uid,a,'<div class="drk'+(i<3?' top':'')+'"><img src="i/ui2/'+(i<3?'rank_'+(i+1):'rank_n')+'.png?m3" alt=""><b>'+(i+1)+'</b></div>',i+1)).join('')+'</div>':'<p class="muted">아직 없어요.</p>';}
  if(tab==='log'){h+=PV.logs&&PV.logs.length?'<div class="dlogs">'+PV.logs.map(b=>{const mw=b.role==='atk'?b.win:!b.win,op=b.role==='atk'?b.d:b.a,dm=b.role==='atk'?b.da:b.dd;
    return '<div class="blog"><img class="seal" src="i/ui2/icon_'+(mw?'win':'lose')+'.png" alt="'+(mw?'승리':'패배')+'"><b style="color:'+(mw?'#2e7d3a':'#b02a1f')+'">'+(b.role==='atk'?'공격 ':'방어 ')+(mw?'승리':'패배')+'</b><span style="flex:1">vs '+esc(op.nick)+' <small class="muted">('+esc(NAMES[op.pet.no])+')</small></span><span class="muted">'+(dm>0?'+':'')+dm+'</span><button class="btn soft sm" data-replay="'+esc(b.id)+'">다시 보기</button></div>';}).join('')+'</div>':'<p class="muted">이번 주 기록이 없어요.</p>';}
@@ -2132,7 +2132,7 @@ async function loadAccount(uid){
   arenaKey=null;PV.list=null;PV.logs=null;PV.loaded=false;syncArena();
   {const st=attCheck();if(st){save();render();attModal(true);}passLoad();}
   if(unsubMe)unsubMe();unsubMe=db.doc('accounts/'+uid).onSnapshot(s=>{if(!s.exists||!acc||s.metadata&&s.metadata.hasPendingWrites)return;const r=s.data();if(MODE==='player'&&r.sess&&r.sess!==SESS){if(!S.kicked){S.kicked=true;acc=normAcc(r);acc.uid=uid;vilInit();render();kickModal();}return;}if((r.rev||0)>(acc.rev||0)){if(r.banned){toast('정지된 계정이에요.');return logout();}const before=(acc.mail||[]).length;acc=normAcc(r);acc.uid=uid;vilInit();tickAll();render();if(acc.mail.length>before){SFX.play('egg');toast('우편이 도착했어요! 우편함을 확인해 주세요.');}else toast('계정 정보가 새로 바뀌었어요.');}},()=>{});}
- else{render();if(isAdmin())AD.loadList();}
+ else{render();if(isAdmin()){AD.loadList();setTimeout(spAuto,2000);}}
 }
 async function logout(){if(unsubMe){unsubMe();unsubMe=null;}acc=null;AS.tgt=null;AS.list=null;try{await HS.signOut();}catch(e){}render();}
 
@@ -2249,7 +2249,7 @@ function twStart(){const t=twState();if(t.run)return;if(t.best>=TW_TOP)return to
 function twBlessN(best){return Math.min(3,Math.floor(best/20));}
 function twRetreat(){const t=twState();if(!t.run)return;confirmBox('등반 끝내기','지금 등반을 끝낼까요? 다음 도전은 기회 1회를 써서 모든 환수가 체력이 가득 찬 상태로 '+(t.best+1)+'층부터 시작해요.',()=>{t.run=null;SFX.play('wake');commit();});}
 function twTicketUse(){const k=twTickets();if(k.left>0)return toast('아직 도전 기회가 남아 있어요.');if(!take('sec_tower'))return;acc.twTk.n++;SFX.play('magic');toast('구천탑 도전 기회 +1');commit();}
-async function twSync(){if(!db||!acc||MODE!=='player')return false;const t=twState();if(!t.best)return false;try{await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,gm:1,title:acc.title||null});TV.err=null;return true;}catch(e){TV.err=(e&&(e.code||e.message))||'error';console.warn('twSync',e);return false;}}
+async function twSync(){if(!db||!acc||MODE!=='player')return false;const t=twState();if(!t.best)return false;try{try{const o=await db.doc('tower/'+acc.uid).get();const od=o.exists?o.data():null;if(od&&od.season&&od.season!==t.season&&od.best>0)await db.doc('towerhist/'+od.season+'_'+acc.uid).set(od);}catch(e){}await db.doc('tower/'+acc.uid).set({uid:acc.uid,id:acc.id||'',nick:acc.nick||acc.id||'',season:t.season,best:t.best,t:t.bestT||Date.now(),no:t.bestNo==null?null:t.bestNo,gm:1,title:acc.title||null});TV.err=null;return true;}catch(e){TV.err=(e&&(e.code||e.message))||'error';console.warn('twSync',e);return false;}}
 async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.slots[i];if(!run)return toast('먼저 도전을 시작해 주세요.');if(run.choice)return toast('먼저 보상을 하나 골라 주세요.');if(!q)return;
  const key=petKey(q,i);if(run.down.includes(key))return toast('쓰러진 환수는 이번 등반에서 나갈 수 없어요.');if(q.sick!=null)return toast('아픈 환수는 나갈 수 없어요.');
  const f=t.best+1;if(f>TW_TOP)return;TV.busy=true;
@@ -2264,7 +2264,7 @@ async function twFight(i){if(TV.busy)return;const t=twState(),run=t.run,q=acc.sl
  }catch(e){toast('전투에 실패했어요: '+(e&&e.message||e));}finally{TV.busy=false;}}
 async function loadTower(){TV.loaded=true;try{const s=twSeason(),p=twPrevSeason();
   const getT=async()=>{const a=await db.collection('tower').where('season','==',s).get();return a.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);};let L=await getT();{const t=twState(),me=L.find(r=>r.uid===acc.uid);if(t.best>0&&(!me||me.best<t.best)){if(await twSync())L=await getT();}}TV.rank=L;
-  const b=await db.collection('tower').where('season','==',p).get();TV.prev=b.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
+  const b=await db.collection('tower').where('season','==',p).get(),PM={};b.docs.forEach(d=>{const x=gFixDoc(d.data());PM[x.uid]=x;});try{const b2=await db.collection('towerhist').where('season','==',p).get();b2.docs.forEach(d=>{const x=gFixDoc(d.data());if(!PM[x.uid]||x.best>PM[x.uid].best)PM[x.uid]=x;});}catch(e){}TV.prev=Object.values(PM).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t).slice(0,3);}
  catch(e){TV.rank=TV.rank||[];TV.prev=TV.prev||[];}
  if(view==='tower'&&!document.getElementById('layer').innerHTML)render();}
 function twMonHp(run,k,D){if(!run||!run.mhp||run.mhp.k!==k)return '';const mx=twStat(D).hp,v=run.mhp.hp/mx;return '<div class="twmhp"><small>남은 체력 '+fmt(run.mhp.hp)+' / '+fmt(mx)+' · 다음 환수가 이어서 싸워요</small>'+twHpBar(v)+'</div>';}
@@ -2287,7 +2287,7 @@ function vTower(){if(!TV.loaded)setTimeout(loadTower,0);const t=twState(),run=t.
 function vTowerRank(){const L=TV.rank;if(!L)return '<div class="card"><p class="muted">순위를 불러오는 중…</p></div>';
  const me=L.findIndex(r=>r.uid===acc.uid);let h='';
  if(TV.prev&&TV.prev.length){const POS=[[50,68.5],[33.75,76.5],[66.25,82]];h+='<div class="card twhall"><div class="hall">'+TV.prev.slice(0,3).map((r,i)=>'<div class="hp hp'+(i+1)+'" style="left:'+POS[i][0]+'%;top:'+POS[i][1]+'%">'+(i===0?'<img class="px hcrown" src="i/ui4/tw_hall_crown.png" alt="">':'')+(r.no!=null?'<img class="px hpet" src="'+img(r.no)+'" alt="">':'')+'<div class="hplate"><span class="hrk"><img class="px" src="i/ui2/rank_'+(i+1)+'.png?m3" alt=""><b>'+(i+1)+'</b></span><div>'+nickT(r.nick,r.title)+'<small>'+r.best+'층</small></div></div></div>').join('')+'<div class="htitle serif">지난 시즌 명예의 전당</div></div></div>';}
- h+='<div class="card twrankc"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">이번 시즌 순위</h2><button class="btn soft sm" data-twreload="1">새로고침</button></div><p class="muted">최고 층이 높은 순, 같으면 먼저 도달한 사람이 위예요.</p>'+
+ h+=spNote('t');h+='<div class="card twrankc"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">이번 시즌 순위</h2><button class="btn soft sm" data-twreload="1">새로고침</button></div><p class="muted">최고 층이 높은 순, 같으면 먼저 도달한 사람이 위예요.</p>'+
   podium(L.slice(0,3).map(r=>({no:r.no,nick:r.nick,val:r.best+'층',sub:r.no!=null?NAMES[r.no]:'',me:r.uid===acc.uid})),'pb-tower')+rankBoard('tower','구천탑 순위',['순위','닉네임','최고 층','돌파 환수','도달 시각'],'64px minmax(0,2.2fr) 80px minmax(0,1.6fr) 110px',L.slice(0,50).map(r=>({me:r.uid===acc.uid,cells:[nickT(r.nick,r.title),'<b>'+r.best+'층</b>',(r.no!=null?'<img class="px rkpet" src="'+img(r.no)+'" alt=""> '+NAMES[r.no]:''),new Date(r.t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})]})),'아직 기록이 없어요. 첫 번째 등반자가 되어 보세요!')+
   '<p style="margin:10px 0 0"><b>내 순위:</b> '+(me>=0?(me+1)+'위 · '+L[me].best+'층':'기록 없음')+'</p>'+(TV.err?'<p class="muted" style="color:#b02a1f">순위를 서버에 저장하지 못했어요 ('+esc(String(TV.err))+'). 운영자에게 알려 주세요.</p>':'')+'</div>';
  return h;}
@@ -2524,12 +2524,12 @@ async function igReissue(aid,code){const a=(AS.list||[]).find(x=>x.id===aid);if(
    toast('새 코드: '+nc+' (유저의 발급한 코드 목록에도 바뀌어 들어갔어요)');await AD.loadList();}catch(e){toast('재발급 실패: '+(e&&e.message||e));}});}
 /* ================= 운영자 사이트 ================= */
 const AS={tab:'users',tgt:null,list:null,eggs:null,logs:null,newPw:'',codeGen:'',slot:0};
-const ADM_GROUPS=[['user','유저','users',[['users','유저 관리'],['make','계정 만들기',1]]],['gift','보상·코드','gift',[['mail','우편'],['eggs','알 코드'],['lib','인게임 코드'],['tools','코드 테스트'],['att','출석 보상'],['pass','월정액'],['sup','후원 페이지']]],['cont','콘텐츠','cont',[['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['shop','상점 설정'],['rcp','제작소 레시피'],['cols','컬렉션'],['pvpcfg','대전 설정'],['dgcfg','도깨비 야행'],['krcfg','근두운 질주'],['ltcfg','복권']]],['log','기록·관리','log',[['backup','수동 저장 복구'],['gb','방명록 기록'],['logs','변경 기록'],['reset','전체 초기화',1]]]];
+const ADM_GROUPS=[['user','유저','users',[['users','유저 관리'],['make','계정 만들기',1]]],['gift','보상·코드','gift',[['mail','우편'],['eggs','알 코드'],['lib','인게임 코드'],['tools','코드 테스트'],['att','출석 보상'],['pass','월정액'],['sup','후원 페이지']]],['cont','콘텐츠','cont',[['boss','월드보스'],['tower','구천탑'],['event','이벤트·공지'],['shop','상점 설정'],['rcp','제작소 레시피'],['cols','컬렉션'],['pvpcfg','대전 설정'],['dgcfg','도깨비 야행'],['krcfg','근두운 질주'],['ltcfg','복권'],['spay','시즌 보상']]],['log','기록·관리','log',[['backup','수동 저장 복구'],['gb','방명록 기록'],['logs','변경 기록'],['reset','전체 초기화',1]]]];
 function admGroups(){return ADM_GROUPS.map(([g,n,ic,tabs])=>[g,n,ic,tabs.filter(t=>!t[2]||isMain())]);}
 function admGroupOf(tab){const G=admGroups().find(x=>x[3].some(t=>t[0]===tab));return G?G[0]:'user';}
 function adminHeader(){const G=admGroups(),cg=admGroupOf(AS.tab),cur=G.find(x=>x[0]===cg);
  return '<header class="sky"><div class="bar"><span class="logo">환수 운영자</span><nav class="main admgrp" aria-label="운영자 메뉴">'+G.map(([g,n,ic,tabs])=>'<button data-xtab="'+tabs[0][0]+'" class="'+(cg===g?'on':'')+'"><img class="px" src="i/adm/hd/ag_'+ic+'.png" alt="" onerror="this.style.display=\'none\'">'+n+'</button>').join('')+'</nav><a class="btn sm" href="index.html?test" target="_blank" rel="noopener" style="background:#f0c75e;color:#3a2414" title="실제 서버와 상관없는 가짜 계정으로 유저 화면을 시험해요">🧪 테스트 모드</a><span style="color:#fff8e6;font-size:13px">'+esc(acc.nick||acc.id)+' ('+(isMain()?'메인 운영자':'보조 운영자')+')</span><button class="btn ghost sm" data-a2="logout">로그아웃</button></div><nav class="admsub" aria-label="세부 메뉴">'+cur[3].map(([k,n])=>'<button data-xtab="'+k+'" class="'+(AS.tab===k?'on':'')+'">'+n+'</button>').join('')+'</nav></header>';}
-function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,lib:aLib,event:aEvent,tools:aTools,logs:aLogs,reset:aReset,shop:aShop,rcp:aRcp,cols:aCols,gb:aGb,backup:aBackup,att:aAtt,pass:aPass,sup:aSup,pvpcfg:aPvpCfg,dgcfg:aDgCfg,krcfg:aKrCfg,ltcfg:aLtCfg}[AS.tab]();}
+function adminBody(){return {users:aUsers,make:aMake,eggs:aEggs,mail:aMail,boss:aBoss,tower:aTower,lib:aLib,event:aEvent,tools:aTools,logs:aLogs,reset:aReset,shop:aShop,rcp:aRcp,cols:aCols,gb:aGb,backup:aBackup,att:aAtt,pass:aPass,sup:aSup,pvpcfg:aPvpCfg,dgcfg:aDgCfg,krcfg:aKrCfg,ltcfg:aLtCfg,spay:aSpay}[AS.tab]();}
 const roleN={main:'메인',sub:'보조',player:'플레이어'};
 const VIEWN={village:'마을',home:'성장',train:'수련·심부름',gear:'장비',bag:'가방',shop:'상점',dex:'도감',pvp:'대전',boss:'토벌',tower:'구천탑',xmas:'설화 던전',guest:'전용 공간',code:'코드',mail:'우편',support:'후원',visit:'마을 구경'};
 function viewIc(v){const n=NAV.find(x=>x[0]===v);return n?n[2]:({xmas:'nav_event',guest:'nav_portal',code:'nav_settings',mail:'nav_mail',visit:'nav_village'})[v]||'nav_village';}
@@ -2624,7 +2624,7 @@ async function saveTgt(msg){const t=AS.tgt,s0=await db.doc('accounts/'+t.uid).ge
  const out=mergeT(AS.base,t,fresh,AS.abs||{});AS.abs=null;await db.doc('accounts/'+t.uid).set(out);if(msg)log(t.id+': '+msg);
  AS.tgt=normT(Object.assign({uid:t.uid},out));AS.base=CL(AS.tgt);const i=(AS.list||[]).findIndex(a=>a.uid===t.uid);if(i>=0)AS.list[i]=CL(AS.tgt);toast('저장했어요.');render();}
 function aTower(){if(!AS.tw)setTimeout(()=>AD.twLoad(),0);const ss=AS.twSeason||twSeason(),L=AS.tw||[];
- return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">구천탑 순위</h2><div style="display:flex;gap:8px;align-items:flex-end"><label class="f">시즌<input type="month" id="xTwS" value="'+ss+'"></label><button class="btn soft sm" data-x="twLoad">불러오기</button></div></div><p class="muted">매달 1일 오전 6시에 새 시즌이 시작돼요. 시즌 보상은 순위를 보고 우편 탭에서 보내 주세요. 추천: 1위 음양알, 2~3위 환수 알 + 시간단축비서(8시간) 2개, 4~10위 시간단축비서(5시간).</p>'+
+ return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">구천탑 순위</h2><div style="display:flex;gap:8px;align-items:flex-end"><label class="f">시즌<input type="month" id="xTwS" value="'+ss+'"></label><button class="btn soft sm" data-x="twLoad">불러오기</button></div></div><p class="muted">매달 1일 오전 6시에 새 시즌이 시작돼요. 시즌 보상은 [시즌 보상] 탭에서 정해 두면 시즌이 끝난 뒤 자동으로 우편 발송돼요.</p>'+
  (AS.tw==null?'<p class="muted">불러오는 중…</p>':L.length?'<div style="overflow-x:auto"><table class="t"><tr><th>순위</th><th>아이디</th><th>닉네임</th><th>최고 층</th><th>환수</th><th>도달 시각</th><th></th></tr>'+L.map((r,i)=>'<tr><td><b>'+(i+1)+'</b></td><td>'+esc(r.id||'')+'</td><td>'+esc(r.nick||'')+'</td><td><b>'+r.best+'층</b></td><td>'+(r.no!=null?NAMES[r.no]:'')+'</td><td>'+new Date(r.t).toLocaleString('ko-KR')+'</td><td><button class="btn soft sm" data-x="twDel" data-uid="'+esc(r.uid)+'">기록 삭제</button></td></tr>').join('')+'</table></div>':'<p class="muted">이 시즌 기록이 없어요.</p>')+'</div>';}
 const AD={
  async gbLoad(){try{const q=await db.collection('gblog').get();AS.gb=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>b.t-a.t).slice(0,300);}catch(e){AS.gb=[];}render();},
@@ -2636,7 +2636,7 @@ const AD={
  igCheck(){AS.igChk=(document.getElementById('igChkIn').value||'').trim();render();},
  async libDone(){const uid=AS.twUid,lid=AS.libId;if(!uid||!lid)return;const ref=db.doc('accounts/'+uid),s0=await ref.get();if(!s0.exists)return toast('계정을 찾지 못했어요.');const a=s0.data(),libs=(a.libs||[]).map(l=>l.id===lid?Object.assign({},l,{done:true,by:acc.id,at:Date.now()}):l);
   await ref.update({libs,rev:(a.rev||0)+1});const l=libs.find(x=>x.id===lid);log('해방 인게임 보상 지급: '+a.id+' · '+(l?NAMES[l.no]+' '+stN(l)+' · '+l.game:''));toast('지급 완료로 표시했어요.');await AD.loadList();},
- async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());const q=await db.collection('tower').where('season','==',AS.twSeason).get();AS.tw=q.docs.map(d=>gFixDoc(d.data())).filter(r=>r.best>0).sort((x,y)=>y.best-x.best||x.t-y.t);render();},
+ async twLoad(){const el=document.getElementById('xTwS');AS.twSeason=el&&el.value?el.value:(AS.twSeason||twSeason());AS.tw=(await spRank('t',AS.twSeason)).map(r=>r.uid);{const q=await db.collection('tower').where('season','==',AS.twSeason).get(),M={};q.docs.forEach(d=>{const x=gFixDoc(d.data());M[x.uid]=x;});try{const q2=await db.collection('towerhist').where('season','==',AS.twSeason).get();q2.docs.forEach(d=>{const x=gFixDoc(d.data());if(!M[x.uid]||x.best>M[x.uid].best)M[x.uid]=x;});}catch(e){}AS.tw=AS.tw.map(u=>M[u]).filter(Boolean);}render();},
  async twDel(){const uid=AS.twUid;if(!uid)return;const r=(AS.tw||[]).find(x=>x.uid===uid);
   confirmBox('구천탑 기록 삭제',(r?r.nick+'의 ':'')+'이번 시즌 구천탑 기록을 지울까요? 진행도도 1층으로 돌아가요.',async()=>{await db.doc('tower/'+uid).delete();const ref=db.doc('accounts/'+uid),s0=await ref.get();if(s0.exists){const a=s0.data();if(a.tower&&a.tower.season===(AS.twSeason||twSeason()))await ref.update({tower:null,rev:(a.rev||0)+1});}log('구천탑 기록 삭제 '+(r?r.id:uid));toast('기록을 지웠어요.');AS.tw=null;await AD.twLoad();});},
  async loadList(){const q=await db.collection('accounts').get();AS.list=q.docs.map(d=>Object.assign({uid:d.id},d.data())).sort((a,b)=>(a.id>b.id?1:-1));if(AS.tgt){const n=AS.list.find(a=>a.uid===AS.tgt.uid);AS.tgt=n?normT(n):null;AS.base=CL(AS.tgt);}render();},
@@ -4111,6 +4111,79 @@ Object.assign(AD,{
   const jack=w[0]?0:Math.min(C.carryMax,C.jack+C.carry);cfg.lt=Object.assign({},cfg.lt||{},{round:r+1,jack});await saveGlobal('복권 제 '+r+'회 추첨 ('+num+')');
   log('복권 제 '+r+'회 추첨 '+num+' · 구입 '+s.size+'명 · 당첨 '+w.join('/'));LTV.rounds[r]=undefined;toast('제 '+r+'회 당첨번호 '+num);render();}});
 if(/[?&](test|mock)/.test(location.search))window.__LT={LTV,ltBuy,ltCell,ltDecide,ltNext,ltAcc,ltCfg,ltRank,ltWBuy,ltClaim,go:v=>{view=v;render();}};
+// ===== 시즌 보상 자동 지급 (대전 주간 · 구천탑 월간) =====
+// 시즌이 끝난 뒤 운영자가 운영자 사이트에 들어오면 지난 시즌 순위를 계산해 우편으로 자동 발송해요.
+// 1위 · 2위 · 3위 · 나머지 참여자 4단계. spay/{종류}_{시즌} 문서로 한 번만 보내지게 막아요.
+const SP_KIND={a:{n:'대전',per:'주간',from:'2026-11-22'},t:{n:'구천탑',per:'월간',from:'2026-11'}};
+const SP_TIER=['1위','2위','3위','나머지 참여자'];
+// 기본 보상값 (운영자 사이트에서 수치 수정 가능)
+function spDefR(k){const e=(t,o)=>Object.assign({title:t,msg:'',coins:0,evc:0,eggs:0,yyEggs:0,items:{},gear:[],pets:[]},o);
+ if(k==='t')return[e('구천탑 시즌 1위 보상',{coins:200,yyEggs:1,items:{sec_t480:2}}),e('구천탑 시즌 2위 보상',{coins:120,eggs:1,items:{sec_t480:2}}),e('구천탑 시즌 3위 보상',{coins:80,eggs:1,items:{sec_t480:1}}),e('구천탑 시즌 참여 보상',{coins:20,items:{sec_t300:1}})];
+ return[e('대전 주간 1위 보상',{coins:100,eggs:1,items:{sec_pvp:3}}),e('대전 주간 2위 보상',{coins:70,items:{sec_pvp:2}}),e('대전 주간 3위 보상',{coins:50,items:{sec_pvp:2}}),e('대전 주간 참여 보상',{coins:10,items:{sec_pvp:1}})];}
+function spCfg(k){const c=(cfg&&cfg.spay&&cfg.spay[k])||{};const d=spDefR(k);return{on:c.on==null?true:!!c.on,r:[0,1,2,3].map(i=>(c.r&&c.r[i])||d[i])};}
+function spHas(r){return !!(r&&(r.coins||r.evc||r.eggs||r.yyEggs||Object.keys(r.items||{}).length||(r.gear||[]).length||(r.pets||[]).length));}
+// 지난 시즌 키
+function spPrev(k){return k==='a'?sunKey(now()-7*24*H):twPrevSeason();}
+function spCur(k){return k==='a'?sunKey(now()):twSeason();}
+function spLabel(k,key){if(k==='t')return key.replace('-','년 ')+'월';const d=key.split('-');return (+d[1])+'월 '+(+d[2])+'일 주';}
+// 순위 계산: [{uid,nick,val,part}]
+async function spRank(k,key){
+ if(k==='a'){const q=await db.collection('battles').where('week','==',key).get();const M={};
+  q.docs.map(d=>d.data()).sort((x,y)=>x.t-y.t).forEach(b=>{
+   const put=(uid,nick,m)=>{if(!uid||m==null)return;const o=M[uid]||(M[uid]={uid,nick:nick||'',val:0,atk:0,t:0});o.val=m;o.t=b.t;if(nick)o.nick=nick;return o;};
+   const a=put(b.auid,b.a&&b.a.nick,b.ma);if(a)a.atk++;put(b.duid,b.d&&b.d.nick,b.md);});
+  return Object.values(M).sort((x,y)=>y.val-x.val||y.atk-x.atk||x.t-y.t).map(o=>({uid:o.uid,nick:o.nick,val:o.val,part:o.atk>0}));}
+ const M={};const add=r=>{if(!r||!r.uid||!(r.best>0))return;const o=M[r.uid];if(!o||r.best>o.best||(r.best===o.best&&r.t<o.t))M[r.uid]=r;};
+ const a=await db.collection('tower').where('season','==',key).get();a.docs.forEach(d=>add(d.data()));
+ try{const b=await db.collection('towerhist').where('season','==',key).get();b.docs.forEach(d=>add(d.data()));}catch(e){}
+ return Object.values(M).sort((x,y)=>y.best-x.best||x.t-y.t).map(r=>({uid:r.uid,nick:r.nick||r.id||'',val:r.best,part:true}));}
+function spVal(k,v){return k==='a'?'메달 '+fmt(v):v+'층';}
+// 정산 (한 시즌)
+async function spSettle(k,key,why){const C=spCfg(k),K=SP_KIND[k],ref=db.doc('spay/'+k+'_'+key);
+ const s=await ref.get(),old=s.exists?s.data():null;if(old&&old.state==='done')return{skip:1};
+ const L=await spRank(k,key),paid=(old&&old.paid)||[];
+ await ref.set({kind:k,key,state:'paying',at:Date.now(),by:acc.id,paid});
+ let n=0,fail=0;
+ for(let i=0;i<L.length;i++){const r=L[i],tier=i<3?i:(r.part?3:-1);if(tier<0||paid.includes(r.uid))continue;const m=C.r[tier];if(!spHas(m))continue;
+  const msg=(m.msg?m.msg+'\n':'')+spLabel(k,key)+' '+K.n+' '+(tier<3?(tier+1)+'위':'참여')+' 보상이에요. ('+spVal(k,r.val)+')';
+  try{await db.doc('accounts/'+r.uid).pushMail(stampMail(Object.assign({},m,{from:K.n+' 시즌 보상',title:m.title||(K.n+' '+SP_TIER[tier]+' 보상'),msg})));paid.push(r.uid);n++;await ref.update({paid});}catch(e){let gone=false;try{gone=!(await db.doc('accounts/'+r.uid).get()).exists;}catch(e2){}if(gone){paid.push(r.uid);await ref.update({paid});}else fail++;}}
+ const top=L.slice(0,3).map(r=>({uid:r.uid,nick:r.nick,val:r.val}));
+ await ref.set({kind:k,key,state:fail?'paying':'done',at:Date.now(),by:acc.id,paid,n,total:L.length,top,why:why||'auto'});
+ log(K.n+' '+spLabel(k,key)+' 시즌 보상 우편 '+n+'명'+(fail?' (실패 '+fail+'명)':'')+(why==='manual'?' · 수동':' · 자동'));
+ return{n,fail,total:L.length};}
+// 운영자 접속 시 자동 정산
+async function spAuto(){if(!acc||!isAdmin()||spAuto.run)return;spAuto.run=1;
+ try{for(const k of ['a','t']){const C=spCfg(k),key=spPrev(k);if(!C.on||key<SP_KIND[k].from)continue;
+  const s=await db.doc('spay/'+k+'_'+key).get();if(s.exists&&s.data().state==='done')continue;
+  const r=await spSettle(k,key,'auto');if(r&&!r.skip&&r.n)toast(SP_KIND[k].n+' '+spLabel(k,key)+' 시즌 보상을 '+r.n+'명에게 우편으로 보냈어요.');}}
+ catch(e){console.warn('spAuto',e);}finally{spAuto.run=0;AS.spm=null;if(MODE==='admin'&&AS.tab==='spay')render();}}
+// 유저 화면 안내 한 줄
+function spNote(k){const C=spCfg(k);if(!C.on||!C.r.some(spHas))return '';const K=SP_KIND[k];
+ return '<div class="card spnote"><b>'+K.n+' 시즌 보상</b> <span class="muted">'+(k==='a'?'매주 일요일 오전 6시':'매달 1일 오전 6시')+' 시즌이 끝나면 우편으로 자동 지급돼요.</span><div class="spnl">'+
+  C.r.map((m,i)=>spHas(m)?'<span><b>'+SP_TIER[i]+'</b> '+esc(mailParts(m).join(', '))+'</span>':'').join('')+'</div></div>';}
+// 운영자 화면
+function aSpay(){const main=isMain();
+ if(!AS.spm){AS.spm={};Promise.all(['a','t'].map(async k=>{const key=spPrev(k);try{const s=await db.doc('spay/'+k+'_'+key).get();AS.spm[k]=s.exists?s.data():0;}catch(e){AS.spm[k]=0;}
+  try{AS.spm[k+'L']=await spRank(k,key);}catch(e){AS.spm[k+'L']=[];}})).then(()=>{if(MODE==='admin'&&AS.tab==='spay')render();});}
+ let h='<div class="card adm"><h2>시즌 보상 자동 지급</h2><p class="muted">시즌이 끝난 뒤 운영자가 운영자 사이트에 들어오면 지난 시즌 순위를 계산해서 우편으로 자동으로 보내요. 같은 시즌은 한 번만 보내져요.<br>대전은 매주(일요일 오전 6시 초기화), 구천탑은 매달(1일 오전 6시 초기화) 정산해요. 보상을 비워 둔 단계는 보내지 않아요.<br>대전 나머지 참여자 = 그 주에 한 번 이상 공격한 유저 · 구천탑 나머지 참여자 = 1층 이상 오른 유저</p></div>';
+ for(const k of ['a','t']){const K=SP_KIND[k],C=spCfg(k),key=spPrev(k),M=AS.spm[k],L=AS.spm[k+'L'];
+  const st=M===undefined?'불러오는 중…':M&&M.state==='done'?'보냄 · '+fmt(M.n||0)+'명 ('+new Date(M.at).toLocaleString('ko-KR')+')':M&&M.state==='paying'?'보내는 중 멈춤 · '+fmt((M.paid||[]).length)+'명 보냄 (다시 누르면 나머지만 보내요)':key<K.from?'자동 지급 시작 전 시즌':'아직 안 보냄';
+  h+='<div class="card adm"><h2>'+K.n+' '+K.per+' 보상</h2>'+
+   '<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="sp'+k+'On"'+(C.on?' checked':'')+'> 자동 지급 켜기</label>'+
+   '<p class="muted" style="margin:6px 0">이번 시즌: '+spLabel(k,spCur(k))+' · 지난 시즌: <b>'+spLabel(k,key)+'</b> — '+st+'<br>자동 지급은 '+spLabel(k,K.from)+' 시즌부터 적용돼요.</p>'+
+   (L?'<p style="margin:4px 0">지난 시즌 순위: '+(L.length?L.slice(0,3).map((r,i)=>'<b>'+(i+1)+'위</b> '+esc(r.nick)+' ('+spVal(k,r.val)+')').join(' · ')+' · 나머지 참여자 '+fmt(L.slice(3).filter(r=>r.part).length)+'명':'참여자 없음')+'</p>':'')+
+   (main&&!(M&&M.state==='done')&&M!==undefined&&key>=K.from?'<button class="btn teal sm" data-x="spRun" data-k="'+k+'">'+spLabel(k,key)+' 보상 지금 보내기</button>':'')+
+   C.r.map((m,i)=>'<details class="spd"><summary><b>'+SP_TIER[i]+'</b> <span class="muted">'+(spHas(m)?esc(mailParts(m).join(', ')):'보상 없음 (보내지 않아요)')+'</span></summary>'+mailForm('sp'+k+i,m)+'</details>').join('')+'</div>';}
+ h+=(main?'<div class="card adm admrow"><button class="btn soft sm" data-x="spDef">기본값 불러오기</button><button class="btn" data-x="spSave">시즌 보상 설정 저장</button></div>':'<div class="card adm"><p class="muted">설정은 메인 운영자만 바꿀 수 있어요.</p></div>');
+ return h;}
+MAIN_ONLY.add('spSave');MAIN_ONLY.add('spDef');MAIN_ONLY.add('spRun');
+Object.assign(AD,{
+ spDef(){const o={};for(const k of ['a','t'])o[k]={on:spCfg(k).on?1:0,r:spDefR(k)};cfg.spay=o;render();toast('기본값을 불러왔어요. [저장]을 눌러야 적용돼요.');},
+ async spSave(){const o={};for(const k of ['a','t']){o[k]={on:document.getElementById('sp'+k+'On').checked?1:0,r:[0,1,2,3].map(i=>readMail('sp'+k+i))};}
+  cfg.spay=o;await saveGlobal('시즌 보상 설정 저장 (대전 '+(o.a.on?'켬':'끔')+' · 구천탑 '+(o.t.on?'켬':'끔')+')');render();},
+ async spRun(t){const k=t.dataset.k,key=spPrev(k),K=SP_KIND[k];
+  confirmBox(K.n+' 시즌 보상 보내기',spLabel(k,key)+' '+K.n+' 순위 보상을 지금 우편으로 보낼까요? 저장된 보상 설정으로 보내요. (설정을 바꿨다면 먼저 저장해 주세요)',async()=>{const r=await spSettle(k,key,'manual');AS.spm=null;toast(r.skip?'이미 보낸 시즌이에요.':fmt(r.n)+'명에게 보냈어요.'+(r.fail?' (실패 '+r.fail+'명)':''));render();});}
+});
 /* ================= 이벤트 ================= */
 document.addEventListener('submit',async ev=>{const f=ev.target;ev.preventDefault();const fd=new FormData(f),k=f.dataset.form;if(busy)return;busy=true;try{
  if(k==='login'){const id=String(fd.get('id')).trim();if(!/^[A-Za-z0-9_-]{1,40}$/.test(id)){S.loginMsg='아이디 또는 비밀번호가 틀렸어요.';return render();}
@@ -4346,7 +4419,7 @@ function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
 (async function boot(){
  const app=document.getElementById('app');
  try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
- db=HS.db;if(TEST)window.__T={bossSendUnclaimed,bossSaveLast,bossSuggest,BV,get db(){return db;},GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
+ db=HS.db;if(TEST)window.__T={spSettle,spRank,spPrev,spNote,get cfg(){return cfg;},bossSendUnclaimed,bossSaveLast,bossSuggest,BV,get db(){return db;},GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
  HS.onAuth(async uid=>{

@@ -2313,3 +2313,12 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 @media (max-height:520px) and (orientation:landscape){.skypc{--w:min(620px,92vw);padding-top:calc(var(--w)*.1)}}
 .skypc{padding:calc(var(--w)*.23) calc(var(--w)*.12) calc(var(--w)*.14)}
 @media (max-height:520px) and (orientation:landscape){.skypc{padding:calc(var(--w)*.12) calc(var(--w)*.08) calc(var(--w)*.06)}}
+
+/* v202 시즌 보상 안내 */
+.spnote{padding:10px 14px;font-size:14px;line-height:1.5}
+.spnote .spnl{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px}
+.spnote .spnl span{white-space:normal}
+.spnote .spnl b{color:#b0302a;margin-right:4px}
+.spd{border:1px solid rgba(120,80,40,.25);border-radius:10px;padding:8px 12px;margin-top:8px;background:rgba(255,255,255,.35)}
+.spd>summary{cursor:pointer;padding:4px 0;line-height:1.5}
+.spd[open]>summary{margin-bottom:8px}
