@@ -2397,3 +2397,8 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 
 /* v209 안내 띠: hidden 이 display:flex 에 덮이지 않게 */
 .dgwarnb[hidden]{display:none!important}
+/* v210 꾸밈 팝업 좌우 여백: %가 화면 폭 기준이라 넓은 화면에서 여백이 과하게 커지던 문제 → 팝업 폭 기준으로 */
+.overlay .modal[class="modal"]{padding-left:calc(min(480px,94vw)*.075)!important;padding-right:calc(min(480px,94vw)*.075)!important}
+.overlay .modal[class="modal"]:has(.kigrid){padding-left:calc(min(520px,96vw)*.05)!important;padding-right:calc(min(520px,96vw)*.05)!important}
+/* 환수 고르기 창은 조금 더 넓게 */
+.overlay .modal[class="modal"]:has(.bmlist){width:min(540px,96vw);padding-left:calc(min(540px,96vw)*.065)!important;padding-right:calc(min(540px,96vw)*.065)!important}

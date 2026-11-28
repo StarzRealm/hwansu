@@ -2999,6 +2999,8 @@ const dgWName=k=>k==='dfire'?DG_CW.fire[0]:DG_CW[k]?DG_CW[k][0]:DG_EL[k]?DG_ELN[
 function dgEvoReady(G){return Object.keys(DG_EVO).filter(id=>!G.W['ev_'+id]&&(G.W[DG_EVO[id].a]||0)>=DG_WMAX&&(G.W[DG_EVO[id].b]||0)>=DG_WMAX);}
 function dgCardRank(G,c){return c.t==='e'?3:c.k===G.el?2:c.t==='w'?1:0;}
 const DG_PS={spd:['이동 속도','+8%'],mag:['영혼 흡수 범위','+25%'],heal:['체력 회복','초당 +0.4%'],cd:['쿨타임','-7%'],size:['탄 크기','+10%'],crit:['치명타','+6%'],hp:['최대 체력','+15%'],arm:['방어','받는 피해 -7%']};
+// 조합 무기 화력 배율 (밸런스 조절용)
+const DG_EVOM=.72;
 const DG_WMAX=6,DG_PMAX=5,DG_PCMAX=3,DG_CWMAX=4;
 // 몬스터: 체력·속도·피해·크기·영혼
 const DG_MT={m1:{h:1,s:62,d:1,r:15,x:1},m2:{h:.6,s:112,d:.8,r:13,x:1},m3:{h:4.5,s:42,d:1.6,r:24,x:5,hv:1},m4:{h:1.3,s:52,d:1,r:15,x:5,rng:1},
@@ -3144,7 +3146,7 @@ function dgBossLim(G,e){const b=G.C.bossT||0;return (e.k==='bx'||e.k==='h5')?Mat
 function dgHurt(G,v){if(G.p.inv>0)return;v*=Math.max(.3,1-.07*(G.P.arm||0));G.p.hp-=v;if(G.p.hp<=0){G.p.hp=0;G.dead=1;G.ev.push({k:'end'});}}
 
 /* --- 무기 --- */
-function dgWeapons(G,dt){const p=G.p,bd=dgBD(G),sz=dgSz(G),cd=dgCd(G);G.wt=G.wt||{};const W=G.W;
+function dgWeapons(G,dt){const p=G.p,bd=dgBD(G),be=bd*DG_EVOM,sz=dgSz(G),cd=dgCd(G);G.wt=G.wt||{};const W=G.W;
  const tick=(k,base)=>{G.wt[k]=(G.wt[k]||0)-dt;if(G.wt[k]<=0){G.wt[k]=base*cd;return true;}return false;};
  const fa=Math.atan2(p.fy,p.fx);
  for(const k in W){const lv=W[k];
@@ -3171,30 +3173,30 @@ function dgWeapons(G,dt){const p=G.p,bd=dgBD(G),sz=dgSz(G),cd=dgCd(G);G.wt=G.wt|
  if(W.hori&&tick('hori',4.0)){const lv=W.hori,t=dgNear(G,p.x,p.y,420),x=t?t.x:p.x+p.fx*150,y=t?t.y:p.y+p.fy*150;dgAdd(G,{k:'hori',x,y,vx:0,vy:0,r:(56+7*lv)*sz,dmg:bd*(.35+.1*lv),life:2.4+.2*lv,tk:.4,pierce:1e9,stick:1,pull:90+10*lv});}
  if(W.jang){const lv=W.jang,mx=lv>=4?2:1;if(tick('jang',6.5)&&G.B.filter(b=>b.k==='jang').length<mx){const ja=G.rnd()*6.28;dgAdd(G,{k:'jang',x:p.x+Math.cos(ja)*70,y:p.y+Math.sin(ja)*70,vx:0,vy:0,r:0,dmg:0,life:7+.6*lv,pierce:1e9,tk:1e9,stick:1,nohit:1,sc:0,lv});}}
  // --- 조합 무기 ---
- if(W.ev_yeoui){const R=125*sz;if(!G.B.some(b=>b.k==='ev_yeoui'))for(let i=0;i<4;i++)dgAdd(G,{k:'ev_yeoui',i,n:4,x:p.x,y:p.y,r:30*sz,dmg:bd*3.4,life:1e9,pierce:1e9,tk:.35,orb:R,spd:3.4,kb:120});}
- if(W.ev_gwihwa&&tick('ev_gwihwa',.85)){for(let i=0;i<4;i++){const a=fa+i*Math.PI/2+G.rnd()*.4;dgAdd(G,{k:'ev_gwihwa',x:p.x,y:p.y,vx:Math.cos(a)*340,vy:Math.sin(a)*340,a,r:14*sz,dmg:bd*3.2,life:2.6,pierce:1,tk:1e9,home:1,boomR:85*sz});}}
+ if(W.ev_yeoui){const R=125*sz;if(!G.B.some(b=>b.k==='ev_yeoui'))for(let i=0;i<4;i++)dgAdd(G,{k:'ev_yeoui',i,n:4,x:p.x,y:p.y,r:30*sz,dmg:be*3.4,life:1e9,pierce:1e9,tk:.35,orb:R,spd:3.4,kb:120});}
+ if(W.ev_gwihwa&&tick('ev_gwihwa',.85)){for(let i=0;i<4;i++){const a=fa+i*Math.PI/2+G.rnd()*.4;dgAdd(G,{k:'ev_gwihwa',x:p.x,y:p.y,vx:Math.cos(a)*340,vy:Math.sin(a)*340,a,r:14*sz,dmg:be*3.2,life:2.6,pierce:1,tk:1e9,home:1,boomR:85*sz});}}
  if(W.ev_sinryeong){const R=195*sz;G.snR=R;G.snT=(G.snT||0)-dt;for(const e of G.E)if((e.x-p.x)**2+(e.y-p.y)**2<(R+e.r)**2)e.slow=Math.max(e.slow,e.boss?.2:.4);
   if(G.snT<=0){G.snT=.5*cd;for(const e of G.E)if((e.x-p.x)**2+(e.y-p.y)**2<(R+e.r)**2)dgHit(G,e,bd*1.0);}
   if(tick('ev_sinryeong',2.0))dgAdd(G,{k:'bell',x:p.x,y:p.y,vx:0,vy:0,r:10,rmax:270*sz,dmg:bd*3.2,life:.55,pierce:1e9,tk:1e9,ring:1,follow:1,kb:170});}
- if(W.ev_noepung&&tick('ev_noepung',.9)){[fa,fa+Math.PI,fa+Math.PI/2,fa-Math.PI/2].forEach(a=>dgAdd(G,{k:'ev_noepung',x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,a,r:34*sz,dmg:bd*3,life:1.2,pierce:1e9,tk:1e9,kb:60,zap:.2,zt:0}));}
- if(W.ev_cheonnyang&&tick('ev_cheonnyang',1.25)){for(let i=0;i<3;i++){const a=fa+i*Math.PI*2/3;dgAdd(G,{k:'ev_cheonnyang',x:p.x,y:p.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:28*sz,dmg:bd*4,life:1.7,pierce:1e9,tk:.3,boom:1,t0:0,emit:.2,et:0});}}
- if(W.ev_daejang&&tick('ev_daejang',5.0)){const t=dgNear(G,p.x,p.y,460),x=t?t.x:p.x+p.fx*180,y=t?t.y:p.y+p.fy*180;dgAdd(G,{k:'ev_daejang',x,y,vx:0,vy:0,r:0,dmg:0,life:1.7,pierce:1e9,tk:1e9,stick:1,nohit:1,pull:170,pr:270*sz,slamR:210*sz,sd:bd*13});}
+ if(W.ev_noepung&&tick('ev_noepung',.9)){[fa,fa+Math.PI,fa+Math.PI/2,fa-Math.PI/2].forEach(a=>dgAdd(G,{k:'ev_noepung',x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,a,r:34*sz,dmg:be*3,life:1.2,pierce:1e9,tk:1e9,kb:60,zap:.2,zt:0}));}
+ if(W.ev_cheonnyang&&tick('ev_cheonnyang',1.25)){for(let i=0;i<3;i++){const a=fa+i*Math.PI*2/3;dgAdd(G,{k:'ev_cheonnyang',x:p.x,y:p.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:28*sz,dmg:be*4,life:1.7,pierce:1e9,tk:.3,boom:1,t0:0,emit:.2,et:0});}}
+ if(W.ev_daejang&&tick('ev_daejang',5.0)){const t=dgNear(G,p.x,p.y,460),x=t?t.x:p.x+p.fx*180,y=t?t.y:p.y+p.fy*180;dgAdd(G,{k:'ev_daejang',x,y,vx:0,vy:0,r:0,dmg:0,life:1.7,pierce:1e9,tk:1e9,stick:1,nohit:1,pull:170,pr:270*sz,slamR:210*sz,sd:be*13});}
  // --- 속성 기술 각성 ---
- if(W.ev_hwaryun&&tick('ev_hwaryun',.9)){for(let i=0;i<3;i++){const t=dgNear(G,p.x,p.y,600);const a=(t?Math.atan2(t.y-p.y,t.x-p.x):fa)+(i-1)*.6;dgAdd(G,{k:'bujeok',sk:'cw_ev_hwaryun',x:p.x,y:p.y,vx:Math.cos(a)*330,vy:Math.sin(a)*330,a,r:15*sz,dmg:bd*2.6,life:2.2,pierce:2,tk:1e9,home:1,trail:.26,trT:0});}}
- if(W.ev_manpa&&tick('ev_manpa',1.3)){for(let i=0;i<12;i++){const a=fa+i*Math.PI/6;dgAdd(G,{k:'water',sk:'cw_ev_manpa',x:p.x,y:p.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,a,r:40*sz,dmg:bd*3.0,life:1.3,pierce:1e9,tk:1e9,kb:80});}}
- if(W.ev_baekho&&tick('ev_baekho',.8)){for(let i=-1;i<=1;i++){const a=fa+i*.38;dgAdd(G,{k:'baekho',sk:'cw_ev_baekho',x:p.x,y:p.y,vx:Math.cos(a)*440,vy:Math.sin(a)*440,a,r:30*sz,dmg:bd*6.6,life:1.3,pierce:1e9,tk:1e9,kb:90});}}
- if(W.ev_jisin&&tick('ev_jisin',5.0)){dgAdd(G,{k:'earth',sk:'cw_ev_jisin',x:p.x,y:p.y,vx:0,vy:0,follow:1,r:230*sz,dmg:bd*2.2,life:3.5,tk:.5,pierce:1e9,slow:.55});}
+ if(W.ev_hwaryun&&tick('ev_hwaryun',.9)){for(let i=0;i<3;i++){const t=dgNear(G,p.x,p.y,600);const a=(t?Math.atan2(t.y-p.y,t.x-p.x):fa)+(i-1)*.6;dgAdd(G,{k:'bujeok',sk:'cw_ev_hwaryun',x:p.x,y:p.y,vx:Math.cos(a)*330,vy:Math.sin(a)*330,a,r:15*sz,dmg:be*2.6,life:2.2,pierce:2,tk:1e9,home:1,trail:.26,trT:0});}}
+ if(W.ev_manpa&&tick('ev_manpa',1.3)){for(let i=0;i<12;i++){const a=fa+i*Math.PI/6;dgAdd(G,{k:'water',sk:'cw_ev_manpa',x:p.x,y:p.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,a,r:40*sz,dmg:be*3.0,life:1.3,pierce:1e9,tk:1e9,kb:80});}}
+ if(W.ev_baekho&&tick('ev_baekho',.8)){for(let i=-1;i<=1;i++){const a=fa+i*.38;dgAdd(G,{k:'baekho',sk:'cw_ev_baekho',x:p.x,y:p.y,vx:Math.cos(a)*440,vy:Math.sin(a)*440,a,r:30*sz,dmg:be*6.6,life:1.3,pierce:1e9,tk:1e9,kb:90});}}
+ if(W.ev_jisin&&tick('ev_jisin',5.0)){dgAdd(G,{k:'earth',sk:'cw_ev_jisin',x:p.x,y:p.y,vx:0,vy:0,follow:1,r:230*sz,dmg:be*2.2,life:3.5,tk:.5,pierce:1e9,slow:.55});}
  if(W.ev_sinmok&&tick('ev_sinmok',3.0)&&G.B.filter(b=>b.k==='sinmok').length<4){const a=G.rnd()*6.28,d=90+G.rnd()*70;dgAdd(G,{k:'sinmok',x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d,vx:0,vy:0,r:0,dmg:0,life:9,pierce:1e9,tk:1e9,stick:1,nohit:1,sc:.3});}
- if(W.ev_honbul&&tick('ev_honbul',.8)){for(let i=0;i<2;i++){const t=dgNear(G,p.x,p.y,600);const a=(t?Math.atan2(t.y-p.y,t.x-p.x):fa)+(i?.25:-.25);dgAdd(G,{k:'yin',sk:'cw_ev_honbul',x:p.x,y:p.y,vx:Math.cos(a)*470,vy:Math.sin(a)*470,a,r:16*sz,dmg:bd*2.8,life:1.3,pierce:1,tk:1e9,chain:6,burn:bd*1.3});}}
- if(W.ev_haeullim&&tick('ev_haeullim',1.2)){dgAdd(G,{k:'bell',sk:'cw_ev_haeullim',x:p.x,y:p.y,vx:0,vy:0,r:10,rmax:360*sz,gt:1.0,dmg:bd*3.4,life:1.05,pierce:1e9,tk:1e9,ring:1,follow:1,kb:70});}
+ if(W.ev_honbul&&tick('ev_honbul',.8)){for(let i=0;i<2;i++){const t=dgNear(G,p.x,p.y,600);const a=(t?Math.atan2(t.y-p.y,t.x-p.x):fa)+(i?.25:-.25);dgAdd(G,{k:'yin',sk:'cw_ev_honbul',x:p.x,y:p.y,vx:Math.cos(a)*470,vy:Math.sin(a)*470,a,r:16*sz,dmg:be*2.8,life:1.3,pierce:1,tk:1e9,chain:6,burn:be*1.3});}}
+ if(W.ev_haeullim&&tick('ev_haeullim',1.2)){dgAdd(G,{k:'bell',sk:'cw_ev_haeullim',x:p.x,y:p.y,vx:0,vy:0,r:10,rmax:360*sz,gt:1.0,dmg:be*3.4,life:1.05,pierce:1e9,tk:1e9,ring:1,follow:1,kb:70});}
  for(const b of G.B){
-  if(b.trail){b.trT-=dt;if(b.trT<=0){b.trT=b.trail;dgAdd(G,{k:'fire',sk:'cw_ev_hwaryun_w',x:b.x,y:b.y,vx:0,vy:0,r:32*sz,dmg:bd*.8,life:1.4,tk:.3,pierce:1e9,stick:1});}}
-  if(b.k==='sinmok'){b.sc-=dt;if(b.sc<=0){const t=dgNear(G,b.x,b.y,320);if(t){b.sc=.6*cd;G.FX.push({k:'bolt',x:b.x,y:b.y-60,x2:t.x,y2:t.y,t:0,life:.3});dgHit(G,t,bd*4);dgChain(G,t,4,bd*2.6,0,'bolt');}}}}
+  if(b.trail){b.trT-=dt;if(b.trT<=0){b.trT=b.trail;dgAdd(G,{k:'fire',sk:'cw_ev_hwaryun_w',x:b.x,y:b.y,vx:0,vy:0,r:32*sz,dmg:be*.8,life:1.4,tk:.3,pierce:1e9,stick:1});}}
+  if(b.k==='sinmok'){b.sc-=dt;if(b.sc<=0){const t=dgNear(G,b.x,b.y,320);if(t){b.sc=.6*cd;G.FX.push({k:'bolt',x:b.x,y:b.y-60,x2:t.x,y2:t.y,t:0,life:.3});dgHit(G,t,be*4);dgChain(G,t,4,be*2.6,0,'bolt');}}}}
  // 장승 포탑 · 조합 무기 보조 동작
  for(const b of G.B){
   if(b.k==='jang'){b.sc-=dt;if(b.sc<=0){const t=dgNear(G,b.x,b.y,330);if(t){b.sc=.5*cd;const a=Math.atan2(t.y-b.y,t.x-b.x);dgAdd(G,{k:'jangshot',x:b.x,y:b.y-30,vx:Math.cos(a)*460,vy:Math.sin(a)*460,a,r:10*sz,dmg:bd*(1.25+.32*b.lv),life:1,pierce:1+(b.lv>=6?1:0),tk:1e9});}}}
-  if(b.zap){b.zt-=dt;if(b.zt<=0){b.zt=b.zap;const t=dgNear(G,b.x,b.y,150);if(t){G.FX.push({k:'thunder',x:t.x,y:t.y,t:0,life:.35});dgHit(G,t,bd*2.4);}}}
-  if(b.emit){b.et-=dt;if(b.et<=0){b.et=b.emit;const a=G.rnd()*7;dgAdd(G,{k:'yeop',x:b.x,y:b.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:9*sz,dmg:bd*1.3,life:.8,pierce:1,tk:1e9});}}
+  if(b.zap){b.zt-=dt;if(b.zt<=0){b.zt=b.zap;const t=dgNear(G,b.x,b.y,150);if(t){G.FX.push({k:'thunder',x:t.x,y:t.y,t:0,life:.35});dgHit(G,t,be*2.4);}}}
+  if(b.emit){b.et-=dt;if(b.et<=0){b.et=b.emit;const a=G.rnd()*7;dgAdd(G,{k:'yeop',x:b.x,y:b.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:9*sz,dmg:be*1.3,life:.8,pierce:1,tk:1e9});}}
   if(b.pull){const PR=b.pr||b.r*1.6;for(const e of G.E){const dx=b.x-e.x,dy=b.y-e.y,d2=dx*dx+dy*dy;if(d2<PR*PR&&d2>25){const d=Math.sqrt(d2),f=(e.boss?.25:1)*b.pull*dt;e.x+=dx/d*Math.min(f,d);e.y+=dy/d*Math.min(f,d);}}}
   if(b.k==='ev_daejang'&&!b.slam&&b.age>=1.15){b.slam=1;b.pull=0;G.FX.push({k:'boom',x:b.x,y:b.y,t:0,life:.6,r:b.slamR});G.FX.push({k:'quake',x:b.x,y:b.y,t:0,life:.5,r:b.slamR});for(const e of G.E)if((e.x-b.x)**2+(e.y-b.y)**2<(b.slamR+e.r)**2)dgHit(G,e,b.sd,140,b);}}
  if(W.dfire&&tick('dfire',1.8)){for(let i=0;i<Math.ceil(W.dfire/2);i++)dgAdd(G,{k:'dfire',x:p.x,y:p.y,vx:(G.rnd()-.5)*200,vy:(G.rnd()-.5)*200,r:14*sz,dmg:bd*(1.2+.3*W.dfire),life:3,pierce:1,tk:1e9,home:1,boomR:55*sz});}}
@@ -3835,7 +3837,7 @@ function vKr(){if(!krOpen())return krClosed('근두운 질주');const R=dgRep('k
  (tab==='tree'?krTreeView(K,C):tab==='charm'?krCharmView(K):krRankView(wk))+'</div></section>';}
 function krRankView(wk){krRankLoad(wk);const RK=KRV.rank[wk],me=RK&&RK.list.findIndex(r=>r.uid===acc.uid);
  const rows=RK?(RK.list.length?RK.list.slice(0,10).map((r,i)=>krRow(r,i,r.uid===acc.uid)).join('')+(me>=10?krRow(RK.list[me],me,1):''):'<p class="krmuted">이번 주 기록이 아직 없어요. 첫 기록의 주인공이 되어 보세요!</p>'):'<p class="krmuted">순위를 불러오는 중…</p>';
- return '<h3 class="krh3 serif">주간 랭킹 <small>'+wk+' 주 · 월요일 0시 정산</small></h3><div class="krrank">'+rows+'</div>'+
+ return '<h3 class="krh3 serif">주간 랭킹 <small>'+wk+' 주 · 월요일 오전 6시 정산</small></h3><div class="krrank">'+rows+'</div>'+
  '<details class="krrules"><summary>주간 랭킹 보상</summary><ul>'+krTiers().map(t=>'<li><b>'+t[0]+'</b> '+krTierTxt(t)+'</li>').join('')+'</ul></details>';}
 function krRow(r,i,me){return '<div class="krrow'+(me?' me':'')+'"><span class="krno">'+(i<3?'<img class="px" src="i/kr/kr_crown'+(i+1)+'.png" alt="'+(i+1)+'위">':'<b>'+(i+1)+'</b>')+'</span><span class="krnm">'+esc(r.nick||'?')+'</span><span class="krsc">'+fmt(r.score)+'<small>'+r.stage+'스테이지</small></span></div>';}
 const KR_TN=[['1위',1,1],['2~3위',2,3],['4~10위',4,10],['11~30위',11,30],['참여',31,99999]];
@@ -3854,7 +3856,7 @@ function krTreeView(K,C){const T=K.tree,sp=krTreeSpent(T);
   return '<div class="krbr" style="--bc:'+col+'"><div class="krbrh">'+krImg('b_'+b)+'<b>'+bn+'</b><small>'+used+'</small></div><div class="krbrg"><svg viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">'+lines+'</svg>'+nodes+'</div></div>';}).join('');
  return '<h3 class="krh3 serif">갈래 트리 <small>엽전으로 배워요 · 아래 칸은 위 칸을 배워야 열려요</small></h3>'+
   '<div class="krtree"><img class="px krcrest" src="i/kr/kr_tree_crest.png?'+IMG_V+'" alt="" onerror="this.remove()"><div class="krbrs">'+br+'</div></div>'+
-  '<p class="krnote">이번 주 트리에 쓴 엽전 <b>'+sp+'</b>'+(C.wreset?' · 매주 월요일 0시에 트리가 초기화돼요. 남은 엽전은 그대로 두고, 트리에 쓴 엽전은 최대 <b>'+C.carry+'개</b>까지 돌려받아요.':'')+'</p>';}
+  '<p class="krnote">이번 주 트리에 쓴 엽전 <b>'+sp+'</b>'+(C.wreset?' · 매주 월요일 오전 6시에 트리가 초기화돼요. 남은 엽전은 그대로 두고, 트리에 쓴 엽전은 최대 <b>'+C.carry+'개</b>까지 돌려받아요.':'')+'</p>';}
 function krNodePop(id){const n=KR_TREE[id],K=krAcc(),T=K.tree,lv=T[id]||0,s=krNodeSt(T,id),cost=n.cost[lv],br=KR_BR.find(b=>b[0]===n.b);
  const req=n.req?(Array.isArray(n.req)?n.req:[n.req]).map(q=>KR_TREE[q].n).join(' 또는 '):'';
  krPop('<div class="krpopn" style="--bc:'+br[2]+'"><div class="krpopi krnode '+s+'">'+krImg('n_'+id,'kricon')+'</div><div><small>'+br[1]+' 갈래</small><b class="serif">'+n.n+'</b><span>Lv '+lv+' / '+n.mx+'</span></div></div>'+
@@ -4037,7 +4039,7 @@ function aKrCfg(){const C=krCfg(),main=isMain(),wk=AS.krwk||weekKey(now()),RK=KR
  const cw=weekKey(now()),last=weekKey(now()-7*86400000),fut=[0,1,2,3,4].map(i=>weekKey(now()+i*7*86400000)),fv=C.mForceWk===cw?C.mForce:'';
  const mrow=KR_MUTS.map(k=>'<label class="krmrow"><input type="checkbox" class="krMOn" value="'+k+'"'+(C.mOff.includes(k)?'':' checked')+'>'+krImg('m_'+k)+'<span><b>'+KR_MUT[k][0]+'</b><small>'+KR_MUT[k][1]+'</small></span></label>').join('');
  return '<div class="card adm"><h2>근두운 질주</h2>'+admOpenRow('kr',C.open)+
- '<h3 class="serif adh3">설정</h3><label class="f gmchk" style="color:inherit;margin:4px 0"><input type="checkbox" id="krWr"'+(C.wreset?' checked':'')+'>매주 월요일 0시에 갈래 트리 초기화 (남은 엽전은 그대로, 트리에 쓴 엽전은 아래 한도까지 돌려줌)</label><div class="admrow">'+n('krCa','돌려줄 엽전 한도',C.carry)+n('krD','하루 입장',C.daily)+n('krP','스테이지당 코인',C.perStage)+n('krM','하루 코인 상한',C.dailyCap)+n('krR','고속질주 간격(초)',C.rushT)+n('krDr','체력 감소 %',C.drain)+n('krO','장애물 양 %',C.obst)+'</div>'+
+ '<h3 class="serif adh3">설정</h3><label class="f gmchk" style="color:inherit;margin:4px 0"><input type="checkbox" id="krWr"'+(C.wreset?' checked':'')+'>매주 월요일 오전 6시에 갈래 트리 초기화 (남은 엽전은 그대로, 트리에 쓴 엽전은 아래 한도까지 돌려줌)</label><div class="admrow">'+n('krCa','돌려줄 엽전 한도',C.carry)+n('krD','하루 입장',C.daily)+n('krP','스테이지당 코인',C.perStage)+n('krM','하루 코인 상한',C.dailyCap)+n('krR','고속질주 간격(초)',C.rushT)+n('krDr','체력 감소 %',C.drain)+n('krO','장애물 양 %',C.obst)+'</div>'+
  '<h3 class="serif adh3">주간 변이</h3><p class="muted">체크한 변이 중에서 매주 하나가 정해져요 (같은 주에는 모두 같은 변이). 아래에서 이번 주만 직접 고를 수도 있어요.</p><div class="krmgrid">'+mrow+'</div>'+
  '<div class="admrow"><label class="f">이번 주('+cw+') 변이<select id="krMF"><option value="">자동 (무작위)</option><option value="none"'+(fv==='none'?' selected':'')+'>변이 없음</option>'+KR_MUTS.map(k=>'<option value="'+k+'"'+(fv===k?' selected':'')+'>'+KR_MUT[k][0]+'</option>').join('')+'</select></label></div>'+
  '<p class="muted">미리 보기: '+fut.map((w,i)=>{const m=krMutOf(w,C);return (i?w:'이번 주')+' <b>'+(m?KR_MUT[m][0]:'없음')+'</b>';}).join(' · ')+'</p>'+
@@ -4228,7 +4230,7 @@ function ltDaily(){const C=ltCfg(),L=ltAcc(),cur=L.cur,left=ltLeft();let board='
   else ctrl='<p class="ltmsg">'+(n<4?'칸을 <b>'+(4-n)+'번</b> 더 긁어 보세요.':'줄을 하나 고르세요. 화살표를 누르면 줄이 정해져요.')+'</p>'+(n>=4?'<button class="btn teal ltgo" data-lt="decide"'+(LTV.sel<0?' disabled':'')+'>결정</button>':'');}
  else board='<div class="ltbw"><div class="ltboard idle">'+ltI('daily_board','ltbbg')+'<div class="ltidle">'+ltI('vendor','ltvd2')+'<p>1~9가 숨은 9칸 중 1칸이 보여요.<br>3칸을 더 긁고, 가로·세로·대각선 한 줄을 골라요.</p></div></div></div>';
  const pay='<div class="ltpay"><h3 class="serif">보상표 <small>줄 합계 → 환수코인</small></h3><div class="ltpt">'+C.pay.map((v,i)=>{const s=i+6,hl=cur&&cur.end&&ltSum(cur.b,cur.ln)===s;return '<div class="'+(hl?'hl':'')+(v>=10?' big':'')+'"><span>'+s+'</span><b>'+v+'</b></div>';}).join('')+'</div></div>';
- return '<div class="ltd"><div class="ltl">'+board+'<div class="ltctl">'+(cur?ctrl:'<button class="btn teal ltgo" data-lt="buy"'+(left&&acc.coins>=C.dCost?'':' disabled')+'>복권 사기 · 환수코인 '+C.dCost+'</button>')+'<p class="ltnote">오늘 남은 횟수 <b>'+left+'</b> / '+C.dPlays+' · 매일 0시 초기화 · 보유 환수코인 '+fmt(acc.coins||0)+'</p></div></div>'+pay+'</div>';}
+ return '<div class="ltd"><div class="ltl">'+board+'<div class="ltctl">'+(cur?ctrl:'<button class="btn teal ltgo" data-lt="buy"'+(left&&acc.coins>=C.dCost?'':' disabled')+'>복권 사기 · 환수코인 '+C.dCost+'</button>')+'<p class="ltnote">오늘 남은 횟수 <b>'+left+'</b> / '+C.dPlays+' · 매일 오전 6시 초기화 · 보유 환수코인 '+fmt(acc.coins||0)+'</p></div></div>'+pay+'</div>';}
 function ltBuy(){const C=ltCfg(),L=ltAcc();if(L.cur)return;if(!ltLeft())return toast('오늘 복권을 다 샀어요.');if((acc.coins||0)<C.dCost)return toast('환수코인이 부족해요.');
  acc.coins-=C.dCost;accDaily().lt=(accDaily().lt||0)+1;const b=[1,2,3,4,5,6,7,8,9];for(let i=8;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
  L.cur={b,r:[Math.floor(Math.random()*9)],ln:-1,end:0};LTV.sel=-1;LTV.fx='';save();SFX.play('coins');render();}
