@@ -3916,7 +3916,10 @@ const SKY_M=[
 const SKY_Q={e:{a0:135,col:[90,230,200],han:'青龍',ko:'청룡',dir:'동방'},n:{a0:225,col:[150,140,255],han:'玄武',ko:'현무',dir:'북방'},w:{a0:315,col:[225,235,255],han:'白虎',ko:'백호',dir:'서방'},s:{a0:45,col:[255,130,120],han:'朱雀',ko:'주작',dir:'남방'}};
 const SKYV={on:0,raf:0,W:0,H:0,L:null,cam:{z:1,rot:0,fx:0,fy:0,d:0,foc:null,sx:0,sy:0},anim:null,foc:null,pop:-1,T0:0};
 const SKYI={};function skyI(k){let o=SKYI[k];if(!o){o=SKYI[k]={im:new Image(),ok:0};o.im.onload=()=>{o.ok=1;};o.im.onerror=()=>{o.ok=-1;};o.im.src='i/sky/sky_'+k+'.png?'+IMG_V;}return o.ok===1?o.im:null;}
-function skyGot(i){return !!(acc.dex&&acc.dex[SKY_M[i][3]]);}
+// 칠전사(12단계)를 한 번이라도 얻으면 불이 들어와요. 해방·선계 귀환으로 떠나보내도 꺼지지 않아요.
+// 도감 기록이 빠진 경우(운영자 지급 등)에도 지금 데리고 있으면 켜지고, 도감에도 채워 둬요.
+function skyOwned(){const S=new Set(),add=p=>{if(p&&p.no!=null)S.add(+p.no);};(acc.slots||[]).forEach(add);try{vilPets().forEach(add);}catch(e){}const walk=(o,d)=>{if(!o||typeof o!=='object'||d>3)return;if(Array.isArray(o))return o.forEach(x=>walk(x,d+1));if(o.no!=null&&'st' in o)add(o);else Object.values(o).forEach(x=>walk(x,d+1));};walk(acc.bench,0);walk(acc.gsp,0);return S;}
+function skyGot(i){const no=SKY_M[i][3];if(acc.dex&&acc.dex[no])return true;const S=skyGot.c&&skyGot.t===acc.rev?skyGot.c:(skyGot.c=skyOwned(),skyGot.t=acc.rev,skyGot.c);if(S.has(no)){try{dexAdd(no);}catch(e){}return true;}return false;}
 function skyCnt(q){let n=0;SKY_M.forEach((m,i)=>{if((!q||m[2]===q)&&skyGot(i))n++;});return n;}
 function skyBanner(){const n=skyCnt();return '<div class="skyban" data-sky="open"><div><b class="serif">이십팔수 성도</b><span>칠전사를 모으면 하늘의 별자리가 하나씩 깨어나요</span></div><em>'+n+' / 28</em></div>';}
 /* --- 열기 · 닫기 --- */
@@ -4429,7 +4432,7 @@ function testBar(){if(!TEST||!acc||document.getElementById('testbar'))return;
 (async function boot(){
  const app=document.getElementById('app');
  try{HS=(TEST||/[?&]mock/.test(location.search))?makeMock():await makeFirebase();if(TEST){db=HS.db;await testSeed();}}catch(e){app.innerHTML='<main><div class="card">서버에 연결하지 못했어요. 잠시 뒤 새로고침해 주세요.<br><small class="muted">'+esc(e&&e.message||e)+'</small></div></main>';return;}
- db=HS.db;if(TEST)window.__T={spSettle,spRank,spPrev,spNote,get cfg(){return cfg;},bossSendUnclaimed,bossSaveLast,bossSuggest,BV,get db(){return db;},GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
+ db=HS.db;if(TEST)window.__T={skyGot,skyCnt,spSettle,spRank,spPrev,spNote,get cfg(){return cfg;},bossSendUnclaimed,bossSaveLast,bossSuggest,BV,get db(){return db;},GRADE_N,repPet,bModal,RCP,vErrand,evoAnimA,evoAnimB,wanderTick,petStats,powerOf,simBoss,maxLv,ELOF,BOSSES,get acc(){return acc;},set acc(v){acc=v;},vilInit,render,commit,tickAll,bOf,vilTick,evoCheck,statsOf,cp,TMAP,ITEMS,FORMS,NAMES,newPet,gCap,set view(v){view=v;},get VS(){return VS;},get PV(){return PV;},get SO(){return SO;},pgSimon,pgCatch,pgMem,bossRank,podium,get XV(){return XV;},get TV(){return TV;}};if(/[?&]mock/.test(location.search))window.__dbg={evoCheck,newPet,cp,needP,isAdv,maxLv,statsOf,petStats,evoTargets};
  if(MODE==='admin'){try{const b=await db.doc('config/bootstrap').get();S.needBoot=!b.exists;}catch(e){S.needBoot=false;}}
  let first=true;
  HS.onAuth(async uid=>{
