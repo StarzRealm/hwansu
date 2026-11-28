@@ -3172,17 +3172,17 @@ function dgElOf(no){const e=String(ELOF[no]||'yang').split('|')[0];return DG_EL[
 function dgImgTag(k,alt,cls,fb){if(DGI[k]&&DGI[k].ok===-1&&!fb)return '<img class="px '+(cls||'')+'" alt="" style="display:none">';return '<img class="px '+(cls||'')+'" src="i/dg/dg_'+k+'.png?'+IMG_V+'" alt="'+esc(alt||'')+'" onerror="this.onerror=null;'+(fb?'this.src=\''+fb+'\'':'this.style.display=\'none\'')+'">';}
 const DG_ICF={coins:'i/ui/icon_coin.png',ki:'i/ui/icon_ki_fire.png'};
 
-function vDgn(){if(!dgOpen())return krClosed('도깨비 야행');dgSettle();const R=dgRep(),p=R&&R.p,C=dgCfg(),left=dgLeft(),best=acc.dg&&acc.dg.best||0,tot=C.daily+mgEv('dgEnt')+(accDaily().dgBonus||0);
+function vDgn(){if(!dgOpen())return krClosed('도깨비 야행');dgSettle();const R=dgRep('dg'),p=R&&R.p,C=dgCfg(),left=dgLeft(),best=acc.dg&&acc.dg.best||0,tot=C.daily+mgEv('dgEnt')+(accDaily().dgBonus||0);
  const el=p?dgElOf(p.no):'yang',sec=acc.inv.sec_dg||0,canGo=p&&left&&p.en>=C.en;
  const row=(ic,t,d)=>'<li><span class="dgri">'+ic+'</span><span><b>'+t+'</b>'+d+'</span></li>';
  return '<section class="card dgcard"><div class="dghero"><div class="dgherot"><div class="dglogo"><h2 class="serif">도깨비 야행</h2></div><small>30분 서바이벌 사냥터</small><p>영혼을 모아 강해지고, 5분마다 나타나는 보스를 쓰러뜨려 보세요</p></div></div>'+
  '<div class="dgbody">'+
  (p?'<div class="dgrep"><img class="px" src="'+img(p.no)+'" alt=""><div class="dgrepi"><div class="dgrepn"><b class="serif">'+esc(NAMES[p.no])+'</b><span>'+p.st+'단계 · Lv '+p.lv+'</span></div>'+
-   '<div class="dgchips"><span class="dgchip">전투력 <b>'+fmt(cp(p))+'</b></span><span class="dgchip">기본 탄막 <b>'+DG_ELN[el]+' · '+DG_EL[el]+'</b></span><span class="dgchip'+(p.en<C.en?' bad':'')+'">활동력 <b>'+Math.floor(p.en)+'</b> / '+C.en+' 필요</span></div></div></div>'
-  :'<p class="dgwarn">대표 환수가 없어요. 성장 화면에서 환수를 키워 주세요.</p>')+
+   '<div class="dgchips"><span class="dgchip">전투력 <b>'+fmt(cp(p))+'</b></span><span class="dgchip">기본 탄막 <b>'+DG_ELN[el]+' · '+DG_EL[el]+'</b></span><span class="dgchip'+(p.en<C.en?' bad':'')+'">활동력 <b>'+Math.floor(p.en)+'</b> / '+C.en+' 필요</span></div><button class="btn soft sm mgpick" data-mgpet="dg">출전 환수 바꾸기</button></div></div>'
+  :'<p class="dgwarn">출전할 환수가 없어요. 성장 화면에서 환수를 키워 주세요.</p>')+
  '<div class="dgmeta"><div><small>오늘 남은 입장</small><b>'+left+' <i>/ '+tot+'</i></b></div><div><small>최고 기록</small><b>'+dgClock(best)+'</b></div><div><small>충전비서</small><b>'+sec+'</b></div></div>'+
  (!left&&sec>0?'<button class="btn soft dgfill" data-dgfill="1"><img class="px" src="'+ITEMS.sec_dg.img+'" alt="">야행충전비서 사용 · 입장 +1</button>':'')+
- '<button class="btn teal dgstart" data-dg="start"'+(canGo?'':' disabled')+'>'+(!p?'대표 환수가 필요해요':!left?'오늘 입장을 다 했어요':p.en<C.en?'활동력이 부족해요':'입장하기')+'</button>'+
+ '<button class="btn teal dgstart" data-dg="start"'+(canGo?'':' disabled')+'>'+(!p?'출전 환수가 필요해요':!left?'오늘 입장을 다 했어요':p.en<C.en?'활동력이 부족해요':'입장하기')+'</button>'+
  '<h3 class="dgh3 serif">보상</h3><ul class="dglist">'+
  row('<img class="px" src="i/ui/icon_coin.png" alt="">','환수코인','1분 버틸 때마다 '+C.cMin+'개 · 완주하면 +'+C.cClear+' · 상자·꾸러미 포함 최대 '+C.cMax)+
  row('<img class="px" src="i/ui/icon_ki_fire.png" alt="">','기운세트','6가지 기운 1개씩이 1세트 · 5분마다 '+C.k5+'세트 · 경지마다 '+C.kRank+'세트 · 최대 '+C.kMax)+
@@ -3193,13 +3193,21 @@ function vDgn(){if(!dgOpen())return krClosed('도깨비 야행');dgSettle();cons
  row('🎮','조작','PC는 WASD·방향키, 모바일은 화면을 누른 채 끌기 · 공격은 자동, 환수 옆 화살표 방향으로 나가요')+
  row('🎟️','입장','하루 '+C.daily+'번 · 다 쓰면 야행충전비서로 1번씩 더 들어갈 수 있어요')+
  row('🏳️','끝나면','쓰러지거나 포기해도 그때까지 쌓인 보상을 받아요 · 1분마다 기록이 저장돼서 창이 꺼져도 다음 접속 때 받아요')+'</ul></div></section>';}
-function dgRep(){try{autoRep();}catch(e){}return repPet();}
+// 미니게임 출전 환수 (도깨비 야행 dg · 근두운 질주 kr) — 따로 고르지 않으면 대전 대표 환수
+function mgFind(born){if(born==null)return null;const i=acc.slots.findIndex(q=>q&&q.born===born);if(i>=0)return{i,p:acc.slots[i]};const p=vilPets().find(q=>q.born===born);return p?{i:-1,p}:null;}
+function dgRep(k){const id=k&&acc.mgPet&&acc.mgPet[k],r=mgFind(id);if(r&&!noArena(r.p.no))return r;try{autoRep();}catch(e){}return repPet();}
+const MG_GN={dg:'도깨비 야행',kr:'근두운 질주'};
+function mgPetModal(k){const L=document.getElementById('layer'),R=dgRep(k),cur=R&&R.p.born,rep=acc.arenaRep,
+  all=acc.slots.map((p,i)=>p?{p,w:'성장 슬롯 '+(i+1)}:null).filter(Boolean).concat(vilPets().map(p=>({p,w:p.vb?(BLD[(bOf(p.vb)||{}).k]||{n:'건물'}).n+'에서 일하는 중':'마을'})));
+ L.innerHTML='<div class="overlay" data-close="1"><div class="modal pickm" role="dialog" aria-label="출전 환수 고르기"><b class="serif" style="font-size:20px">'+MG_GN[k]+' 출전 환수</b><p class="muted" style="margin:0">'+MG_GN[k]+'에 데리고 나갈 환수를 골라요. 대전 대표 환수와 따로 정할 수 있어요. 스타즈렐름·게스트 등급은 고를 수 없어요.</p><div class="bmlist">'+
+  all.map(({p,w})=>{if(!p.born)p.born=Date.now()+Math.floor(Math.random()*1e6);const no=noArena(p.no),on=p.born===cur;return '<button class="btn '+(on?'teal':'soft')+' bmrow" data-setmg="'+p.born+'" data-k="'+k+'" '+(no?'disabled':'')+'><img class="px" src="'+img(p.no)+'" alt=""><span><b>'+esc(NAMES[p.no])+'</b> · '+stN(p)+' · 전투력 '+fmt(cp(p))+(k==='dg'?' · 활동력 '+Math.floor(p.en||0):'')+'<small>'+(on?'★ 지금 출전 · ':'')+(p.born===rep?'대전 대표 · ':'')+w+(no?' · 고를 수 없는 등급':'')+'</small></span></button>';}).join('')+'</div><button class="btn ghost" data-close="1">닫기</button></div></div>';}
+async function setMgPet(k,born){const all=acc.slots.filter(Boolean).concat(vilPets()),q=all.find(p=>String(p.born)===String(born));if(!q||noArena(q.no))return;acc.mgPet=Object.assign({},acc.mgPet||{},{[k]:q.born});closeLayer();SFX.play('equip');toast(NAMES[q.no]+'을(를) '+MG_GN[k]+' 출전 환수로 정했어요.');await commit();render();}
 function dgClock(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 
 /* --- 시작 --- */
 function dgEvC(){return{evRew:mgM('dgRew'),evBox:mgEv('dgBox'),evEgg:mgM('dgEgg'),evXp:mgM('dgXp')};}
-function dgStart(){const R=dgRep(),p=R&&R.p,C=Object.assign({},dgCfg(),dgEvC());
- if(!p)return toast('대표 환수가 없어요.');if(!dgLeft())return toast('오늘 입장 횟수를 다 썼어요.');if(p.en<C.en)return toast('활동력이 부족해요. ('+C.en+' 필요)');
+function dgStart(){const R=dgRep('dg'),p=R&&R.p,C=Object.assign({},dgCfg(),dgEvC());
+ if(!p)return toast('출전 환수가 없어요.');if(!dgLeft())return toast('오늘 입장 횟수를 다 썼어요.');if(p.en<C.en)return toast('활동력이 부족해요. ('+C.en+' 필요)');
  p.en-=C.en;const d=accDaily();d.dg=(d.dg||0)+1;acc.dg=acc.dg||{};acc.dg.runs=(acc.dg.runs||0)+1;save();
  const G=dgNew({cp:cp(p),el:dgElOf(p.no),cfg:C});acc.dg.run=dgSnap(G);save();DGV.G=G;DGV.ckT=60;DGV.pet=p;DGV.petImg=new Image();DGV.petImg.src=img(p.no);DGV.pause=0;DGV.ov='';DGV.keys={};DGV.stick=null;DGV.warnT=0;DGV.done=0;
  Object.keys(DG_MT).forEach(k=>dgI(k));['rank1','rank2','rank3','rank4','rank5','rank6','timer','ic_kill','ic_soul','ic_pause','boss_warn','arrow','ground','hpbar'].forEach(k=>dgI(k));
@@ -3626,13 +3634,13 @@ function krMutBan(){const m=krMut();if(!m)return '<div class="krmut none"><div c
  return '<div class="krmut"><div class="krmutb">'+krImg('m_'+m)+'</div><div><small>이번 주 변이</small><b>'+KR_MUT[m][0]+'</b><span>'+KR_MUT[m][1]+'</span></div></div>';}
 
 /* --- 입장 화면 --- */
-function vKr(){if(!krOpen())return krClosed('근두운 질주');const R=dgRep(),p=R&&R.p,C=krCfg(),K=krAcc(),left=krLeft(),tot=C.daily+mgEv('krEnt')+(accDaily().krBonus||0),sec=acc.inv.sec_kr||0,wk=weekKey(now());
+function vKr(){if(!krOpen())return krClosed('근두운 질주');const R=dgRep('kr'),p=R&&R.p,C=krCfg(),K=krAcc(),left=krLeft(),tot=C.daily+mgEv('krEnt')+(accDaily().krBonus||0),sec=acc.inv.sec_kr||0,wk=weekKey(now());
  const el=p?dgElOf(p.no):'yang',M=krMods({tree:K.tree,charms:krEqList(),mut:krMut(),el}),mh=p?Math.max(1,Math.min(10,krMaxHp(cp(p))+M.hpAdd)):3;
  if(KRV.resetMsg){const [sp,back]=KRV.resetMsg;KRV.resetMsg=0;setTimeout(()=>toast('새 주가 시작돼서 갈래 트리가 초기화됐어요. 트리에 쓴 엽전 '+sp+'개 중 '+back+'개를 돌려받았어요.'),200);}
  const tab=KRV.tab||'tree',tb=(k,n)=>'<button class="krtab'+(tab===k?' on':'')+'" data-kr="tab" data-t="'+k+'">'+n+'</button>';
  return '<section class="card krcard"><div class="krhero"><div class="krherot"><div class="krlogo"><h2 class="serif">근두운 질주</h2></div><p>누르고 있으면 떠오르고, 떼면 내려가요 · 천도복숭아를 모아 점수를 올려요</p></div></div><div class="krbody">'+
  (p?'<div class="krrep"><div class="krrepv"><img class="px krc" src="i/kr/kr_'+krCloud()+'.png?'+IMG_V+'" alt=""><img class="px krp" src="'+img(p.no)+'" alt=""></div><div class="dgrepi"><div class="dgrepn"><b class="serif">'+esc(NAMES[p.no])+'</b><span>'+p.st+'단계 · Lv '+p.lv+'</span></div>'+
-  '<div class="dgchips"><span class="dgchip">체력 <b>'+mh+'칸</b> <small>(전투력 '+fmt(cp(p))+')</small></span><span class="dgchip">고속질주 <b>'+DG_ELN[el]+' · '+krF(Math.max(1,krRushDur(p.st)+M.rushDur))+'초</b></span></div><p class="krelfx"><b>'+DG_ELN[el]+' 속성</b> '+KR_ELFX[el]+'</p></div></div>':'<p class="dgwarn">대표 환수가 없어요.</p>')+
+  '<div class="dgchips"><span class="dgchip">체력 <b>'+mh+'칸</b> <small>(전투력 '+fmt(cp(p))+')</small></span><span class="dgchip">고속질주 <b>'+DG_ELN[el]+' · '+krF(Math.max(1,krRushDur(p.st)+M.rushDur))+'초</b></span></div><p class="krelfx"><b>'+DG_ELN[el]+' 속성</b> '+KR_ELFX[el]+'</p><button class="btn soft sm mgpick" data-mgpet="kr">출전 환수 바꾸기</button></div></div>':'<p class="dgwarn">출전할 환수가 없어요.</p>')+
  krMutBan()+
  '<div class="krmeta"><div><small>오늘 남은 입장</small><b>'+left+' <i>/ '+tot+'</i></b></div><div><small>보유 엽전</small><b><img class="px" src="i/kr/kr_coin.png" alt="">'+fmt(K.tok)+'</b></div><div><small>이번 주 최고</small><b>'+fmt(K.wk===wk?K.wbest||0:0)+'</b></div></div>'+
  (!left&&sec>0?'<button class="btn soft krfill" data-krfill="1"><img class="px" src="'+ITEMS.sec_kr.img+'" alt="">근두운충전비서 사용 · 입장 +1 (보유 '+sec+')</button>':'')+
@@ -3706,7 +3714,7 @@ function krMergeDo(k){const c=krChParse(k);if(!c)return;const [id,L]=c,K=krAcc()
 function krPop(h,cls){const L=document.getElementById('layer');L.innerHTML='<div class="overlay" data-close="1"><div class="krpop '+(cls||'')+'" role="dialog">'+h+'</div></div>';}
 
 /* --- 시작 --- */
-function krStart(){if(!krOpen())return;const R=dgRep(),p=R&&R.p,C=krCfg(),K=krAcc();if(!p)return toast('대표 환수가 없어요.');if(!krLeft())return toast('오늘 입장 횟수를 다 썼어요.');
+function krStart(){if(!krOpen())return;const R=dgRep('kr'),p=R&&R.p,C=krCfg(),K=krAcc();if(!p)return toast('출전 환수가 없어요.');if(!krLeft())return toast('오늘 입장 횟수를 다 썼어요.');
  const d=accDaily();d.kr=(d.kr||0)+1;K.runs=(K.runs||0)+1;save();
  const mut=krMut(),G=krNew({cp:cp(p),st:p.st,el:dgElOf(p.no),cfg:C,tree:K.tree,charms:krEqList(),mut});KRV.G=G;KRV.pet=p;KRV.petImg=new Image();KRV.petImg.src=img(p.no);KRV.pause=0;KRV.ov='';KRV.hold=0;KRV.done=0;KRV.banT=0;KRV.tip=3;
  ['bg1','bg2','bg3','bg4','bg5','floor',krCloud(),'trail','peach','peach_big','heart','coin','pearl','rush_'+G.el+(p.st>=10?'2':''),'ascend','get','hit','heal','bolt','warn','o_goblin','o_kite','o_talisman','o_whirl','o_thunder','o_meteor','o_wisp','o_pillar','heart_full','heart_empty','tap'].forEach(k=>krI(k));
@@ -4264,6 +4272,8 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
   return confirmBox('마을 확장','마을 환수 한도를 '+vc+' → '+(vc+5)+'마리로 늘릴까요? ('+pr+'환수코인)',()=>{if(acc.coins<pr)return;acc.coins-=pr;acc.vil.cap=vc+5;SFX.play('fanfare');toast('마을이 넓어졌어요! '+acc.vil.cap+'마리까지 머물 수 있어요.');commit();});}
  if(view==='visit'&&(ds.vo||ds.vpet!=null))return;
 if(ds.repmodal)return repModal();
+if(ds.mgpet)return mgPetModal(ds.mgpet);
+if(ds.setmg)return setMgPet(ds.k,ds.setmg);
 if(ds.setrep)return setRep(ds.setrep);
 if(ds.dtab){SO.tab=ds.dtab;return render();}
 if(ds.visit)return visitOpen(ds.visit);
