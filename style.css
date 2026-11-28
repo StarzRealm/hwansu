@@ -1882,7 +1882,7 @@ img[style*="none"]+.fb{display:inline!important}
 .dgboss div{position:relative;overflow:visible}.dgboss div::after{content:'';position:absolute;inset:-6px -10px -6px -34px;background:url(i/dg/dg_bossbar.png) center/100% 100% no-repeat;pointer-events:none}
 .dgsh{display:block;width:220px;height:220px;background-repeat:no-repeat;background-size:800% 100%;pointer-events:none;position:absolute;left:50%;top:0;transform:translateX(-50%)}
 .dgchest,.dgres{position:relative}
-.dgchfx{background-image:url(i/dg/dg_chest_fx.png);animation:dgsheet .9s steps(7) forwards}
+.dgchfx{background-image:url(i/dg/dg_chest_fx.png?v4);animation:dgsheet .9s steps(7) forwards}
 .dgclr{background-image:url(i/dg/dg_clear.png);animation:dgsheet 1.1s steps(7) infinite;top:-60px;width:300px;height:300px}
 @keyframes dgsheet{from{background-position:0 0}to{background-position:100% 0}}
 @media (max-width:520px){.dgsoul{display:none}}
@@ -2123,3 +2123,90 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 /* v3 카드 창: x23~75.6%, y12~47.8% */
 .dgcd .dgici{left:23%;top:12%;width:52.6%;height:35.8%}
 .dgwarnb,.dgwarnb.wave{border-image-slice:30 fill;border-image-width:12px}
+/* ===== 근두운 질주 v197: 변이 · 탭 · 갈래 트리 · 부적 ===== */
+.krelfx{margin:6px 0 0;font-size:12.5px;color:#5a4a38;line-height:1.4}.krelfx b{color:#2b6a4e;margin-right:4px}
+.krmut{display:flex;align-items:center;gap:10px;min-height:76px;margin-bottom:12px;border-style:solid;border-image:url(i/kr/kr_mut_bg.png) 36 40 36 200 fill / 10px 12px 10px 62px stretch;padding:8px 14px 8px 4px}
+.krmutb{width:56px;height:56px;flex:none;margin-left:-58px}.krmutb img{width:100%;height:100%}
+.krmut small{display:block;font-size:11.5px;color:#8a6a40}.krmut b{display:block;font-size:17px;color:#7a3a1a}.krmut span{display:block;font-size:13px;color:#4a3a28;line-height:1.35}
+.krmut.none b{color:#6b5a48}.krmut.none .krmutb{filter:grayscale(1);opacity:.5}
+.krevt{color:#c0392b;font-weight:800}
+.krtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:16px 0 4px}
+.krtab{min-height:44px;font-weight:800;font-size:15px;color:#6b5a48;background:none;border:0;border-radius:0;border-image:url(i/kr/kr_slot.png) 30 fill / 10px stretch;cursor:pointer}
+.krtab.on{color:#fff;border-image-source:url(i/kr/kr_btn.png);border-image-slice:24 fill;text-shadow:0 1px 0 #1a3a2a}
+/* 갈래 트리 */
+.krtree{position:relative;margin:58px 0 0;border-style:solid;border-image:url(i/kr/kr_tree_frame.png) 64 fill / 20px stretch;padding:34px 10px 12px}
+.krcrest{position:absolute;left:50%;top:0;width:clamp(150px,30%,230px);transform:translate(-50%,-62%);pointer-events:none;z-index:2}
+.krbrs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.krbr{background:rgba(255,255,255,.35);border-radius:12px;padding:6px 4px 4px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--bc) 35%,transparent)}
+.krbrh{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px}.krbrh img{width:38px;height:38px}.krbrh b{font-size:16px;color:var(--bc);text-shadow:0 1px 0 #fff}
+.krbrh small{font-size:11px;color:#8a7a68;background:#fff8;border-radius:8px;padding:1px 6px}.krbrh small::before{content:'엽전 '}
+.krbrg{position:relative;aspect-ratio:3/4}
+.krbrg svg{position:absolute;inset:0;width:100%;height:100%}
+.krbrg line{stroke:#c9b48e;stroke-width:6;stroke-linecap:round;stroke-dasharray:2 12;vector-effect:non-scaling-stroke}
+.krbrg line.on{stroke:var(--bc);stroke-dasharray:none;stroke-width:5}
+.krnode{position:absolute;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border:0;padding:0;cursor:pointer;background:url(i/kr/kr_node.png) center/100% 100% no-repeat;display:grid;place-items:center}
+.krnode .kricon{width:78%;height:78%;margin-top:-2%}
+.krnode i{position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;font-weight:800;color:#fff;background:var(--bc,#2b6a4e);border-radius:9px;padding:0 6px;line-height:16px;white-space:nowrap;box-shadow:0 1px 0 #0003}
+.krnode.full{background-image:url(i/kr/kr_node_on.png)}
+.krnode.lock{background-image:url(i/kr/kr_node_lock.png)}.krnode.lock .kricon{filter:grayscale(1) brightness(.9);opacity:.55}.krnode.lock i{background:#8a8a8a}
+.krnode.open:not(.has) .kricon{filter:saturate(.75)}
+.krnode.open:hover,.krnode.full:hover{transform:translate(-50%,-50%) scale(1.06)}
+/* 팝업 */
+.krpop{position:relative;width:min(400px,92vw);max-height:88vh;overflow:auto;border-style:solid;border-image:url(i/dg/dg_paper.png) 100 fill / 22px stretch;padding:20px 20px 16px;color:#2e2418;display:flex;flex-direction:column;gap:10px}
+.krpopt{font-size:20px;color:#2a4a3a;text-align:center}
+.krpopn{display:flex;align-items:center;gap:12px}.krpopn small{display:block;font-size:12px;color:#8a7a68}.krpopn b{display:block;font-size:20px;color:#2a1a10}.krpopn span{font-size:13px;color:#2b6a4e;font-weight:700}
+.krpopi{position:relative;width:76px;height:76px;flex:none;transform:none;left:auto;top:auto}
+.krpopi.krnode i{display:none}.krpopi.krcsi{background:url(i/kr/kr_cslot_on.png) center/100% 100% no-repeat;display:grid;place-items:center}.krpopi.krcsi img{width:80%;height:80%}
+.krpopl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.krpopl li{background:#fff8;border-radius:8px;padding:6px 10px}.krpopl li small{display:block;font-size:11.5px;color:#8a7a68}.krpopl li.nx{background:#e6f4ec}
+.krpro,.krcon{display:block;font-size:13px;line-height:1.4}.krpro{color:#2b6a4e}.krcon{color:#b0442e}
+.krwarn{margin:0;color:#b0442e;font-size:13px;text-align:center}
+.krpop .dgbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.krpop .btn{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px}.krpop .btn img{width:20px;height:20px}
+.krpop .btn.teal{background:none;border:0;border-radius:0;box-shadow:none;border-image:url(i/kr/kr_btn.png) 24 fill / 10px stretch;color:#fff;text-shadow:0 1px 0 #1a3a2a}
+.krpop .btn.soft{background:none;border:0;border-radius:0;box-shadow:none;border-image:url(i/kr/kr_btn_gray.png) 24 fill / 10px stretch;color:#fff}
+.krpop .btn:disabled{filter:grayscale(.8);opacity:.6}
+.krlv{font-style:normal;font-size:12px;font-weight:800;color:#fff;background:#b8862b;border-radius:8px;padding:0 6px;vertical-align:middle}
+/* 부적 */
+.krcslots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.krcs{aspect-ratio:1;border:0;padding:8%;cursor:pointer;background:url(i/kr/kr_cslot.png) center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#8a7a68;font-size:13px}
+.krcs.on{background-image:url(i/kr/kr_cslot_on.png)}.krcs img{width:62%;height:62%}.krcs b{font-size:12.5px;color:#2a1a10;text-align:center;line-height:1.2}
+.krchs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.krch{position:relative;border:0;cursor:pointer;background:url(i/kr/kr_cslot.png) center/100% 100% no-repeat;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 6px;gap:1px}
+.krch.eq{background-image:url(i/kr/kr_cslot_on.png)}
+.krch img{width:58%;height:58%}.krch b{font-size:11.5px;color:#2a1a10;line-height:1.15;text-align:center}
+.krch .krlv{position:absolute;top:7%;left:8%}.krch em{position:absolute;top:7%;right:9%;font-style:normal;font-size:12px;font-weight:800;color:#2a4a3a}
+.krch u{position:absolute;bottom:4%;text-decoration:none;font-size:10.5px;font-weight:800;color:#fff;background:#2b6a4e;border-radius:6px;padding:0 5px}
+.krshops{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.krshop{display:flex;align-items:center;gap:8px;border-image:url(i/kr/kr_slot.png) 30 fill / 10px stretch;padding:8px 10px}
+.krshop>img{width:52px;height:52px;flex:none}.krshop>div{flex:1;min-width:0}.krshop b{display:block;font-size:14px;color:#2a1a10}.krshop b small{font-size:11px;font-weight:700;margin-left:2px}
+.krshop.g1 b small{color:#6b7a68}.krshop.g2 b small{color:#2a6ab0}.krshop.g3 b small{color:#c0392b}
+.krshop .btn{flex:none;display:inline-flex;align-items:center;gap:3px;padding:6px 10px;min-width:64px;justify-content:center}.krshop .btn img{width:16px;height:16px}
+.krshop .btn:disabled{filter:grayscale(.8);opacity:.6}
+.krrules p{margin:6px 0;line-height:1.5}
+/* 합성 */
+.krmerge{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:1;background:url(i/kr/kr_merge_bg.png) center/100% 100% no-repeat}
+.krms{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center}.krms img{width:82%;height:82%}
+.krms.kma{left:24.2%;top:51.3%;width:18%;height:18%}.krms.kmb{left:75.9%;top:51.3%;width:18%;height:18%}
+.krms.kmc{left:50%;top:23.3%;width:23.5%;height:23.5%}.krms.kmc img{opacity:.35;filter:grayscale(.6)}.krms.kmc.kgot img{opacity:1;filter:none;animation:krpop .5s ease-out}
+.krmfx{position:absolute;left:50%;top:23.3%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);background-size:800% 100%;background-repeat:no-repeat;pointer-events:none;animation:krfx .9s steps(7) forwards}
+.krmfx.ok{background-image:url(i/kr/kr_fx_merge_ok.png)}.krmfx.no{background-image:url(i/kr/kr_fx_merge_fail.png)}
+@keyframes krfx{from{background-position:0 0;opacity:1}99%{opacity:1}to{background-position:100% 0;opacity:0}}
+@keyframes krpop{from{transform:scale(.4)}70%{transform:scale(1.15)}to{transform:scale(1)}}
+.krmodds{margin:0;text-align:center;display:flex;flex-direction:column;gap:2px}.krmodds b{font-size:15px}.krmodds span{font-size:13.5px;color:#4a3a28}.krmodds small{color:#b0442e;font-size:12px}
+.krmres{margin:0;text-align:center;font-weight:800;color:#6b5a48}.krmres.ok{color:#2b6a4e}.krmres.bad{color:#b0442e}
+/* HUD 추가 */
+.krsub{display:flex;gap:6px;margin-top:4px;font-size:12px;font-weight:800}.krsub:empty{display:none}.krsub span{background:rgba(20,60,90,.6);border-radius:8px;padding:1px 8px}
+/* 운영자 변이 */
+.krmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;margin:6px 0}
+.krmrow{display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px;background:#f6f1e6;cursor:pointer}.krmrow img{width:40px;height:40px}.krmrow b{display:block;font-size:14px}.krmrow small{display:block;font-size:12px;color:#6b5a48;line-height:1.3}
+@media (max-width:720px){.krbrs{grid-template-columns:repeat(2,1fr);gap:10px}.krbrg{max-width:300px;margin:0 auto;width:100%}}
+@media (max-width:520px){.krshops{grid-template-columns:1fr}.krtree{padding:28px 6px 10px;margin-top:48px}.krtab{font-size:14px}.krnode i{font-size:10px}.krchs{grid-template-columns:repeat(3,1fr)}.krmut span{font-size:12px}}
+.krmut{position:relative;border-width:10px 12px 10px 62px;padding:4px 6px}
+.krmutb{position:absolute;left:-58px;top:50%;transform:translateY(-50%);width:56px;height:56px;margin:0}
+.krrep .dgrepi{flex:1;min-width:0}.krelfx{overflow-wrap:anywhere}
+.overlay>.krpop{margin:auto 0;flex:none}
+.krmut{border-image-slice:36 40 36 60 fill;border-width:10px 12px 10px 18px;padding:4px 6px 4px 66px}
+.krmutb{left:2px;width:60px;height:60px}
+.krrep{padding:20px 22px}
+.krtree{margin-top:70px}.krcrest{transform:translate(-50%,-58%)}
+@media (max-width:520px){.krtree{margin-top:64px}.krcrest{width:140px}}
