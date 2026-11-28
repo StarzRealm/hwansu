@@ -2394,3 +2394,6 @@ html.dgon,html.dgon body{overflow:hidden;overscroll-behavior:none;height:100%}
 .modal .bmlist .bmrow span{overflow-wrap:anywhere}
 .modal .bmlist .bmrow span b{white-space:nowrap}
 .modal .bmlist{min-width:min(300px,100%)}
+
+/* v209 안내 띠: hidden 이 display:flex 에 덮이지 않게 */
+.dgwarnb[hidden]{display:none!important}
